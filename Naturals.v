@@ -44,6 +44,7 @@ Implicit Arguments Vnil [A].
 Implicit Arguments Vcons [A n].
 
 (* Some terms *)
+Check (Fun plus (Vcons (Fun succ (Vcons (Var 2) Vnil)) (Vcons (Fun zero Vnil) Vnil))).
 Check (Fun succ (Vcons (Var 1) Vnil)).
 Check (Var 3).
 
@@ -53,7 +54,7 @@ CoFixpoint repeat_succ : term :=
 
 Check repeat_succ.
 
-(* Test the head of a  term *)
+(* Test the head of a term *)
 Definition head (t : term) : nat :=
   match t with
   | Var n      => n
@@ -62,6 +63,7 @@ Definition head (t : term) : nat :=
   | Fun plus _ => 1007
   end.
 
+Eval simpl in (head (Fun plus (Vcons (Fun succ (Vcons (Var 2) Vnil)) (Vcons (Fun zero Vnil) Vnil)))).
 Eval simpl in (head (Fun succ (Vcons (Var 1) Vnil))).
 Eval simpl in (head (Var 3)).
 Eval simpl in (head repeat_succ).
