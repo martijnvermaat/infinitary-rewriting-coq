@@ -36,17 +36,32 @@ End NaturalsSignature.
 Module Naturals := Term.Term NaturalsSignature NatVars.
 
 
+(* Now play with this *)
 Import Naturals.
 Import NaturalsSignature.
 
 Implicit Arguments Vnil [A].
 Implicit Arguments Vcons [A n].
 
+(* Some terms *)
 Check (Fun succ (Vcons (Var 1) Vnil)).
 Check (Var 3).
 
-
+(* succ(succ(succ(succ(succ(...))))) *)
 CoFixpoint repeat_succ : term :=
   Fun succ (Vcons repeat_succ Vnil).
 
 Check repeat_succ.
+
+(* Test the head of a  term *)
+Definition head (t : term) : nat :=
+  match t with
+  | Var n      => n
+  | Fun zero _ => 1005
+  | Fun succ _ => 1006
+  | Fun plus _ => 1007
+  end.
+
+Eval simpl in (head (Fun succ (Vcons (Var 1) Vnil))).
+Eval simpl in (head (Var 3)).
+Eval simpl in (head repeat_succ).
