@@ -58,4 +58,25 @@ Module Term (S : Signature) (X : Variables).
     | Var : variable -> term
     | Fun : forall f : symbol, vector term (arity f) -> term.
 
+(*
+  Definition size (t : term) : nat :=
+    match t with
+    | Var x          => 0
+    | Fun _ subterms =>
+        let fix size_subterms (terms : vector term _) {struct terms} :=
+          match terms with
+          | Vnil         => 0
+          | Vcons u _ us => size u + size_subterms us
+        end
+        in 1 + (size_subterms subterms)
+    end.
+*)
+
+  (* Definition finite : (t : term) : bool := exists n (size t = n). *)
+
+  (* Definieer rewrite rule met predicate finite voor beide kanten van de rule *)
+
+  (* Substitution *)
+  (* Matching *)
+
 End Term.
