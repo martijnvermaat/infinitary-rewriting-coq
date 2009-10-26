@@ -58,23 +58,69 @@ Module Term (S : Signature) (X : Variables).
     | Var : variable -> term
     | Fun : forall f : symbol, vector term (arity f) -> term.
 
+  (*
+    Choice: how to model rewrite rules with finite lhs (and rhs)?
+    1) With type term and a proof that lhs is finite
+    2) With new inductive type finite_term
+  *)
+
 (*
-  Definition size (t : term) : nat :=
+  Inductive Finite : term \u2192 Prop :=
+    | Var_fin : Finite (Var _)
+    | Fun_fin : als alle subtermen Finite zijn, dan ook een Fun f (subtermen)
+*)
+
+
+
+(*
+
+  (*
+    Define size on ordinal numbers, so we need a representation
+    for ordinal numbers.
+  *)
+  Fixpoint size (t : term) : nat :=
     match t with
     | Var x          => 0
     | Fun _ subterms =>
-        let fix size_subterms (terms : vector term _) {struct terms} :=
+        let fix size_subterms n (terms : vector term n) {struct terms} :=
           match terms with
           | Vnil         => 0
-          | Vcons u _ us => size u + size_subterms us
+          | Vcons u m us => size u + size_subterms m us
         end
-        in 1 + (size_subterms subterms)
+        in 1 + (size_subterms _ subterms)
     end.
+
+  (*
+    Ordinal numbers:
+
+    1) Casteran: http://www.labri.fr/perso/casteran/Cantor
+
+       Inductive T1 : Set :=
+         | zero : T1
+         | cons : T1 -> nat -> T1 -> T1.
+
+       cons a n b represents  omega^a *(S n)  + b
+
+    2) Giminez:
+
+       Inductive Ord:Set :=
+         | OrdO  : Ord
+         | OrdS  : Ord -> Ord
+         | Limit : (Nat -> Ord) -> Ord.
+
+       In this representation, a limit ordinal (Limit h) is a sort
+       of tree with an infinite width, whose nth child is obtained
+       by applying the function h to n.
 *)
 
-  (* Definition finite : (t : term) : bool := exists n (size t = n). *)
+(*
+  Inductive finite_term : Set :=
+    | FVar : variable -> finite_term
+    | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
 
-  (* Definieer rewrite rule met predicate finite voor beide kanten van de rule *)
+  Definition rule :=
+  Definition trs :=
+*)
 
   (* Substitution *)
   (* Matching *)
