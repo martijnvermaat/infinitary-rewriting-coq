@@ -3,6 +3,7 @@
 *)
 
 
+Require Export List.
 Require Export Bvector.
 
 
@@ -58,6 +59,15 @@ Module Term (S : Signature) (X : Variables).
     | Var : variable -> term
     | Fun : forall f : symbol, vector term (arity f) -> term.
 
+  Inductive finite_term : Set :=
+    | FVar : variable -> finite_term
+    | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
+
+  Record rule : Set :=
+    makeRule { lhs : finite_term; rhs : finite_term }.
+
+  Definition trs : Set := (list rule).
+
   (*
     Choice: how to model rewrite rules with finite lhs (and rhs)?
     1) With type term and a proof that lhs is finite
@@ -111,15 +121,6 @@ Module Term (S : Signature) (X : Variables).
        In this representation, a limit ordinal (Limit h) is a sort
        of tree with an infinite width, whose nth child is obtained
        by applying the function h to n.
-*)
-
-(*
-  Inductive finite_term : Set :=
-    | FVar : variable -> finite_term
-    | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
-
-  Definition rule :=
-  Definition trs :=
 *)
 
   (* Substitution *)
