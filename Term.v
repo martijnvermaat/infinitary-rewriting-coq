@@ -55,6 +55,9 @@ Module Term (S : Signature) (X : Variables).
   Notation symbol := S.symbol.
   Notation variable := X.variable.
 
+  Implicit Arguments Vnil [A].
+  Implicit Arguments Vcons [A n].
+
   CoInductive term : Set :=
     | Var : variable -> term
     | Fun : forall f : symbol, vector term (arity f) -> term.
@@ -67,6 +70,33 @@ Module Term (S : Signature) (X : Variables).
     makeRule { lhs : finite_term; rhs : finite_term }.
 
   Definition trs : Set := (list rule).
+
+  Fixpoint substitute (t : term) (v : variable) (t' : finite_term) {struct t'} : term :=
+    match t' with
+    | FVar x          => if eq_variable_dec x v then t else Var x
+    | FFun f subterms =>
+        let fix subs_subterms n (terms : vector finite_term n) {struct terms} : (vector term n) :=
+          match terms with
+          | Vnil         => Vnil
+          | Vcons u m us => Vcons (substitute t v u) (subs_subterms m us)
+          end
+        in Fun f (subs_subterms (arity f) subterms)
+    end.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   (*
     Choice: how to model rewrite rules with finite lhs (and rhs)?
