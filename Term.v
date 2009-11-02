@@ -55,8 +55,8 @@ Module Term (S : Signature) (X : Variables).
   Notation symbol := S.symbol.
   Notation variable := X.variable.
 
-  Implicit Arguments Vnil [A].
-  Implicit Arguments Vcons [A n].
+  (*Implicit Arguments Vnil [A].*)
+  (*Implicit Arguments Vcons [A n].*)
 
   CoInductive term : Set :=
     | Var : variable -> term
@@ -76,9 +76,9 @@ Module Term (S : Signature) (X : Variables).
     | FVar x          => if eq_variable_dec x v then t else Var x
     | FFun f subterms =>
         let fix subs_subterms n (terms : vector finite_term n) {struct terms} : (vector term n) :=
-          match terms with
-          | Vnil         => Vnil
-          | Vcons u m us => Vcons (substitute t v u) (subs_subterms m us)
+          match terms in vector _ n return vector term n with
+          | Vnil         => Vnil term
+          | Vcons u m us => Vcons term (substitute t v u) m (subs_subterms m us)
           end
         in Fun f (subs_subterms (arity f) subterms)
     end.
