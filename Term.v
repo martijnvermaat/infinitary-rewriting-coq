@@ -49,86 +49,94 @@ End NatVars.
 *)
 Module Term (S : Signature) (X : Variables).
 
+  (* Use names from signature and variables directly *)
   Import S.
   Import X.
 
-  Notation symbol := S.symbol.
-  Notation variable := X.variable.
+  (* Ommit element type and length arguments for vector constructors *)
+  Implicit Arguments Vnil [A].
+  Implicit Arguments Vcons [A n].
 
-  (*Implicit Arguments Vnil [A].*)
-  (*Implicit Arguments Vcons [A n].*)
-
+  (* Infinitary term datatype *)
   CoInductive term : Set :=
     | Var : variable -> term
     | Fun : forall f : symbol, vector term (arity f) -> term.
 
+  (* Finitary term datatype *)
   Inductive finite_term : Set :=
     | FVar : variable -> finite_term
     | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
 
+  (* Rewriting rule consists of two finite terms *)
   Record rule : Set :=
     makeRule { lhs : finite_term; rhs : finite_term }.
 
+  (* Term rewriting system is a list of rewriting rules *)
   Definition trs : Set := (list rule).
 
-  Fixpoint substitute (t : term) (v : variable) (t' : finite_term) {struct t'} : term :=
-    match t' with
-    | FVar x          => if eq_variable_dec x v then t else Var x
+  (* Trivial image of finite_term in term *)
+  Fixpoint finite_term_as_term (t : finite_term) : term :=
+    match t with
+    | FVar x          => Var x
+    | FFun f subterms =>
+        let fix image_subterms n (terms : vector finite_term n) {struct terms} : (vector term n) :=
+          match terms in vector _ n return vector term n with
+          | Vnil         => Vnil
+          | Vcons u m us => Vcons (finite_term_as_term u) (image_subterms m us)
+          end
+        in Fun f (image_subterms (arity f) subterms)
+    end.
+
+  (* Type of substitutions of terms for variables *)
+  Definition substitution := variable -> term.
+
+  (* The identity substitution *)
+  Definition empty_substitution (x : variable) : term := Var x.
+
+  (* Apply a substitution to a finite term *)
+  Fixpoint substitute (s : substitution) (t : finite_term) {struct t} : term :=
+    match t with
+    | FVar x          => s x
     | FFun f subterms =>
         let fix subs_subterms n (terms : vector finite_term n) {struct terms} : (vector term n) :=
           match terms in vector _ n return vector term n with
-          | Vnil         => Vnil term
-          | Vcons u m us => Vcons term (substitute t v u) m (subs_subterms m us)
+          | Vnil         => Vnil
+          | Vcons u m us => Vcons (substitute s u) (subs_subterms m us)
           end
         in Fun f (subs_subterms (arity f) subterms)
     end.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  (*
-    Choice: how to model rewrite rules with finite lhs (and rhs)?
-    1) With type term and a proof that lhs is finite
-    2) With new inductive type finite_term
-  *)
+  (* The empty substitution just builds Var terms from variables *)
+  Lemma empty_substitution_is_id : forall (x : variable), empty_substitution x = Var x.
+  Proof.
+    intros.
+    unfold empty_substitution.
+    reflexivity.
+  Qed.
 
 (*
-  Inductive Finite : term \u2192 Prop :=
-    | Var_fin : Finite (Var _)
-    | Fun_fin : als alle subtermen Finite zijn, dan ook een Fun f (subtermen)
+  (* Applying the empty substitution to a finite term gives the trivial infinite term image *)
+  Lemma empty_substitution_is_trivial : forall (t : finite_term), (substitute empty_substitution t) = (finite_term_as_term t).
+  Proof.
+    intros.
+    unfold substitute.
+    unfold finite_term_as_term.
+    induction t.
+      (* t = FVar x *)
+      apply empty_substitution_is_id.
+      (* t = FFun f subterms *)
+      (* TODO: Induction principle is probably no good (see ATerm.v in CoLoR) *)
+  Abort.
 *)
 
+  (* Infinitary one-hole context datatype *)
+  CoInductive context : Set :=
+    | Hole : context
+    | CFun : forall f : symbol, forall i j : nat, i + S j = arity f ->
+             vector term i -> context -> vector term j -> context.
 
+  Implicit Arguments CFun [i j].
 
-(*
-
-  (*
-    Define size on ordinal numbers, so we need a representation
-    for ordinal numbers.
-  *)
-  Fixpoint size (t : term) : nat :=
-    match t with
-    | Var x          => 0
-    | Fun _ subterms =>
-        let fix size_subterms n (terms : vector term n) {struct terms} :=
-          match terms with
-          | Vnil         => 0
-          | Vcons u m us => size u + size_subterms m us
-        end
-        in 1 + (size_subterms _ subterms)
-    end.
 
   (*
     Ordinal numbers:
@@ -151,9 +159,7 @@ Module Term (S : Signature) (X : Variables).
        In this representation, a limit ordinal (Limit h) is a sort
        of tree with an infinite width, whose nth child is obtained
        by applying the function h to n.
-*)
 
-  (* Substitution *)
-  (* Matching *)
+  *)
 
 End Term.
