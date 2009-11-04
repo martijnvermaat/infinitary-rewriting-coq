@@ -53,7 +53,7 @@ Module Term (S : Signature) (X : Variables).
   Import S.
   Import X.
 
-  (* Ommit element type and length arguments for vector constructors *)
+  (* Omit element type and length arguments for vector constructors *)
   Implicit Arguments Vnil [A].
   Implicit Arguments Vcons [A n].
 
@@ -113,6 +113,23 @@ Module Term (S : Signature) (X : Variables).
     unfold empty_substitution.
     reflexivity.
   Qed.
+
+(*
+
+CoFixpoint id (t : term) : term :=
+  match t with
+    Var x => Var x
+  | Fun f subterms => 
+    let fix id_subterms n (terms : vector term n) {struct terms} : (vector term n) :=
+          match terms in vector _ n return vector term n with
+          | Vnil         => Vnil
+          | Vcons u m us => Vcons (id u) (id_subterms m us)
+          end
+        in Fun f (id_subterms (arity f) subterms)
+  end.
+
+*)
+
 
 (*
   (* Applying the empty substitution to a finite term gives the trivial infinite term image *)
@@ -189,6 +206,9 @@ Module Term (S : Signature) (X : Variables).
         end
     end.
 
+
+Print vector_cast.
+
   Implicit Arguments vector_cast [A n m].
 
 (*
@@ -216,7 +236,7 @@ Module Term (S : Signature) (X : Variables).
 
        cons a n b represents  omega^a *(S n)  + b
 
-    2) Giminez:
+    2) Gimenez:
 
        Inductive Ord:Set :=
          | OrdO  : Ord
