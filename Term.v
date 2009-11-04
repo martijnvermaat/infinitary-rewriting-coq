@@ -137,6 +137,73 @@ Module Term (S : Signature) (X : Variables).
 
   Implicit Arguments CFun [i j].
 
+(*
+  Require Import Program.
+  Program Fixpoint vector_append n1 n2 (v1 : vector A n1) (v2 : vector A n2) : vector A (n1 + n2) :=
+    match v1 with
+    | Vnil         => v2
+    | Vcons x n xs => Vcons x (vector_append (n1 - 1) n2 xs v2)
+    end.
+  Next Obligation.
+  Next Obligation.
+  Defined.
+*)
+
+  (* Append two vectors of lengths n1 and n2 yields a vector of length n1 + n2 *)
+  Fixpoint vector_append (A : Type) n1 n2 (v1 : vector A n1) (v2 : vector A n2) : vector A (n1 + n2) :=
+    match v1 in (vector _ p) return (vector A (p + n2)) with
+    | Vnil         => v2
+    | Vcons x n xs => Vcons x (vector_append _ n _ xs v2)
+    end.
+
+  Implicit Arguments vector_append [A n1 n2].
+
+(*
+  (* Fill a context with a term *)
+  (*
+    Problem:   vector_append gives a vector of length (i + S j) which is equal
+               to (arity f), but Coq doesn't know this.
+    Solutions: None, casting the vector or typing vector_append differently
+               both fail because of guardedness restrictions in CoFixpoint.
+  *)
+  CoFixpoint fill (c : context) (t : term) : term :=
+    match c with
+    | Hole                  => t
+    | CFun f i j H v1 c' v2 => Fun f (vector_append v1 (Vcons (fill c' t) v2))
+    end.
+*)
+
+  (* Cast a vector of length n to a vector of length m, having that n = m *)
+  Require Import Program.
+  Program Fixpoint vector_cast (A : Type) n (v : vector A n) m (H : n = m) {struct v} : vector A m :=
+    match v with
+    | Vnil =>
+        match m with
+        | 0 => Vnil
+        | _ => !
+        end
+    | Vcons x n' v' =>
+        match n with
+        | 0 => !
+        | S m' => Vcons x (vector_cast A n' v' m' _)
+        end
+    end.
+
+  Implicit Arguments vector_cast [A n m].
+
+(*
+  (* Fill a context with a term *)
+  (*
+    Problem: the call to vector_cast is not guarded, which is required in CoFixpoint, the same
+    would apply to a more intelligent version of vector_append.
+  *)
+  CoFixpoint fill (c : context) (t : term) : term :=
+    match c with
+    | Hole                  => t
+    | CFun f i j H v1 c' v2 => Fun f (vector_cast (vector_append v1 (Vcons (fill c' t) v2)) H)
+    end.
+*)
+
 
   (*
     Ordinal numbers:
