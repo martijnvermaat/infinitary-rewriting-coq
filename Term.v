@@ -213,10 +213,6 @@ Print vector_cast.
 
 
   (* Fill a context with a term *)
-  (*
-    Problem: the call to vector_cast is not guarded, which is required in CoFixpoint, the same
-    would apply to a more intelligent version of vector_append.
-  *)
   Fixpoint fill (c : context) (t : term) : term :=
     match c with
     | Hole                  => t
