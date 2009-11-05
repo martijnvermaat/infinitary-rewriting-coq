@@ -74,6 +74,21 @@ Module Term (S : Signature) (X : Variables).
   (* Term rewriting system is a list of rewriting rules *)
   Definition trs : Set := (list rule).
 
+(*
+  (* This is ill-formed, because the recursive call to id is not guarded *)
+  CoFixpoint id (t : term) : term :=
+    match t with
+    | Var x => Var x
+    | Fun f subterms => 
+        let fix id_subterms n (terms : vector term n) {struct terms} : (vector term n) :=
+          match terms in vector _ n return vector term n with
+          | Vnil         => Vnil
+          | Vcons u m us => Vcons (id u) (id_subterms m us)
+          end
+        in Fun f (id_subterms (arity f) subterms)
+    end.
+*)
+
   (* Trivial image of finite_term in term *)
   Fixpoint finite_term_as_term (t : finite_term) : term :=
     match t with
@@ -115,23 +130,6 @@ Module Term (S : Signature) (X : Variables).
   Qed.
 
 (*
-
-CoFixpoint id (t : term) : term :=
-  match t with
-    Var x => Var x
-  | Fun f subterms => 
-    let fix id_subterms n (terms : vector term n) {struct terms} : (vector term n) :=
-          match terms in vector _ n return vector term n with
-          | Vnil         => Vnil
-          | Vcons u m us => Vcons (id u) (id_subterms m us)
-          end
-        in Fun f (id_subterms (arity f) subterms)
-  end.
-
-*)
-
-
-(*
   (* Applying the empty substitution to a finite term gives the trivial infinite term image *)
   Lemma empty_substitution_is_trivial : forall (t : finite_term), (substitute empty_substitution t) = (finite_term_as_term t).
   Proof.
@@ -146,27 +144,15 @@ CoFixpoint id (t : term) : term :=
   Abort.
 *)
 
-  (* Infinitary one-hole context datatype *)
+  (* One-hole contexts where a hole can occur at any finite dept *)
   Inductive context : Set :=
     | Hole : context
     | CFun : forall f : symbol, forall i j : nat, i + S j = arity f ->
-             vector term i -> context -> vector term j -> context.
+               vector term i -> context -> vector term j -> context.
 
   Implicit Arguments CFun [i j].
 
-(*
-  Require Import Program.
-  Program Fixpoint vector_append n1 n2 (v1 : vector A n1) (v2 : vector A n2) : vector A (n1 + n2) :=
-    match v1 with
-    | Vnil         => v2
-    | Vcons x n xs => Vcons x (vector_append (n1 - 1) n2 xs v2)
-    end.
-  Next Obligation.
-  Next Obligation.
-  Defined.
-*)
-
-  (* Append two vectors of lengths n1 and n2 yields a vector of length n1 + n2 *)
+  (* Appending two vectors of lengths n1 and n2 yields a vector of length n1 + n2 *)
   Fixpoint vector_append (A : Type) n1 n2 (v1 : vector A n1) (v2 : vector A n2) : vector A (n1 + n2) :=
     match v1 in (vector _ p) return (vector A (p + n2)) with
     | Vnil         => v2
@@ -174,21 +160,6 @@ CoFixpoint id (t : term) : term :=
     end.
 
   Implicit Arguments vector_append [A n1 n2].
-
-(*
-  (* Fill a context with a term *)
-  (*
-    Problem:   vector_append gives a vector of length (i + S j) which is equal
-               to (arity f), but Coq doesn't know this.
-    Solutions: None, casting the vector or typing vector_append differently
-               both fail because of guardedness restrictions in CoFixpoint.
-  *)
-  CoFixpoint fill (c : context) (t : term) : term :=
-    match c with
-    | Hole                  => t
-    | CFun f i j H v1 c' v2 => Fun f (vector_append v1 (Vcons (fill c' t) v2))
-    end.
-*)
 
   (* Cast a vector of length n to a vector of length m, having that n = m *)
   Require Import Program.
@@ -206,18 +177,24 @@ CoFixpoint id (t : term) : term :=
         end
     end.
 
-
-Print vector_cast.
-
   Implicit Arguments vector_cast [A n m].
 
-
-  (* Fill a context with a term *)
+  (* Fill a hole in a context with a term *)
   Fixpoint fill (c : context) (t : term) : term :=
     match c with
     | Hole                  => t
     | CFun f i j H v1 c' v2 => Fun f (vector_cast (vector_append v1 (Vcons (fill c' t) v2)) H)
     end.
+
+  (* Bisimilarity on terms *)
+(*
+  (* TODO: TermsEq *)
+  CoInductive TermEq : term -> term -> Prop :=
+    | var_eq : forall x : variable, TermEq (Var x) (Var x)
+    | fun_eq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f) ->
+                 TermsEq subterms1 subterms2 -> TermEq (Fun f subterms1) (Fun f subterms2).
+*)
+
 
   (*
     Ordinal numbers:
