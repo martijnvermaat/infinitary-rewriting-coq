@@ -147,7 +147,7 @@ CoFixpoint id (t : term) : term :=
 *)
 
   (* Infinitary one-hole context datatype *)
-  CoInductive context : Set :=
+  Inductive context : Set :=
     | Hole : context
     | CFun : forall f : symbol, forall i j : nat, i + S j = arity f ->
              vector term i -> context -> vector term j -> context.
@@ -211,19 +211,17 @@ Print vector_cast.
 
   Implicit Arguments vector_cast [A n m].
 
-(*
+
   (* Fill a context with a term *)
   (*
     Problem: the call to vector_cast is not guarded, which is required in CoFixpoint, the same
     would apply to a more intelligent version of vector_append.
   *)
-  CoFixpoint fill (c : context) (t : term) : term :=
+  Fixpoint fill (c : context) (t : term) : term :=
     match c with
     | Hole                  => t
     | CFun f i j H v1 c' v2 => Fun f (vector_cast (vector_append v1 (Vcons (fill c' t) v2)) H)
     end.
-*)
-
 
   (*
     Ordinal numbers:
