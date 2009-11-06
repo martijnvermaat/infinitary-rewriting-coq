@@ -198,7 +198,6 @@ Module Term (S : Signature) (X : Variables).
 
   Implicit Arguments vector_for_all2 [A B n m].
 
-
 (*
   (* Bisimilarity on terms *)
 
@@ -230,6 +229,30 @@ Module Term (S : Signature) (X : Variables).
                    term_eq t u -> terms_eq v w -> terms_eq (Vcons t _ v) (Vcons u _ w).
 *)
 
+  (* Reduction step *)
+  Inductive step : Set :=
+    | Step : context -> rule -> substitution -> step.
+
+  (* Sequence of steps *)
+  (* This seems incorrect, the sequence should be reversed... *)
+  CoInductive steps : Set :=
+    | Start : term -> steps
+    | Next  : step -> steps -> steps.
+
+  CoInductive matching : steps -> Prop :=
+    | Start_matching : forall t : term, matching (Start t)
+    | First_matching : forall t : term, forall c : context, forall r : rule, forall s : substitution,
+                         (* term_eq t (fill c (substitute s (lhs r))) -> *)
+                         matching (Next (Step c r s) (Start t))
+    | Next_matching  : forall r : steps, forall s t : step,
+                         (* source of r equal to target of s -> *)
+                         matching (Next s r) -> matching (Next t (Next s r)).
+
+  Record reduction : Set :=
+    makeReduction {
+      r : steps;
+      m : matching r
+    }.
 
 
   (*
