@@ -198,8 +198,10 @@ Module Term (S : Signature) (X : Variables).
 
   Implicit Arguments vector_for_all2 [A B n m].
 
+
 (*
   (* Bisimilarity on terms *)
+
   (*
     Error: Non strictly positive occurrence of "term_eq"
     http://pauillac.inria.fr/pipermail/coq-club/2005/001897.html
@@ -208,6 +210,14 @@ Module Term (S : Signature) (X : Variables).
     | VarEq : forall x : variable, term_eq (Var x) (Var x)
     | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
                  vector_for_all2 term_eq subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2).
+
+  (* Error: Recursive definition on "term" which should be an inductive type *)
+  Fixpoint term_eq (t u : term) {struct t} : Prop :=
+    match t, u with
+    | Var x,    Var y    => if eq_variable_dec x y then True else False
+    | Fun f t', Fun g v' => (if eq_symbol_dec f g then True else False) /\ vector_for_all2 term_eq t' v'
+    | _,        _        => False
+    end.
 *)
 
 
