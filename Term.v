@@ -68,6 +68,8 @@ Module Term (S : Signature) (X : Variables).
     | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
 
   (* Rewriting rule consists of two finite terms *)
+  (* TODO: explore alternative using 'term' with proof of finiteness *)
+  (* TODO: add proof that vars(rhs) is a subset of vars(lhs) *)
   Record rule : Set :=
     makeRule { lhs : finite_term; rhs : finite_term }.
 
@@ -186,14 +188,28 @@ Module Term (S : Signature) (X : Variables).
     | CFun f i j H v1 c' v2 => Fun f (vector_cast (vector_append v1 (Vcons (fill c' t) v2)) H)
     end.
 
-  (* Bisimilarity on terms *)
+  (* Vectors v and w are pair-wise in relation R *)
+  Fixpoint vector_for_all2 (A B : Type) (R : A -> B -> Prop) n m (v : vector A n) (w : vector B m) {struct v} : Prop :=
+    match v, w with
+    | Vnil,         Vnil         => True
+    | Vcons a _ v', Vcons b _ w' => R a b /\ vector_for_all2 A B R _ _ v' w'
+    | _,            _            => False
+    end.
+
+  Implicit Arguments vector_for_all2 [A B n m].
+
 (*
-  (* TODO: TermsEq *)
-  CoInductive TermEq : term -> term -> Prop :=
-    | var_eq : forall x : variable, TermEq (Var x) (Var x)
-    | fun_eq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f) ->
-                 TermsEq subterms1 subterms2 -> TermEq (Fun f subterms1) (Fun f subterms2).
+  (* Bisimilarity on terms *)
+  (*
+    Error: Non strictly positive occurrence of "term_eq"
+    http://pauillac.inria.fr/pipermail/coq-club/2005/001897.html
+  *)
+  CoInductive term_eq : term -> term -> Prop :=
+    | VarEq : forall x : variable, term_eq (Var x) (Var x)
+    | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
+                 vector_for_all2 term_eq subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2).
 *)
+
 
 
   (*
