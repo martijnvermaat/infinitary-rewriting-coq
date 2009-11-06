@@ -218,6 +218,16 @@ Module Term (S : Signature) (X : Variables).
     | Fun f t', Fun g v' => (if eq_symbol_dec f g then True else False) /\ vector_for_all2 term_eq t' v'
     | _,        _        => False
     end.
+
+  (* Error: Parameters should be syntactically the same for each inductive type *)
+  CoInductive term_eq : term -> term -> Prop :=
+    | VarEq : forall x : variable, term_eq (Var x) (Var x)
+    | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
+                 terms_eq subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2)
+  with terms_eq n m : (vector term n) -> (vector term m) -> Prop :=
+    | Vnil_eq  : terms_eq Vnil Vnil
+    | Vcons_eq : forall t u : term, forall v : (vector term _), forall w : (vector term _),
+                   term_eq t u -> terms_eq v w -> terms_eq (Vcons t _ v) (Vcons u _ w).
 *)
 
 
