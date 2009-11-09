@@ -6,6 +6,10 @@
 Require Export List.
 Require Export Bvector.
 
+Add LoadPath "../".
+Require Import Cantor.epsilon0.EPSILON0.
+Close Scope cantor_scope.
+
 
 (*
   A Signature contains a decidable set of function symbols and
@@ -229,30 +233,33 @@ Module Term (S : Signature) (X : Variables).
                    term_eq t u -> terms_eq v w -> terms_eq (Vcons t _ v) (Vcons u _ w).
 *)
 
+  (* Assume we defined some form of term equality *)
+  Parameter term_eq : term -> term -> Prop.
+
   (* Reduction step *)
   Inductive step : Set :=
     | Step : context -> rule -> substitution -> step.
 
-  (* Sequence of steps *)
-  (* This seems incorrect, the sequence should be reversed... *)
-  CoInductive steps : Set :=
-    | Start : term -> steps
-    | Next  : step -> steps -> steps.
+  Definition source (u : step) : term :=
+    match u with
+    | Step c r s => fill c (substitute s (lhs r))
+    end.
 
-  CoInductive matching : steps -> Prop :=
-    | Start_matching : forall t : term, matching (Start t)
-    | First_matching : forall t : term, forall c : context, forall r : rule, forall s : substitution,
-                         (* term_eq t (fill c (substitute s (lhs r))) -> *)
-                         matching (Next (Step c r s) (Start t))
-    | Next_matching  : forall r : steps, forall s t : step,
-                         (* source of r equal to target of s -> *)
-                         matching (Next s r) -> matching (Next t (Next s r)).
+  Definition target (u : step) : term :=
+    match u with
+    | Step c r s => fill c (substitute s (rhs r))
+    end.
 
-  Record reduction : Set :=
-    makeReduction {
-      r : steps;
-      m : matching r
-    }.
+  (* Reduction sequence *)
+  Open Scope cantor_scope.
+  Record sequence : Set :=
+    makeSequence {
+      length   : T1;
+      steps    : forall a : T1, a < length -> step;
+      (* source of a should be equal to target of pred(a) *)
+      matching : forall a : T1, a <> zero -> forall H : (a < length), source (steps a H) = target (steps a H)
+  }.
+  Close Scope cantor_scope.
 
 
   (*
