@@ -233,8 +233,17 @@ Module Term (S : Signature) (X : Variables).
                    term_eq t u -> terms_eq v w -> terms_eq (Vcons t _ v) (Vcons u _ w).
 *)
 
+ CoInductive term_eq : term -> term -> Prop :=
+    | VarEq : forall x : variable, term_eq (Var x) (Var x)
+    | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
+                 terms_eq (arity f) subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2)
+  with terms_eq : forall n : nat, (vector term n) -> (vector term n) -> Prop :=
+    | Vnil_eq  : terms_eq 0 Vnil Vnil
+    | Vcons_eq : forall t u : term, forall n : nat, forall v w : (vector term n),
+                   term_eq t u -> terms_eq n v w -> terms_eq (S n) (Vcons t v) (Vcons u w).
+
   (* Assume we defined some form of term equality *)
-  Parameter term_eq : term -> term -> Prop.
+(*  Parameter term_eq : term -> term -> Prop. *)
 
   (* Reduction step *)
   Inductive step : Set :=
