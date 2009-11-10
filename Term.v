@@ -250,15 +250,33 @@ Module Term (S : Signature) (X : Variables).
     | Step c r s => fill c (substitute s (rhs r))
     end.
 
-  (* Reduction sequence *)
   Open Scope cantor_scope.
+
+(*
+  (* For any non-zero ordinal a < b, pred(a) < b *)
+  Lemma m : forall a b : T1, a <> zero -> a < b ->
+              match (pred a) with
+              | None       => False
+              | Some a'    => a' < b
+              end.
+  Proof.
+  intros.
+
+  Qed.
+
+  (* Reduction sequence *)
   Record sequence : Set :=
     makeSequence {
       length   : T1;
       steps    : forall a : T1, a < length -> step;
-      (* source of a should be equal to target of pred(a) *)
-      matching : forall a : T1, a <> zero -> forall H : (a < length), source (steps a H) = target (steps a H)
+      matching : forall a : T1, forall n : (a <> zero), forall H : (a < length),
+                   match (pred a) with
+                   | None   => True
+                   | Some b => term_eq (source (steps a H)) (target (steps b (m a length n H)))
+                   end
   }.
+*)
+
   Close Scope cantor_scope.
 
 
@@ -267,11 +285,15 @@ Module Term (S : Signature) (X : Variables).
 
     1) Casteran: http://www.labri.fr/perso/casteran/Cantor
 
+       Countable ordinals up to phi0 in Cantor Normal Form:
+
        Inductive T1 : Set :=
          | zero : T1
          | cons : T1 -> nat -> T1 -> T1.
 
        cons a n b represents  omega^a *(S n)  + b
+
+       Type T2 contains countable ordinals up to gamma0 in Veblen Normal Form.
 
     2) Gimenez:
 
