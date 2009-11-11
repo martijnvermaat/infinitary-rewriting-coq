@@ -71,11 +71,27 @@ Module Term (S : Signature) (X : Variables).
     | FVar : variable -> finite_term
     | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
 
+  (* List of variable occurrences in finite term *)
+  (* TODO: alternatively use Coq.FSets *)
+  Fixpoint vars (t : finite_term) : list variable :=
+    match t with
+    | FVar x          => x :: nil
+    | FFun f subterms =>
+        let fix vars_subterms n (terms : vector finite_term n) {struct terms} : list variable :=
+          match terms with
+          | Vnil         => nil
+          | Vcons u m us => vars u ++ vars_subterms m us
+          end
+        in vars_subterms (arity f) subterms
+    end.
+
   (* Rewriting rule consists of two finite terms *)
   (* TODO: explore alternative using 'term' with proof of finiteness *)
-  (* TODO: add proof that vars(rhs) is a subset of vars(lhs) *)
-  Record rule : Set :=
-    makeRule { lhs : finite_term; rhs : finite_term }.
+  Record rule : Set := {
+    lhs : finite_term;
+    rhs : finite_term;
+    wf  : incl (vars rhs) (vars lhs)
+  }.
 
   (* Term rewriting system is a list of rewriting rules *)
   Definition trs : Set := (list rule).
@@ -158,6 +174,13 @@ Module Term (S : Signature) (X : Variables).
 
   Implicit Arguments CFun [i j].
 
+  (* Depth of hole *)
+  Fixpoint hole_depth c :=
+    match c with
+    | Hole                => 0
+    | CFun _ _ _ _ _ c' _ => 1 + hole_depth c'
+    end.
+
   (* Appending two vectors of lengths n1 and n2 yields a vector of length n1 + n2 *)
   Fixpoint vector_append (A : Type) n1 n2 (v1 : vector A n1) (v2 : vector A n2) : vector A (n1 + n2) :=
     match v1 in (vector _ p) return (vector A (p + n2)) with
@@ -233,7 +256,8 @@ Module Term (S : Signature) (X : Variables).
                    term_eq t u -> terms_eq v w -> terms_eq (Vcons t _ v) (Vcons u _ w).
 *)
 
- CoInductive term_eq : term -> term -> Prop :=
+  (* Bisimilarity on terms *)
+  CoInductive term_eq : term -> term -> Prop :=
     | VarEq : forall x : variable, term_eq (Var x) (Var x)
     | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
                  terms_eq (arity f) subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2)
@@ -241,9 +265,6 @@ Module Term (S : Signature) (X : Variables).
     | Vnil_eq  : terms_eq 0 Vnil Vnil
     | Vcons_eq : forall t u : term, forall n : nat, forall v w : (vector term n),
                    term_eq t u -> terms_eq n v w -> terms_eq (S n) (Vcons t v) (Vcons u w).
-
-  (* Assume we defined some form of term equality *)
-(*  Parameter term_eq : term -> term -> Prop. *)
 
   (* Reduction step *)
   Inductive step : Set :=
@@ -259,32 +280,33 @@ Module Term (S : Signature) (X : Variables).
     | Step c r s => fill c (substitute s (rhs r))
     end.
 
+  Definition depth (u : step) : nat :=
+    match u with
+    | Step c r s => hole_depth c
+    end.
+
   Open Scope cantor_scope.
 
-(*
-  (* For any non-zero ordinal a < b, pred(a) < b *)
-  Lemma m : forall a b : T1, a <> zero -> a < b ->
-              match (pred a) with
-              | None       => False
-              | Some a'    => a' < b
-              end.
-  Proof.
-  intros.
+  (* If a + 1 < b then a < b *)
+  Axiom lt_invariant_succ : forall a b, succ a < b -> a < b.
 
-  Qed.
+  (* If a < b and b < c then a < c *)
+  Axiom lt_trans : forall a b c, a < b -> b < c -> a < c.
 
   (* Reduction sequence *)
-  Record sequence : Set :=
-    makeSequence {
+  Record sequence : Set := {
       length   : T1;
       steps    : forall a : T1, a < length -> step;
-      matching : forall a : T1, forall n : (a <> zero), forall H : (a < length),
-                   match (pred a) with
-                   | None   => True
-                   | Some b => term_eq (source (steps a H)) (target (steps b (m a length n H)))
-                   end
+      matching : forall a : T1, forall H : succ a < length,
+                   term_eq (target (steps a (lt_invariant_succ a length H)))
+                           (source (steps (succ a) H));
+      (* forall a : limit ordinal < length, forall n, exists b < a,
+           forall c, b < c < a -> depth of hole in step c > n *)
+      limits : forall a k n, forall H1 : omega_term a k < length,
+                 exists b, b < omega_term a k ->
+                 forall c, b < c -> forall H2 : c < omega_term a k,
+                 depth (steps c (lt_trans c (omega_term a k) length H2 H1)) > n
   }.
-*)
 
   Close Scope cantor_scope.
 
