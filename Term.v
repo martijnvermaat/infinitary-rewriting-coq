@@ -225,37 +225,6 @@ Module Term (S : Signature) (X : Variables).
 
   Implicit Arguments vector_for_all2 [A B n m].
 
-(*
-  (* Bisimilarity on terms *)
-
-  (*
-    Error: Non strictly positive occurrence of "term_eq"
-    http://pauillac.inria.fr/pipermail/coq-club/2005/001897.html
-  *)
-  CoInductive term_eq : term -> term -> Prop :=
-    | VarEq : forall x : variable, term_eq (Var x) (Var x)
-    | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
-                 vector_for_all2 term_eq subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2).
-
-  (* Error: Recursive definition on "term" which should be an inductive type *)
-  Fixpoint term_eq (t u : term) {struct t} : Prop :=
-    match t, u with
-    | Var x,    Var y    => if eq_variable_dec x y then True else False
-    | Fun f t', Fun g v' => (if eq_symbol_dec f g then True else False) /\ vector_for_all2 term_eq t' v'
-    | _,        _        => False
-    end.
-
-  (* Error: Parameters should be syntactically the same for each inductive type *)
-  CoInductive term_eq : term -> term -> Prop :=
-    | VarEq : forall x : variable, term_eq (Var x) (Var x)
-    | FunEq : forall f : symbol, forall subterms1 subterms2 : vector term (arity f),
-                 terms_eq subterms1 subterms2 -> term_eq (Fun f subterms1) (Fun f subterms2)
-  with terms_eq n m : (vector term n) -> (vector term m) -> Prop :=
-    | Vnil_eq  : terms_eq Vnil Vnil
-    | Vcons_eq : forall t u : term, forall v : (vector term _), forall w : (vector term _),
-                   term_eq t u -> terms_eq v w -> terms_eq (Vcons t _ v) (Vcons u _ w).
-*)
-
   (* Bisimilarity on terms *)
   CoInductive term_eq : term -> term -> Prop :=
     | VarEq : forall x : variable, term_eq (Var x) (Var x)
@@ -265,6 +234,52 @@ Module Term (S : Signature) (X : Variables).
     | Vnil_eq  : terms_eq 0 Vnil Vnil
     | Vcons_eq : forall t u : term, forall n : nat, forall v w : (vector term n),
                    term_eq t u -> terms_eq n v w -> terms_eq (S n) (Vcons t v) (Vcons u w).
+
+Print terms_eq.
+
+(*
+Lemma terms_eq_ind : forall m, P : vector term m
+*)
+
+Inductive equal_up_to : nat -> term -> term -> Prop :=
+    eut_0   : forall t u : term, equal_up_to 0 t u
+  | eut_var : forall n : nat, forall x : variable, equal_up_to n (Var x) (Var x)
+  | eut_fun : forall n : nat, forall f : symbol, forall v w : vector term (arity f), 
+              equal_up_to_vec n (arity f) v w -> equal_up_to (S n) (Fun f v) (Fun f w)
+with equal_up_to_vec : nat -> forall m : nat, vector term m -> vector term m -> Prop :=
+    eutv_nil  : forall n, equal_up_to_vec n 0 Vnil Vnil
+  | eutv_cons : forall n,  
+                forall t u : term, equal_up_to n t u -> 
+                forall m : nat, forall v w : vector term m, equal_up_to_vec n m v w -> 
+                equal_up_to_vec n (S m) (Vcons t v) (Vcons u w).
+
+(*
+
+Lemma term_eq_root : 
+
+*)
+
+Lemma term_eq_to_equal_up_to_n :
+  forall n, 
+  forall t u : term,
+  term_eq t u ->
+  equal_up_to n t u.
+Proof.
+
+
+
+induction n as [| n IH]; intros t u H.
+constructor.
+destruct H.
+constructor.
+constructor.
+
+
+destruct H; constructor.
+apply IH.
+exact H.
+
+
 
   (* Reduction step *)
   Inductive step : Set :=
@@ -293,23 +308,51 @@ Module Term (S : Signature) (X : Variables).
   (* If a < b and b < c then a < c *)
   Axiom lt_trans : forall a b c, a < b -> b < c -> a < c.
 
-  (* Reduction sequence *)
+
+Variable equal_up_to : nat -> term -> term -> Prop.
+
+Definition Ord := T1.
+Variable limit : Ord -> Prop.
+
+  (* Strongly continuous rewriting sequences *)
   Record sequence : Set := {
       length   : T1;
       steps    : forall a : T1, a < length -> step;
-      matching : forall a : T1, forall H : succ a < length,
-                   term_eq (target (steps a (lt_invariant_succ a length H)))
-                           (source (steps (succ a) H));
-      (* forall a : limit ordinal < length, forall n, exists b < a,
-           forall c, b < c < a -> depth of hole in step c > n *)
-      limits : forall a k n, forall H1 : omega_term a k < length,
-                 exists b, b < omega_term a k ->
-                 forall c, b < c -> forall H2 : c < omega_term a k,
-                 depth (steps c (lt_trans c (omega_term a k) length H2 H1)) > n
+      continuous_local : 
+               forall a : T1, forall H : succ a < length,
+               term_eq (target (steps a (lt_invariant_succ a length H))) (source (steps (succ a) H));
+
+      continuous_limit : 
+               forall a : Ord, limit a ->  
+               forall H1 : a < length,
+               forall n : nat, 
+               exists b, b < a /\
+               forall c, b < c -> forall H2 : c < a,
+               equal_up_to n (source (steps c (lt_trans c a length H2 H1))) (source (steps a H1));
+
+      continuous_strong : 
+               forall a : Ord, limit a -> 
+               forall H1 : a < length,
+               forall n : nat, 
+               exists b, 
+               b < a /\
+               forall c, b < c -> forall H2 : c < a,
+               depth (steps c (lt_trans c a length H2 H1)) > n
   }.
+
+  Definition weakly_convergent : sequence -> Prop := 
+    approaching length, forall n, eventually prefix_n is stable
+
+  Definition strongly_convergent : sequence -> Prop := 
+    exists t : term,
+    approaching length, forall n, eventually depth of redex > n
+    /\ 
+
+  Lemma strong_implies_weak
 
   Close Scope cantor_scope.
 
+Print epsilon.
 
   (*
     Ordinal numbers:
