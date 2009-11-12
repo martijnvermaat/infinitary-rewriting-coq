@@ -348,9 +348,10 @@ exact H.
   (* Shorthand for reaching source term at step a in rewriting sequence s *)
   Definition term_at s (a : Ord) H := source (steps s a H).
 
-  (* Approaching the end of the rewriting sequence,
+  (* If the length of the rewriting sequence is a limit ordinal,
      for all n, eventually terms are equal up to depth n *)
   Definition weakly_convergent (s : sequence) : Prop :=
+    limit (length s) ->
     forall n : nat,
     exists b, b < length s /\
       forall c d, b < c -> b < d ->
@@ -358,9 +359,10 @@ exact H.
       equal_up_to n (term_at s c H1)
                     (term_at s d H2).
 
-  (* Approaching the end of the rewriting sequence,
+  (* If the length of the rewriting sequence is a limit ordinal,
      for all n, eventually the rule applications are below depth n *)
   Definition strongly_convergent (s : sequence) : Prop :=
+    limit (length s) ->
     forall n : nat,
     exists b, b < length s /\
       forall c, b < c -> forall H : c < length s,
