@@ -8,6 +8,18 @@ Require Export Bvector.
 
 Add LoadPath "../".
 Require Import Cantor.epsilon0.EPSILON0.
+
+(* If a + 1 < b then a < b *)
+Axiom lt_invariant_succ : forall a b, succ a < b -> a < b.
+
+(* If a < b and b < c then a < c *)
+Axiom lt_trans : forall a b c, a < b -> b < c -> a < c.
+
+(* Use T1 as type for ordinal numbers *)
+Definition Ord := T1.
+Variable limit : Ord -> Prop.
+Delimit Scope cantor_scope with ord.
+
 Close Scope cantor_scope.
 
 
@@ -167,6 +179,7 @@ Module Term (S : Signature) (X : Variables).
 *)
 
   (* One-hole contexts where a hole can occur at any finite dept *)
+  (* TODO: Alternatively define this as term over variables extended with a hole (option variable) *)
   Inductive context : Set :=
     | Hole : context
     | CFun : forall f : symbol, forall i j : nat, i + S j = arity f ->
@@ -235,30 +248,19 @@ Module Term (S : Signature) (X : Variables).
     | Vcons_eq : forall t u : term, forall n : nat, forall v w : (vector term n),
                    term_eq t u -> terms_eq n v w -> terms_eq (S n) (Vcons t v) (Vcons u w).
 
-Print terms_eq.
+  Inductive equal_up_to : nat -> term -> term -> Prop :=
+      eut_0   : forall t u : term, equal_up_to 0 t u
+    | eut_var : forall n : nat, forall x : variable, equal_up_to n (Var x) (Var x)
+    | eut_fun : forall n : nat, forall f : symbol, forall v w : vector term (arity f), 
+                equal_up_to_vec n (arity f) v w -> equal_up_to (S n) (Fun f v) (Fun f w)
+  with equal_up_to_vec : nat -> forall m : nat, vector term m -> vector term m -> Prop :=
+      eutv_nil  : forall n, equal_up_to_vec n 0 Vnil Vnil
+    | eutv_cons : forall n,  
+                  forall t u : term, equal_up_to n t u -> 
+                  forall m : nat, forall v w : vector term m, equal_up_to_vec n m v w -> 
+                  equal_up_to_vec n (S m) (Vcons t v) (Vcons u w).
 
 (*
-Lemma terms_eq_ind : forall m, P : vector term m
-*)
-
-Inductive equal_up_to : nat -> term -> term -> Prop :=
-    eut_0   : forall t u : term, equal_up_to 0 t u
-  | eut_var : forall n : nat, forall x : variable, equal_up_to n (Var x) (Var x)
-  | eut_fun : forall n : nat, forall f : symbol, forall v w : vector term (arity f), 
-              equal_up_to_vec n (arity f) v w -> equal_up_to (S n) (Fun f v) (Fun f w)
-with equal_up_to_vec : nat -> forall m : nat, vector term m -> vector term m -> Prop :=
-    eutv_nil  : forall n, equal_up_to_vec n 0 Vnil Vnil
-  | eutv_cons : forall n,  
-                forall t u : term, equal_up_to n t u -> 
-                forall m : nat, forall v w : vector term m, equal_up_to_vec n m v w -> 
-                equal_up_to_vec n (S m) (Vcons t v) (Vcons u w).
-
-(*
-
-Lemma term_eq_root : 
-
-*)
-
 Lemma term_eq_to_equal_up_to_n :
   forall n, 
   forall t u : term,
@@ -278,81 +280,103 @@ constructor.
 destruct H; constructor.
 apply IH.
 exact H.
+*)
 
-
-
-  (* Reduction step *)
+  (* Rewriting step *)
   Inductive step : Set :=
     | Step : context -> rule -> substitution -> step.
 
+  (* Source term of rewriting step *)
   Definition source (u : step) : term :=
     match u with
     | Step c r s => fill c (substitute s (lhs r))
     end.
 
+  (* Target term of rewriting step *)
   Definition target (u : step) : term :=
     match u with
     | Step c r s => fill c (substitute s (rhs r))
     end.
 
+  (* Depth of rule application in rewriting step *)
   Definition depth (u : step) : nat :=
     match u with
     | Step c r s => hole_depth c
     end.
 
-  Open Scope cantor_scope.
-
-  (* If a + 1 < b then a < b *)
-  Axiom lt_invariant_succ : forall a b, succ a < b -> a < b.
-
-  (* If a < b and b < c then a < c *)
-  Axiom lt_trans : forall a b c, a < b -> b < c -> a < c.
-
-
-Variable equal_up_to : nat -> term -> term -> Prop.
-
-Definition Ord := T1.
-Variable limit : Ord -> Prop.
+  (* From now on, the default scope is that of our ordinals *)
+  Local Open Scope cantor_scope.
 
   (* Strongly continuous rewriting sequences *)
   Record sequence : Set := {
-      length   : T1;
-      steps    : forall a : T1, a < length -> step;
+
+      (* Length of rewriting sequence *)
+      length : Ord;
+
+      (* Projection from ordinals (up to length) to steps *)
+      steps  : forall a : T1, a < length -> step;
+
+      (* Successive rewriting steps have equal target/source terms *)
       continuous_local : 
-               forall a : T1, forall H : succ a < length,
-               term_eq (target (steps a (lt_invariant_succ a length H))) (source (steps (succ a) H));
+        forall a : Ord,
+        forall H : succ a < length,
+        term_eq (target (steps a (lt_invariant_succ a length H)))
+                (source (steps (succ a) H));
 
+      (* Approaching any limit ordinal a < length from below,
+         for all n, eventually terms are equal to the limit term up to depth n *)
       continuous_limit : 
-               forall a : Ord, limit a ->  
-               forall H1 : a < length,
-               forall n : nat, 
-               exists b, b < a /\
-               forall c, b < c -> forall H2 : c < a,
-               equal_up_to n (source (steps c (lt_trans c a length H2 H1))) (source (steps a H1));
+        forall a : Ord, limit a ->
+        forall H1 : a < length,
+        forall n : nat,
+        exists b, b < a /\
+          forall c, b < c -> forall H2 : c < a,
+          equal_up_to n (source (steps c (lt_trans c a length H2 H1)))
+                        (source (steps a H1));
 
-      continuous_strong : 
-               forall a : Ord, limit a -> 
-               forall H1 : a < length,
-               forall n : nat, 
-               exists b, 
-               b < a /\
-               forall c, b < c -> forall H2 : c < a,
-               depth (steps c (lt_trans c a length H2 H1)) > n
+      (* Approaching any limit ordinal < length from below,
+         for all n, eventually the rule applications are below depth n *)
+      continuous_strong :
+        forall a : Ord, limit a ->
+        forall H1 : a < length,
+        forall n : nat,
+        exists b, b < a /\
+          forall c, b < c -> forall H2 : c < a,
+          depth (steps c (lt_trans c a length H2 H1)) > n
   }.
 
-  Definition weakly_convergent : sequence -> Prop := 
-    approaching length, forall n, eventually prefix_n is stable
+  (* Shorthand for reaching source term at step a in rewriting sequence s *)
+  Definition term_at s (a : Ord) H := source (steps s a H).
 
-  Definition strongly_convergent : sequence -> Prop := 
-    exists t : term,
-    approaching length, forall n, eventually depth of redex > n
-    /\ 
+  (* Approaching the end of the rewriting sequence,
+     for all n, eventually terms are equal up to depth n *)
+  Definition weakly_convergent (s : sequence) : Prop :=
+    forall n : nat,
+    exists b, b < length s /\
+      forall c d, b < c -> b < d ->
+      forall H1 : c < length s, forall H2 : d < length s,
+      equal_up_to n (term_at s c H1)
+                    (term_at s d H2).
 
-  Lemma strong_implies_weak
+  (* Approaching the end of the rewriting sequence,
+     for all n, eventually the rule applications are below depth n *)
+  Definition strongly_convergent (s : sequence) : Prop :=
+    forall n : nat,
+    exists b, b < length s /\
+      forall c, b < c -> forall H : c < length s,
+      depth (steps s c H) > n.
 
-  Close Scope cantor_scope.
+  (* Any strongly convergent rewriting sequence is also weakly convergent *)
+  Lemma strong_implies_weak : forall s, strongly_convergent s -> weakly_convergent s.
+  Proof.
+  Admitted.
 
-Print epsilon.
+  (* Assume we can get a limit term for any weakly convergent rewriting sequence *)
+  (* TODO: This would be a fixpoint using b from weakly_convergent *)
+  Variable limit_term : forall s : sequence, weakly_convergent s -> term.
+
+  Local Close Scope cantor_scope.
+
 
   (*
     Ordinal numbers:
