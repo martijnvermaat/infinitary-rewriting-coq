@@ -1,6 +1,8 @@
 Require Import Term.
 
-Add LoadPath "../".
+Check term.
+
+Add LoadPath "../..".
 Require Import Cantor.epsilon0.EPSILON0.
 
 (* If a + 1 < b then a < b *)
@@ -16,72 +18,66 @@ Delimit Scope cantor_scope with ord.
 
 Close Scope cantor_scope.
 
+Section TRSs.
 
-Module Type Trs (S : Signature) (X : Variables).
-
-  Module T := Terms S X.
-  Export T.
-
-  (* Rewriting rule consists of two finite terms *)
-  (* TODO: explore alternative using 'term' with proof of finiteness *)
-  Record rule : Set := {
-    lhs     : finite_term;
-    rhs     : finite_term;
-    rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
-  }.
-
-  Definition trs := list rule.
-
-  Parameter rules : trs.
-
-End Trs.
+Variable Sig : Signature.
+Variable X : Variables.
 
 
-Module Rewriting (S : Signature) (X : Variables) (System : Trs S X).
+Record rule : Type := {
+  lhs     : finite_term Sig X;
+  rhs     : finite_term Sig X;
+  rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
+}.
 
-  Import System.
 
-  Parameter all_in : forall r : rule, In r rules.
+(* ??? *)
+Variable trs : list rule.
 
-  (* Left hand side is linear *)
-  Definition left_linear (r : rule) : Prop :=
-    linear (lhs r).
+Inductive trs_rule (r : rule) : Type :=
+  Rule : In r trs -> trs_rule r.
 
-  (* All rules are left-linear *)
-  Fixpoint left_linear_trs (s : trs) : Prop :=
-    match s with
-    | nil   => True
-    | r::rs => left_linear r /\ left_linear_trs rs
-    end.
+(* Left hand side is linear *)
+Definition left_linear (r : rule) : Prop :=
+  linear (lhs r).
+
+(* All rules are left-linear *)
+Fixpoint left_linear_trs (s : trs) : Prop :=
+  match s with
+  | nil   => True
+  | r::rs => left_linear r /\ left_linear_trs rs
+  end.
 
   (* Rewriting step *)
-  Inductive step : Set :=
-    | Step : context -> rule -> substitution -> step.
+Inductive step : Type :=
+  | Step : context Sig X -> rule -> substitution Sig X -> step.
 
   (* Source term of rewriting step *)
-  Definition source (u : step) : term :=
-    match u with
-    | Step c r s => fill c (substitute s (lhs r))
-    end.
+Definition source (u : step) : term Sig X :=
+  match u with
+  | Step c r s => fill c (substitute s (lhs r))
+  end.
 
-  (* Target term of rewriting step *)
-  Definition target (u : step) : term :=
-    match u with
-    | Step c r s => fill c (substitute s (rhs r))
-    end.
+(* Target term of rewriting step *)
+Definition target (u : step) : term Sig X :=
+  match u with
+  | Step c r s => fill c (substitute s (rhs r))
+  end.
 
-  (* Depth of rule application in rewriting step *)
-  Definition depth (u : step) : nat :=
-    match u with
-    | Step c r s => hole_depth c
-    end.
+(* Depth of rule application in rewriting step *)
+Definition depth (u : step) : nat :=
+  match u with
+  | Step c r s => hole_depth c
+  end.
 
-  (* From now on, the default scope is that of our ordinals *)
-  Local Open Scope cantor_scope.
+(* From now on, the default scope is that of our ordinals *)
+Local Open Scope cantor_scope.
 
-  (* Strongly continuous rewriting sequences *)
-  (* TODO: this should rely on a TRS *)
-  Record sequence : Set := {
+(* Strongly continuous rewriting sequences *)
+(* TODO: this should rely on a TRS *)
+Record sequence : Set := {
+
+  
 
       (* Length of rewriting sequence *)
       length : Ord;

@@ -2,8 +2,9 @@
   The natural numbers.
 *)
 
-
+Require Import "../Cantor/epsilon0/EPSILON0".
 Require Import Term.
+Require Import Rewriting.
 
 
 (*
@@ -29,16 +30,42 @@ Module NaturalsSignature <: Signature.
 End NaturalsSignature.
 
 
+
+
 (*
   The natural numbers are defined over the above signature
   and a set of variables.
 *)
-Module Naturals := Term.Term NaturalsSignature NatVars.
+Module Naturals := Terms NaturalsSignature NatVars.
 
 
 (* Now play with this *)
 Import Naturals.
 Import NaturalsSignature.
+
+
+Module NaturalsSystem <: Trs NaturalsSignature NatVars.
+
+  Module T := Terms NaturalsSignature NatVars.
+  Import T.
+
+  Record rule : Set := {
+    lhs     : finite_term;
+    rhs     : finite_term;
+    rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
+  }.
+
+  Definition trs := list rule.
+
+  Definition rules := nil (A:=rule).
+
+End NaturalsSystem.
+
+
+Module NatRewriting := Rewriting.Rewriting NaturalsSignature NatVars NaturalsSystem.
+
+
+
 
 Implicit Arguments Vnil [A].
 Implicit Arguments Vcons [A n].
