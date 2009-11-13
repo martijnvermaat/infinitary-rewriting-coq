@@ -1,41 +1,6 @@
-Require Export List.
-Require Export Bvector.
+Require Import Term.
 
-Module Type Signature.
-Parameter symbol : Set.
-Axiom eq_symbol_dec : forall f1 f2 : symbol, {f1 = f2} + {f1 <> f2}.
-Parameter arity : symbol -> nat.
-End Signature.
-
-Module Type Variables.
-Parameter variable : Set.
-Axiom eq_variable_dec : forall v1 v2 : variable, {v1 = v2} + {v1 <> v2}.
-End Variables.
-
-Module NatVars <: Variables.
-
-Definition variable := nat.
-
-Lemma eq_variable_dec : forall v1 v2 : variable, {v1 = v2} + {v1 <> v2}.
-Proof.
-intros; decide equality.
-Qed.
-
-End NatVars.
-
-Module Term (S : Signature) (X : Variables).
-
-Import S.
-Import X.
-
-Implicit Arguments Vnil [A].
-Implicit Arguments Vcons [A n].
-
-CoInductive term : Set :=
-  | Var : variable -> term
-  | Fun : forall f : symbol, vector term (arity f) -> term.
-
-Notation terms := (vector term).
+Set Implicit Arguments.
 
 Lemma disc_O_S : forall n, O <> S n.
 Proof.
@@ -52,10 +17,14 @@ Qed.
 Definition S_eq (n m : nat) (H : n = m) : S n = S m := f_equal S H.
 Definition S_eq_inv (n m : nat) (H : S n = S m) : n = m := eq_add_S n m H.
 
+(*
 Implicit Arguments disc_S_O [n].
 Implicit Arguments disc_O_S [n].
 Implicit Arguments S_eq [n m].
 Implicit Arguments S_eq_inv [n m].
+Implicit Arguments Vnil [A].
+Implicit Arguments Vcons [n A].
+*)
 
 (***********************************************************************************************)
 (*
@@ -126,11 +95,9 @@ Fixpoint vector_cast (A : Type) (n : nat) (v : vector A n) (m : nat) {struct v} 
   | Vcons a n' v' => 
 	  match m return S n' = m -> vector A m with
 	    0    => fun H => False_rect (vector A 0) (disc_S_O H)
-	  | S m' => fun H => Vcons a (vector_cast A n' v' m' (S_eq_inv H))
+	  | S m' => fun H => Vcons a (vector_cast v' (S_eq_inv H))
 	  end
   end.
-
-Implicit Arguments vector_cast [A n m].
 
 Lemma vector_cast_proof_irrelevance :
   forall (A : Type) (n : nat) (v : vector A n) (m : nat) (H1 H2 : n = m),
@@ -154,12 +121,26 @@ induction v as [|c n v IH]; intros.
 destruct w as [|d m w].
 *)
 
+
+Section Bisimilarity.
+
+Variable Sig : Signature.
+Variable X : Variables.
+
+Notation term := (term Sig X).
+Notation terms := (vector term).
+
+Notation Var := (Var Sig X).
+Notation Fun := (Fun Sig X).
+Notation arity := (arity Sig).
+(* better to make Sig and X globally implicit for the term constructors *)
+
 (* Bisimilarity on terms *)
 
 CoInductive term_bis : term -> term -> Prop :=
-  | Var_bis : forall x : variable, term_bis (Var x) (Var x)
-  | Fun_bis : forall (f : symbol) (v w : terms (arity f)),
-              terms_bis (arity f) v w -> term_bis (Fun f v) (Fun f w)
+  | Var_bis : forall x : X, term_bis (Var x) (Var x)
+  | Fun_bis : forall (f : Sig) (v w : terms (arity f)),
+              terms_bis v w -> term_bis (Fun f v) (Fun f w)
 
 with terms_bis : forall (n : nat), (terms n) -> (terms n) -> Prop :=
   | Vnil_bis  : terms_bis 0 Vnil Vnil
@@ -252,6 +233,12 @@ with terms_eq_up_to : nat -> forall m : nat, vector term m -> vector term m -> P
 Definition term_eq (t u : term) := forall (n : nat), term_eq_up_to n t u.
 Definition terms_eq (m : nat) (v w : terms m) := forall (n : nat), terms_eq_up_to n m v w.
 
+Lemma terms_eq_up_to_0 : forall (m : nat) (v w : terms m), terms_eq_up_to 0 m v w.
+Proof.
+induction v as [|t n v IH].
+
+
+
 (* now, with terms_eq_ind this works: *)
 Lemma term_bis_to_term_eq : forall (t u : term), term_bis t u -> term_eq t u.
 Proof.
@@ -297,11 +284,18 @@ Qed.
 
 Print f_equal.
 
-Lemma term_eq_fun_inv_vector
-  forall (f g : symbol) (v : terms (arity f)) (w : terms (arity g)),
-  term_eq (Fun f v) (Fun g w) ->
-  forall (H : f = g),
-  terms_eq (arity f) v (vector_cast w (f_equal arity.
+Lemma term_eq_fun_inv_vector :
+  forall (n : nat) (f g : symbol) (v : terms (arity f)) (w : terms (arity g)),
+  term_eq_up_to (S n) (Fun f v) (Fun g w) ->
+  forall (Hgf : g = f),
+  terms_eq_up_to n (arity f) v (vector_cast w (f_equal arity Hgf)).
+Proof.
+induction n as [|n IHn]; simpl.
+intros f g v w H Hgf.
+inversion H.
+simpl.
+ass
+inversion_clear H.
 
 
 Lemma term_eq_to_term_bis : forall (t u : term), term_eq t u -> term_bis t u.

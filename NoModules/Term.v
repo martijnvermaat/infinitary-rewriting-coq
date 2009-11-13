@@ -5,6 +5,10 @@
 Require Export List.
 Require Export Bvector.
 
+(* Omit element type and length arguments for vector constructors *)
+Implicit Arguments Vnil [A].
+Implicit Arguments Vcons [A n].
+
 Set Implicit Arguments.
 
 Section Term.
@@ -39,9 +43,6 @@ Record Variables : Type := mkVariables {
   provides a term datatype over them.
 *)
 
-(* Omit element type and length arguments for vector constructors *)
-Implicit Arguments Vnil [A].
-Implicit Arguments Vcons [A n].
 
 Variable Sig : Signature.
 Variable X : Variables.
