@@ -83,6 +83,13 @@ Module Term (S : Signature) (X : Variables).
     | FVar : variable -> finite_term
     | FFun : forall f : symbol, vector finite_term (arity f) -> finite_term.
 
+  (* Finite term is not a variable *)
+  Definition not_var t :=
+    match t with
+    | FVar _   => False
+    | FFun _ _ => True
+    end.
+
   (* List of variable occurrences in finite term *)
   (* TODO: alternatively use Coq.FSets *)
   Fixpoint vars (t : finite_term) : list variable :=
@@ -97,16 +104,31 @@ Module Term (S : Signature) (X : Variables).
         in vars_subterms (arity f) subterms
     end.
 
+  (* A finite term is left-linear if it has no duplicate variable occurrences *)
+  Definition linear (t : finite_term) : Prop :=
+    NoDup (vars t).
+
   (* Rewriting rule consists of two finite terms *)
   (* TODO: explore alternative using 'term' with proof of finiteness *)
   Record rule : Set := {
-    lhs : finite_term;
-    rhs : finite_term;
-    wf  : incl (vars rhs) (vars lhs)
+    lhs     : finite_term;
+    rhs     : finite_term;
+    rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
   }.
+
+  (* Left hand side is linear *)
+  Definition left_linear (r : rule) : Prop :=
+    linear (lhs r).
 
   (* Term rewriting system is a list of rewriting rules *)
   Definition trs : Set := (list rule).
+
+  (* All rules are left-linear *)
+  Fixpoint left_linear_trs (s : trs) : Prop :=
+    match s with
+    | nil   => True
+    | r::rs => left_linear r /\ left_linear_trs rs
+    end.
 
 (*
   (* This is ill-formed, because the recursive call to id is not guarded *)
@@ -308,6 +330,7 @@ exact H.
   Local Open Scope cantor_scope.
 
   (* Strongly continuous rewriting sequences *)
+  (* TODO: this should rely on a TRS *)
   Record sequence : Set := {
 
       (* Length of rewriting sequence *)
