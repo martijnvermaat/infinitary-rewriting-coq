@@ -43,7 +43,6 @@ Record Variables : Type := mkVariables {
   provides a term datatype over them.
 *)
 
-
 Variable Sig : Signature.
 Variable X : Variables.
 
@@ -233,3 +232,10 @@ Definition not_var t :=
 
 End Term.
 
+Implicit Arguments Var [X Sig].
+
+(* once more, out of the section *)
+Implicit Arguments mkSignature [symbol beq_symb].
+Implicit Arguments arity [s].
+Implicit Arguments beq_symb [s].
+Implicit Arguments beq_symb_ok [s x y].

@@ -1,5 +1,6 @@
 Require Import Term.
 
+Print Var.
 Set Implicit Arguments.
 
 Lemma disc_O_S : forall n, O <> S n.
@@ -130,10 +131,12 @@ Variable X : Variables.
 Notation term := (term Sig X).
 Notation terms := (vector term).
 
+(*
 Notation Var := (Var Sig X).
 Notation Fun := (Fun Sig X).
 Notation arity := (arity Sig).
 (* better to make Sig and X globally implicit for the term constructors *)
+*)
 
 (* Bisimilarity on terms *)
 
@@ -143,9 +146,9 @@ CoInductive term_bis : term -> term -> Prop :=
               terms_bis v w -> term_bis (Fun f v) (Fun f w)
 
 with terms_bis : forall (n : nat), (terms n) -> (terms n) -> Prop :=
-  | Vnil_bis  : terms_bis 0 Vnil Vnil
+  | Vnil_bis  : terms_bis Vnil Vnil
   | Vcons_bis : forall (t u : term) (n : nat) (v w : terms n),
-                term_bis t u -> terms_bis n v w -> terms_bis (S n) (Vcons t v) (Vcons u w).
+                term_bis t u -> terms_bis v w -> terms_bis (Vcons t v) (Vcons u w).
 
 (* cf.
 CoInductive bis : stream -> stream -> Prop :=
