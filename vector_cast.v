@@ -50,7 +50,7 @@ apply f_equal.
 apply IH.
 Qed.
 
-Lemma vector_cast_elim : forall (n : nat) (v : vector A n) (H : n = n),
+Lemma vector_cast_simpl : forall (n : nat) (v : vector A n) (H : n = n),
   vector_cast v H = v. 
 Proof.
 induction v as [|a n v IH]; intro H; simpl.
@@ -60,6 +60,7 @@ pattern v at 2.
 rewrite <- (IH (S_eq_inv H)).
 reflexivity.
 Qed.
+
 
 (* alternatively ... *)
 Definition vector_cast2 (n : nat) (v : vector A n) (m : nat) (H : n = m) : vector A m :=
