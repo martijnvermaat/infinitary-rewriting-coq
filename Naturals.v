@@ -2,7 +2,6 @@
   The natural numbers.
 *)
 
-Require Import "../Cantor/epsilon0/EPSILON0".
 Require Import Term.
 Require Import Rewriting.
 
@@ -10,68 +9,38 @@ Require Import Rewriting.
 (*
   Signature for the natural numbers.
 *)
-Module NaturalsSignature <: Signature.
 
-  Inductive symbol' : Set := zero | succ | plus.
-  Definition symbol := symbol'.
+Inductive symbol : Set := zero | succ | plus.
 
-  Lemma eq_symbol_dec : forall f1 f2 : symbol, {f1 = f2} + {f1 <> f2}.
-  Proof.
-    intros; decide equality.
-  Qed.
+Lemma eq_symbol_dec : forall f g : symbol, {f = g} + {f <> g}.
+Proof.
+  decide equality.
+Qed.
 
-  Definition arity : symbol -> nat :=
-  fun f => match f with
-    | zero => 0
-    | succ => 1
-    | plus => 2
+Definition beq_symb (f g : symbol) : bool :=
+  match eq_symbol_dec f g with
+  | left  _ => true
+  | right _ => false
+end.
+
+Lemma beq_symb_ok : forall f1 f2, beq_symb f1 f2 = true <-> f1 = f2.
+Proof.
+Admitted.
+
+Definition arity (f : symbol) : nat :=
+  match f with
+  | zero => 0
+  | succ => 1
+  | plus => 2
   end.
 
-End NaturalsSignature.
-
-
-
-
-(*
-  The natural numbers are defined over the above signature
-  and a set of variables.
-*)
-Module Naturals := Terms NaturalsSignature NatVars.
-
-
-(* Now play with this *)
-Import Naturals.
-Import NaturalsSignature.
-
-
-Module NaturalsSystem <: Trs NaturalsSignature NatVars.
-
-  Module T := Terms NaturalsSignature NatVars.
-  Import T.
-
-  Record rule : Set := {
-    lhs     : finite_term;
-    rhs     : finite_term;
-    rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
-  }.
-
-  Definition trs := list rule.
-
-  Definition rules := nil (A:=rule).
-
-End NaturalsSystem.
-
-
-Module NatRewriting := Rewriting.Rewriting NaturalsSignature NatVars NaturalsSystem.
-
-
-
+Definition sig := mkSignature arity beq_symb_ok.
 
 Implicit Arguments Vnil [A].
 Implicit Arguments Vcons [A n].
 
 (* Some terms *)
-Check (Fun plus (Vcons (Fun succ (Vcons (Var 2) Vnil)) (Vcons (Fun zero Vnil) Vnil))).
+Check (@Fun sig plus (Vcons (Fun succ (Vcons (Var 2) Vnil)) (Vcons (Fun zero Vnil) Vnil))).
 Check (Fun succ (Vcons (Var 1) Vnil)).
 Check (Var 3).
 
