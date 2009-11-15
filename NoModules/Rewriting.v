@@ -1,45 +1,29 @@
-Require Import Term.
+Require Export Term.
+Require Import Ordinals.
 
-Check term.
+Set Implicit Arguments.
 
-Add LoadPath "../..".
-Require Import Cantor.epsilon0.EPSILON0.
 
-(* If a + 1 < b then a < b *)
-Axiom lt_invariant_succ : forall a b, succ a < b -> a < b.
+Section Rules.
 
-(* If a < b and b < c then a < c *)
-Axiom lt_trans : forall a b c, a < b -> b < c -> a < c.
-
-(* Use T1 as type for ordinal numbers *)
-Definition Ord := T1.
-Variable limit : Ord -> Prop.
-Delimit Scope cantor_scope with ord.
-
-Close Scope cantor_scope.
-
-Section TRSs.
-
-Variable Sig : Signature.
+Variable F : Signature.
 Variable X : Variables.
 
+Notation finite_term := (finite_term F X).
 
+(* Rewriting rules of finite terms *)
 Record rule : Type := {
-  lhs     : finite_term Sig X;
-  rhs     : finite_term Sig X;
+  lhs     : finite_term;
+  rhs     : finite_term;
   rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
 }.
-
-
-(* ??? *)
-Variable trs : list rule.
-
-Inductive trs_rule (r : rule) : Type :=
-  Rule : In r trs -> trs_rule r.
 
 (* Left hand side is linear *)
 Definition left_linear (r : rule) : Prop :=
   linear (lhs r).
+
+(* A Term Rewriting System as a finite list of of rewriting rules *)
+Definition trs := list rule.
 
 (* All rules are left-linear *)
 Fixpoint left_linear_trs (s : trs) : Prop :=
@@ -48,48 +32,64 @@ Fixpoint left_linear_trs (s : trs) : Prop :=
   | r::rs => left_linear r /\ left_linear_trs rs
   end.
 
-  (* Rewriting step *)
-Inductive step : Type :=
-  | Step : context Sig X -> rule -> substitution Sig X -> step.
+End Rules.
 
-  (* Source term of rewriting step *)
-Definition source (u : step) : term Sig X :=
+
+Implicit Arguments rule [F X].
+Implicit Arguments trs [F X].
+
+
+Section TRSs.
+
+Variable F : Signature.
+Variable X : Variables.
+
+Notation term := (term F X).
+
+Variable system : trs (F := F) (X := X).
+
+(* Rewriting step *)
+Inductive step : Type :=
+  | Step : forall r : rule, In r system -> context F X -> substitution F X -> step.
+
+(* Source term of rewriting step *)
+Definition source (u : step) : term :=
   match u with
-  | Step c r s => fill c (substitute s (lhs r))
+  | Step r H c s => fill c (substitute s (lhs r))
   end.
 
 (* Target term of rewriting step *)
-Definition target (u : step) : term Sig X :=
+Definition target (u : step) : term :=
   match u with
-  | Step c r s => fill c (substitute s (rhs r))
+  | Step r H c s => fill c (substitute s (rhs r))
   end.
 
 (* Depth of rule application in rewriting step *)
 Definition depth (u : step) : nat :=
   match u with
-  | Step c r s => hole_depth c
+  | Step r H c s => hole_depth c
   end.
 
 (* From now on, the default scope is that of our ordinals *)
-Local Open Scope cantor_scope.
+Local Open Scope ordinals_scope.
+
+Variable term_bis : term -> term -> Prop.
 
 (* Strongly continuous rewriting sequences *)
 (* TODO: this should rely on a TRS *)
-Record sequence : Set := {
-
-  
+Record sequence : Type := {
 
       (* Length of rewriting sequence *)
       length : Ord;
 
       (* Projection from ordinals (up to length) to steps *)
-      steps  : forall a : T1, a < length -> step;
+      steps : forall a : Ord, a < length -> step;
 
       (* Successive rewriting steps have equal target/source terms *)
       continuous_local : 
         forall a : Ord,
         forall H : succ a < length,
-        term_eq (target (steps a (lt_invariant_succ a length H)))
+        term_bis (target (steps a (lt_invariant_succ a length H)))
                 (source (steps (succ a) H));
 
       (* Approaching any limit ordinal a < length from below,
@@ -177,7 +177,4 @@ Record sequence : Set := {
 
   *)
 
-End Rewriting.
-
-
-
+End TRSs.

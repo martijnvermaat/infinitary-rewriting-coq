@@ -233,6 +233,7 @@ Definition not_var t :=
 End Term.
 
 Implicit Arguments Var [X Sig].
+Implicit Arguments FVar [X Sig].
 
 (* once more, out of the section *)
 Implicit Arguments mkSignature [symbol beq_symb].
