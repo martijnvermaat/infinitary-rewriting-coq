@@ -32,9 +32,12 @@ Fixpoint left_linear_trs (s : trs) : Prop :=
 
 End Rules.
 
+
 Implicit Arguments rule [F X].
 Implicit Arguments lhs [F X].
 Implicit Arguments rhs [F X].
+Implicit Arguments left_linear_trs [F X].
+
 
 Section TRSs.
 
@@ -141,6 +144,15 @@ Admitted.
 (* Assume we can get a limit term for any weakly convergent rewriting sequence *)
 (* TODO: This would be a fixpoint using b from weakly_convergent *)
 Variable limit_term : forall s : sequence, weakly_convergent s -> term.
+
+Lemma compression : left_linear_trs system -> forall s : sequence,
+                    forall SC: strongly_convergent s,
+                    exists s' : sequence,
+                    exists SC' : strongly_convergent s',
+                      length s' < omega /\ (* should be <= *)
+                      term_bis (limit_term s (strong_implies_weak s SC)) (limit_term s' (strong_implies_weak s' SC')).
+Proof.
+Admitted.
 
 Local Close Scope ordinals_scope.
 

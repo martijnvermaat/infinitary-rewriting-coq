@@ -25,6 +25,8 @@ Parameter limit : Ord -> Prop.
 
 Parameter succ : Ord -> Ord.
 
+Parameter omega : Ord.
+
 Parameter lt : Ord -> Ord -> Prop.
 Notation "o < o'" := (lt o o') : ordinals_scope.
 
