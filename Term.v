@@ -1,5 +1,5 @@
 Require Export List.
-Require Export Bvector.
+Require Export Vector.
 Require Import Signature.
 Require Import Variables.
 Require Import Finite_term.
