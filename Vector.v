@@ -1,88 +1,90 @@
+Set Implicit Arguments.
+
 Inductive Fin : nat -> Type :=
   | First : forall n, Fin (S n)
   | Next  : forall n, Fin n -> Fin (S n).
 
-Inductive empty : Set := .
-
-Fixpoint myFin (n : nat) : Set :=
-  match n with
-  | 0 => empty
-  | S n => (unit + myFin n) % type
-  end.
-
-Lemma Fin_0 (B : Type) : Fin 0 -> B.
-intros B e.
-inversion e.
+Lemma Fin_0_inv (A : Type) : Fin 0 -> A.
+inversion 1.
 Qed.
-
-(*
-Lemma Fin_S : forall 
-
-Fixpoint aa (n : nat) : Fin n -> myFin n :=
-  match n return Fin n -> myFin n with
-  | 0   => fun i : Fin 0 => Fin_0 (myFin 0) i
-  | S n => fun i : Fin (S n) =>
-    match i with 
-    | First n  => inl (myFin n) tt
-    | Next n i => inr unit (aa n i)
-    end
-  end.
-*)
-
-Definition aa : forall n, Fin n -> myFin n.
-induction n as [|n IH]; intro i.
-inversion i.
-inversion_clear i.
-exact (inl (myFin n) tt).
-exact (inr unit (IH H)).
-Defined.
-
-(*
-Definition bb : forall n, myFin n -> Fin n.
-*)
-
-Set Implicit Arguments.
 
 Section vectors.
 
 Variable A : Type.
 
-Definition vector (n : nat) := myFin n -> A.
+Definition vector (n : nat) := Fin n -> A.
 
-Definition nil : vector 0 := (empty_rect (fun _ => A)).
+Definition vnil : vector 0 := Fin_0_inv A.
 
-Definition cons : forall n, A -> vector n -> vector (S n) :=
-  fun n a v i => 
+(*
+Definition vcons : A -> forall n, vector n -> vector (S n).
+intros a [|n]; intros v i.
+exact a.
+inversion_clear i as [| n' i' H].
+exact a.
+exact (v i').
+Defined.
+
+Print vcons.
+*)
+
+Definition vcons : A -> forall n, vector n -> vector (S n) :=
+  fun a n =>
+  match n return vector n -> vector (S n) with
+  | O   => fun _ _ => a
+  | S n => 
+      fun (v : vector (S n)) (i : Fin (S (S n))) =>
+      let X :=
+        match i in Fin m return S (S n) = m -> A with 
+        | First _   => fun _ => a
+        | Next m i' => 
+            fun (H : S (S n) = S m) => 
+            eq_rect (S n) (fun n1 => Fin n1 -> A) v m 
+              (f_equal (fun e => match e with 0 => m | S n1 => n1 end) H) i'
+        end 
+      in X (refl_equal (S (S n)))
+  end.
+
+(* compare this to (with the definition of vector using myFin (see myVector.v): *)
+(*
+Definition myvcons : A -> forall n, myvector n -> myvector (S n) :=
+  fun a n v i => 
   match i with 
   | inl tt => a
   | inr i' => v i'
   end.
-
-Definition head (n : nat) (v : vector (S n)) : A :=
-  v (inl (myFin n) tt).
-
-Definition tail (n : nat) (v : vector (S n)) : vector n :=
-  fun i : myFin n => (v (inr unit i)).
-
-(*
-Variables a b : A.
-
-Definition v : vector 2 :=
-  fun i => match i with inl tt => a | inr i' => b end.
-
-Eval compute in (tail v).
 *)
 
-
-(*
-Definition vector (n : nat) := Fin n -> A.
-
-Definition head (n : nat) (v : vector (S n)) : A :=
+Definition vhead (n : nat) (v : vector (S n)) : A :=
   v (First n).
 
-Definition tail (n : nat) (v : vector (S n)) : vector n :=
-  fun i : Fin n => (v (Next n i)).
-
-*)
+Definition vtail (n : nat) (v : vector (S n)) : vector n :=
+  fun i : Fin n => (v (Next i)).
 
 End vectors.
+
+Implicit Arguments First [n].
+
+Section map.
+
+Variables (A B : Type) (f : A -> B).
+
+Fixpoint vmap (n : nat) : vector A n -> vector B n :=
+  match n with 
+  | O   => fun _ => vnil B
+  | S n => fun v => vcons (f (vhead v)) (vmap (vtail v))
+  end.
+
+End map.
+
+Section fold.
+
+Variables (A : Type) (a : A) (f : A -> A -> A).
+
+Fixpoint vfold (n : nat) : vector A n -> A :=
+  match n with 
+  | O   => fun _ => a
+  | S n => fun v => f (vhead v) (vfold (vtail v))
+  end.
+
+End fold.
