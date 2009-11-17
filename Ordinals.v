@@ -18,7 +18,7 @@ Close Scope cantor_scope.
 
 Delimit Scope ordinals_scope with ord.
 
-(* Pour man's ordinals *)
+(* Poor man's ordinals *)
 Parameter Ord : Type.
 
 Parameter limit : Ord -> Prop.
