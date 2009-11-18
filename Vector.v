@@ -1,5 +1,12 @@
 Set Implicit Arguments.
 
+(* 
+  thanks to Adam Chlipala for suggesting this representation of vector,
+  and for showing how easy some constructions (cons,map) over them can be defined;
+  see the following thread in the mails archive of the coqclub mailing list:
+  http://logical.saclay.inria.fr/coq-puma/messages/9978d9af68461f02
+*)
+
 Inductive Fin : nat -> Type :=
   | First : forall n, Fin (S n)
   | Next  : forall n, Fin n -> Fin (S n).
@@ -16,34 +23,19 @@ Definition vector (n : nat) := Fin n -> A.
 
 Definition vnil : vector 0 := Fin_0_inv A.
 
-(*
-Definition vcons : A -> forall n, vector n -> vector (S n).
-intros a [|n]; intros v i.
-exact a.
-inversion_clear i as [| n' i' H].
-exact a.
-exact (v i').
-Defined.
-
-Print vcons.
-*)
-
-Definition vcons : A -> forall n, vector n -> vector (S n) :=
-  fun a n =>
-  match n return vector n -> vector (S n) with
-  | O   => fun _ _ => a
-  | S n => 
-      fun (v : vector (S n)) (i : Fin (S (S n))) =>
-      let X :=
-        match i in Fin m return S (S n) = m -> A with 
-        | First _   => fun _ => a
-        | Next m i' => 
-            fun (H : S (S n) = S m) => 
-            eq_rect (S n) (fun n1 => Fin n1 -> A) v m 
-              (f_equal (fun e => match e with 0 => m | S n1 => n1 end) H) i'
-        end 
-      in X (refl_equal (S (S n)))
-  end.
+Definition vcons (x : A) n (v : vector n) : vector (S n) :=
+  let P := 
+    fun k =>
+    match k return Type with
+    | O   => Empty_set
+    | S n => vector n -> A
+    end
+  in
+    fun i =>
+    match i in Fin Sn return P Sn with
+    | First _   => fun _ => x
+    | Next _ i' => fun v => v i'
+    end v.
 
 (* compare this to (with the definition of vector using myFin (see myVector.v): *)
 (*
@@ -59,7 +51,7 @@ Definition vhead (n : nat) (v : vector (S n)) : A :=
   v (First n).
 
 Definition vtail (n : nat) (v : vector (S n)) : vector n :=
-  fun i : Fin n => (v (Next i)).
+  fun i : Fin n => v (Next i).
 
 End vectors.
 
@@ -76,12 +68,22 @@ End map.
 
 Section fold.
 
-Variables (A : Type) (a : A) (f : A -> A -> A).
+Variables (A B : Type) (b : B) (f : A -> B -> B).
 
-Fixpoint vfold (n : nat) : vector A n -> A :=
+Fixpoint vfold (n : nat) : vector A n -> B :=
   match n with 
-  | O   => fun _ => a
+  | O   => fun _ => b
   | S n => fun v => f (vhead v) (vfold (vtail v))
   end.
 
 End fold.
+
+Section function_composition.
+
+Variables (A B C : Type) (f : B -> C) (g : A -> B).
+Definition compose : A -> C := 
+  fun x => f (g x).
+
+End function_composition.
+
+Notation "f * g" := (compose f g).
