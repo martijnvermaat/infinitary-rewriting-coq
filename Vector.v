@@ -69,11 +69,8 @@ Section map.
 
 Variables (A B : Type) (f : A -> B).
 
-Fixpoint vmap (n : nat) : vector A n -> vector B n :=
-  match n with 
-  | O   => fun _ => vnil B
-  | S n => fun v => vcons (f (vhead v)) (vmap (vtail v))
-  end.
+Definition vmap (n : nat) : vector A n -> vector B n :=
+  fun v i => f (v i).
 
 End map.
 
