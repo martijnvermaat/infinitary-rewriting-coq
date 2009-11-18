@@ -72,11 +72,11 @@ End map.
 
 Section fold.
 
-Variables (A : Type) (a : A) (f : A -> A -> A).
+Variables (A B : Type) (b : B) (f : A -> B -> B).
 
-Fixpoint myvfold (n : nat) : myvector A n -> A :=
+Fixpoint myvfold (n : nat) : myvector A n -> B :=
   match n with 
-  | O   => fun _ => a
+  | O   => fun _ => b
   | S n => fun v => f (myvhead v) (myvfold (myvtail v))
   end.
 

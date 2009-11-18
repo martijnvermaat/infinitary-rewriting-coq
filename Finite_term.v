@@ -27,7 +27,8 @@ Definition is_var (t : fterm) : bool :=
 Fixpoint size (t : fterm) : nat :=
   match t with
   | FVar _      => 1
-  | FFun _ args => vfold 0 plus (vmap size args)
+  | FFun _ args => 1 + vfold 0 plus (vmap size args) 
+                    (* vfold 0 (plus * size) args *)
   end.
 
 (* List of variable occurrences in a finite term *)
