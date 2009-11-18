@@ -1,6 +1,9 @@
+Require Import Signature.
+Require Import Variables.
 Require Import Term.
-Require Import Equality.
+
 (*
+Require Import Equality.
 Require Import vector_cast.
 *)
 
@@ -18,19 +21,19 @@ Notation terms := (vector term).
 
 CoInductive term_bis : term -> term -> Prop :=
   | Var_bis : forall x, term_bis (Var x) (Var x)
-  | Fun_bis : forall f v w, terms_bis v w -> term_bis (Fun f v) (Fun f w)
+  | Fun_bis : forall (f : F) v w (i : Fin (arity f)), term_bis (v i) (w i).
 
-with terms_bis : forall n, terms n -> terms n -> Prop :=
-  | Vnil_bis  : terms_bis Vnil Vnil
-  | Vcons_bis : forall t u n (v w : terms n), 
-                term_bis t u -> terms_bis v w -> terms_bis (Vcons t v) (Vcons u w).
+Infix "==" := term_bis (no associativity, at level 70).
 
 Definition root (t : term) : X + F := 
   match t with 
-  | Var x   => inl x
-  | Fun f v => inr f
+  | Var x   => inl F x
+  | Fun f v => inr X f
   end.
 
+(* D bezig hier ... *)
+
+(*
 Lemma terms_bis_Vcons_inv : 
   forall t u n (v w : terms n),
   terms_bis (Vcons t v) (Vcons u w) -> term_bis t u /\ terms_bis v w.
@@ -243,4 +246,7 @@ apply coIH; assumption.
 *)
 Abort.
 
+*)
+
 End term_equality.
+

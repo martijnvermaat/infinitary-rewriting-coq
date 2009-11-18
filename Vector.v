@@ -78,6 +78,19 @@ Fixpoint vfold (n : nat) : vector A n -> B :=
 
 End fold.
 
+(* to be done : *)
+(*
+(* Appending two vectors of lengths n1 and n2 yields a vector of length n1 + n2 *)
+Fixpoint vector_append (A : Type) n1 n2 (v1 : vector A n1) (v2 : vector A n2) : vector A (n1 + n2) :=
+  match v1 in (vector _ p) return (vector A (p + n2)) with
+  | Vnil         => v2
+  | Vcons x n xs => Vcons x (vector_append xs v2)
+  end.
+
+Implicit Arguments vector_append [A n1 n2].
+*)
+
+
 Section function_composition.
 
 Variables (A B C : Type) (f : B -> C) (g : A -> B).
