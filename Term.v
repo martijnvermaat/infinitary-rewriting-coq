@@ -1,6 +1,5 @@
 Require Export Vector.
-Require Import Signature.
-Require Import Variables.
+Require Export Signature.
 Require Import Finite_term.
 
 Set Implicit Arguments.
@@ -8,15 +7,14 @@ Set Implicit Arguments.
 Section Terms.
 
 Variable F : Signature.
-Variable X : Variables.
 
 (* infinite terms *)
 CoInductive term : Type :=
-  | Var : X -> term
+  | Var : variable -> term
   | Fun : forall f : F, vector term (arity f) -> term.
 
 Notation terms := (vector term).
-Notation fterm := (finite_term F X).
+Notation fterm := (finite_term F).
 Notation fterms := (vector fterm).
 
 (* Trivial image of finite_term in term *)
@@ -28,4 +26,4 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
 
 End Terms.
 
-Implicit Arguments Var [F X].
+Implicit Arguments Var [F].

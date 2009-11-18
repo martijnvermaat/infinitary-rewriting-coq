@@ -10,6 +10,8 @@ Record Signature : Type := mkSignature {
   beq_symb_ok : forall x y, beq_symb x y = true <-> x = y
 }.
 
+Notation variable := nat (only parsing).
+
 Implicit Arguments mkSignature [symbol beq_symb].
 Implicit Arguments arity [s].
 Implicit Arguments beq_symb [s].

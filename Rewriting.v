@@ -1,19 +1,21 @@
+Require Import List.
+Require Export Finite_term.
 Require Export Term.
+Require Import Substitution.
 Require Import Ordinals.
 
 
 Section Rules.
 
 Variable F : Signature.
-Variable X : Variables.
 
-Notation finite_term := (finite_term F X).
+Notation finite_term := (finite_term F).
 
 (* Rewriting rules of finite terms *)
 Record rule : Type := {
   lhs     : finite_term;
   rhs     : finite_term;
-  rule_wf : not_var lhs /\ incl (vars rhs) (vars lhs)
+  rule_wf : not (is_var lhs) /\ incl (vars rhs) (vars lhs)
 }.
 
 (* Left hand side is linear *)
@@ -33,24 +35,24 @@ Fixpoint left_linear_trs (s : trs) : Prop :=
 End Rules.
 
 
-Implicit Arguments rule [F X].
-Implicit Arguments lhs [F X].
-Implicit Arguments rhs [F X].
-Implicit Arguments left_linear_trs [F X].
+Implicit Arguments rule [F].
+Implicit Arguments lhs [F].
+Implicit Arguments rhs [F].
+Implicit Arguments left_linear_trs [F].
 
 
 Section TRSs.
 
 Variable F : Signature.
-Variable X : Variables.
 
-Notation term := (term F X).
+Notation term := (term F).
 
-Variable system : trs F X.
+Variable system : trs F.
 
+(*
 (* Rewriting step *)
 Inductive step : Type :=
-  | Step : forall r : rule, In r system -> context F X -> substitution F X -> step.
+  | Step : forall r : rule, In r system -> context F -> substitution F -> step.
 
 (* Source term of rewriting step *)
 Definition source (u : step) : term :=
@@ -85,7 +87,7 @@ Record sequence : Type := {
   steps : forall a : Ord, a < length -> step;
 
   (* Successive rewriting steps have equal target/source terms *)
-  continuous_local : 
+  continuous_local :
     forall a : Ord,
     forall H : succ a < length,
     term_bis (target (steps a (lt_invariant_succ a length H)))
@@ -93,7 +95,7 @@ Record sequence : Type := {
 
   (* Approaching any limit ordinal a < length from below,
      for all n, eventually terms are equal to the limit term up to depth n *)
-  continuous_limit : 
+  continuous_limit :
     forall a : Ord, limit a ->
     forall H1 : a < length,
     forall n : nat,
@@ -157,3 +159,4 @@ Admitted.
 Local Close Scope ordinals_scope.
 
 End TRSs.
+*)

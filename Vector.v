@@ -1,6 +1,6 @@
 Set Implicit Arguments.
 
-(* 
+(*
   thanks to Adam Chlipala for suggesting this representation of vector,
   and for showing how easy some constructions (cons,map) over them can be defined;
   see the following thread in the mails archive of the coqclub mailing list:
@@ -24,7 +24,7 @@ Definition vector (n : nat) := Fin n -> A.
 Definition vnil : vector 0 := Fin_0_inv A.
 
 Definition vcons (x : A) n (v : vector n) : vector (S n) :=
-  let P := 
+  let P :=
     fun k =>
     match k return Type with
     | O   => Empty_set
@@ -40,8 +40,8 @@ Definition vcons (x : A) n (v : vector n) : vector (S n) :=
 (* compare this to (with the definition of vector using myFin (see myVector.v): *)
 (*
 Definition myvcons : A -> forall n, myvector n -> myvector (S n) :=
-  fun a n v i => 
-  match i with 
+  fun a n v i =>
+  match i with
   | inl tt => a
   | inr i' => v i'
   end.
@@ -52,6 +52,14 @@ Definition vhead (n : nat) (v : vector (S n)) : A :=
 
 Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   fun i : Fin n => v (Next i).
+
+(*
+Fixpoint vappend n m (v : vector n) (w : vector m) : vector (n + m) :=
+  match n return vector (n + m) with
+  | 0   => w
+  | S n => vcons (vhead v) (vappend (vtail v) w)
+  end.
+*)
 
 End vectors.
 
@@ -71,7 +79,7 @@ Section fold.
 Variables (A B : Type) (b : B) (f : A -> B -> B).
 
 Fixpoint vfold (n : nat) : vector A n -> B :=
-  match n with 
+  match n with
   | O   => fun _ => b
   | S n => fun v => f (vhead v) (vfold (vtail v))
   end.
@@ -94,7 +102,7 @@ Implicit Arguments vector_append [A n1 n2].
 Section function_composition.
 
 Variables (A B C : Type) (f : B -> C) (g : A -> B).
-Definition compose : A -> C := 
+Definition compose : A -> C :=
   fun x => f (g x).
 
 End function_composition.

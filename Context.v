@@ -1,4 +1,10 @@
-(*
+Require Export Term.
+
+Section Contexts.
+
+Variable F : Signature.
+
+Notation term := (term F).
 
 (* One-hole contexts where a hole can occur at any finite depth *)
 (* TODO: Alternatively define this as term over variables extended with a hole (option variable) *)
@@ -15,8 +21,7 @@ Fixpoint hole_depth c :=
   | Hole                => 0
   | CFun _ _ _ _ _ c' _ => 1 + hole_depth c'
   end.
-
-
+(*
 (* Fill a hole in a context with a term *)
 Fixpoint fill (c : context) (t : term) : term :=
   match c with
