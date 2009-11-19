@@ -87,7 +87,16 @@ Next Obligation.
 (*
 Anomaly: uncaught exception Not_found. Please report.
 *)
+(*
+  It works with latest Coq trunk. However, I don't think these are
+  obligations we can fulfill.
 *)
+simpl.
+intros n m v w n' H.
+Admitted.
+Next Obligation. Admitted.
+*)
+
 Definition vappend (n m : nat) (v : vector n) (w : vector m) : vector (n + m).
 Admitted.
 
