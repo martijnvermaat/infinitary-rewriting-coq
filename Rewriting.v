@@ -2,20 +2,22 @@ Require Import List.
 Require Export Finite_term.
 Require Export Term.
 Require Import Substitution.
+Require Import Context.
 Require Import Ordinals.
 
 
 Section Rules.
 
 Variable F : Signature.
+Variable X : Variables.
 
-Notation finite_term := (finite_term F).
+Notation finite_term := (finite_term F X).
 
 (* Rewriting rules of finite terms *)
 Record rule : Type := {
   lhs     : finite_term;
   rhs     : finite_term;
-  rule_wf : not (is_var lhs) /\ incl (vars rhs) (vars lhs)
+  rule_wf : is_var lhs = false /\ incl (vars rhs) (vars lhs)
 }.
 
 (* Left hand side is linear *)
@@ -35,41 +37,41 @@ Fixpoint left_linear_trs (s : trs) : Prop :=
 End Rules.
 
 
-Implicit Arguments rule [F].
-Implicit Arguments lhs [F].
-Implicit Arguments rhs [F].
-Implicit Arguments left_linear_trs [F].
+Implicit Arguments rule [F X].
+Implicit Arguments lhs [F X].
+Implicit Arguments rhs [F X].
+Implicit Arguments left_linear_trs [F X].
 
 
 Section TRSs.
 
 Variable F : Signature.
+Variable X : Variables.
 
-Notation term := (term F).
+Notation term := (term F X).
 
-Variable system : trs F.
+Variable system : trs F X.
 
-(*
 (* Rewriting step *)
 Inductive step : Type :=
-  | Step : forall r : rule, In r system -> context F -> substitution F -> step.
+  | Step : forall r : rule, In r system -> context F X -> substitution F X -> step.
 
 (* Source term of rewriting step *)
 Definition source (u : step) : term :=
   match u with
-  | Step r H c s => fill c (substitute s (lhs r))
+  | Step r H c s => fill F X c (substitute s (lhs r))
   end.
 
 (* Target term of rewriting step *)
 Definition target (u : step) : term :=
   match u with
-  | Step r H c s => fill c (substitute s (rhs r))
+  | Step r H c s => fill F X c (substitute s (rhs r))
   end.
 
 (* Depth of rule application in rewriting step *)
 Definition depth (u : step) : nat :=
   match u with
-  | Step r H c s => hole_depth c
+  | Step r H c s => hole_depth F X c
   end.
 
 Variable term_bis : term -> term -> Prop.
@@ -77,6 +79,7 @@ Variable term_bis : term -> term -> Prop.
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ordinals_scope.
 
+(*
 (* Strongly continuous rewriting sequences *)
 Record sequence : Type := {
 
@@ -156,7 +159,8 @@ Lemma compression : left_linear_trs system -> forall s : sequence,
 Proof.
 Admitted.
 
+*)
+
 Local Close Scope ordinals_scope.
 
 End TRSs.
-*)

@@ -22,6 +22,7 @@ end.
 
 Lemma beq_symb_ok : forall f g, beq_symb f g = true <-> f = g.
 Proof.
+(* This should work for any inductive symbol type *)
 intros f g.
 split; intro H.
   (* beq_symb f g = true -> f = g *)

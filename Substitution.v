@@ -7,15 +7,16 @@ Set Implicit Arguments.
 Section Substitution.
 
 Variable F : Signature.
+Variable X : Variables.
 
-Notation term := (term F).
-Notation fterm := (finite_term F).
+Notation term := (term F X).
+Notation fterm := (finite_term F X).
 
 (* Type of substitutions of terms for variables *)
-Definition substitution := variable -> term.
+Definition substitution := X -> term.
 
 (* The identity substitution *)
-Definition empty_substitution (x : variable) : term := Var x.
+Definition empty_substitution (x : X) : term := Var x.
 
 (* Apply a substitution to a finite term *)
 Fixpoint substitute (sigma : substitution) (t : fterm) {struct t} : term :=

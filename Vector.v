@@ -54,12 +54,42 @@ Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   fun i : Fin n => v (Next i).
 
 (*
-Fixpoint vappend n m (v : vector n) (w : vector m) : vector (n + m) :=
-  match n return vector (n + m) with
-  | 0   => w
-  | S n => vcons (vhead v) (vappend (vtail v) w)
-  end.
+  My problem with vappend here, is that the call to head needs
+  n to be > 0, which it of course is after matching with S n'.
+  But after this matching, is there any way of showing evidence?
+
+  I firts thought of defining it as a fold using vcons, but of
+  course, vcons had the wrong (dependent) types.
+
+  A solution might be to use Program and prove some things
+  afterwards, but I can't try it... Coq crashes.
 *)
+(*
+Program Fixpoint vappend (n m : nat) (v : vector n) (w : vector m) : vector (n + m) :=
+  match n in nat return vector (n + m) with
+  | 0    => w
+  | S n' => vcons (@vhead n' v) (vappend (vtail v) w)
+  end.
+Obligations.
+(*
+2 obligation(s) remaining:
+Obligation 1 of vappend:
+forall n m : nat,
+vector n ->
+vector m -> forall n' : nat, let n'0 := n' in Fin (S n'0) -> S n'0 = n.
+
+Obligation 2 of vappend:
+forall n m : nat,
+vector n ->
+vector m -> forall n' : nat, let n'0 := n' in Fin (S n') -> S n' = n.
+*)
+Next Obligation.
+(*
+Anomaly: uncaught exception Not_found. Please report.
+*)
+*)
+Definition vappend (n m : nat) (v : vector n) (w : vector m) : vector (n + m).
+Admitted.
 
 End vectors.
 
@@ -85,6 +115,19 @@ Fixpoint vfold (n : nat) : vector A n -> B :=
   end.
 
 End fold.
+
+(*
+Section append.
+
+Variable (A : Type).
+
+(* Of course, this doesn't work because vcons is not A -> B -> B,
+   but A -> vector A n -> vector A Sn *)
+Definition vappend n m (v : vector A n) (w : vector A m) : vector A (n + m) :=
+  vfold w vcons v.
+
+End append.
+*)
 
 (* to be done : *)
 (*

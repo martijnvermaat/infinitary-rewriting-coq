@@ -3,14 +3,13 @@
   an arity function on them.
 *)
 
+
 Record Signature : Type := mkSignature {
   symbol :> Type;
   arity : symbol -> nat;
   beq_symb : symbol -> symbol -> bool;
   beq_symb_ok : forall x y, beq_symb x y = true <-> x = y
 }.
-
-Notation variable := nat (only parsing).
 
 Implicit Arguments mkSignature [symbol beq_symb].
 Implicit Arguments arity [s].
