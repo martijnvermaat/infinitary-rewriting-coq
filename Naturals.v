@@ -12,20 +12,23 @@ Require Import Term.
 
 Inductive symbol : Set := zero | succ | plus.
 
-Lemma eq_symbol_dec : forall f g : symbol, {f = g} + {f <> g}.
-Proof.
-  decide equality.
-Qed.
-
 Definition beq_symb (f g : symbol) : bool :=
-  match eq_symbol_dec f g with
-  | left  _ => true
-  | right _ => false
+  match f, g with
+  | zero, zero => true
+  | succ, succ => true
+  | plus, plus => true
+  | _,    _    => false
 end.
 
-Lemma beq_symb_ok : forall f1 f2, beq_symb f1 f2 = true <-> f1 = f2.
+Lemma beq_symb_ok : forall f g, beq_symb f g = true <-> f = g.
 Proof.
-Admitted.
+intros f g.
+split; intro H.
+  (* beq_symb f g = true -> f = g *)
+  destruct f; destruct g; simpl; (reflexivity || discriminate).
+  (* f = g ->  beq_symb f g = true *)
+  subst g; destruct f; simpl; reflexivity.
+Qed.
 
 Definition arity (f : symbol) : nat :=
   match f with
