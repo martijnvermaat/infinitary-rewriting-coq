@@ -80,7 +80,7 @@ Qed.
 
 Lemma term_eq_implies_term_bis : forall (t u : term), term_eq t u -> term_bis t u.
 Proof.
-cofix coIH.
+cofix eq2bis.
 intros [x|f v] [y|g w] H.
 assert (H0 := H 7); inversion_clear H0.
 constructor.
@@ -91,11 +91,43 @@ dependent destruction H0.
 apply Fun_bis.
 intro i.
 assert (H0 := term_eq_fun_inv H).
-apply coIH.
+apply eq2bis.
 apply H0.
+Qed.
+
+Lemma term_bis_refl : forall t, term_bis t t.
+cofix.
+destruct t as [x|f v]; constructor.
+intro i.
+apply term_bis_refl.
+Qed.
+
+Lemma term_bis_symm : forall t u, term_bis t u -> term_bis u t.
+cofix.
+destruct 1 as [x|f v w H]; constructor.
+intro i.
+apply term_bis_symm.
+apply H.
+Qed.
+
+Lemma term_bis_trans : forall s t u, term_bis s t -> term_bis t u -> term_bis s u.
+cofix.
+destruct 1 as [x|f xs ys H1].
+inversion_clear 1; constructor.
+intro H2.
+(*
+generalize H1; clear H1 .
+inversion H2 as [|g ys' zs].
+*)
+dependent destruction H2.
+rename w into zs; rename H into H2.
+constructor; intro i.
+apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
 Qed.
 
 End term_equality.
 
-Infix "[~]" := term_bis (no associativity, at level 70).
-Infix "[=]" := term_eq (no associativity, at level 70).
+Infix " [~] " := term_bis (no associativity, at level 70).
+Infix " [=] " := term_eq (no associativity, at level 70).
+
+

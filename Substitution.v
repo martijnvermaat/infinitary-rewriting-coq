@@ -1,6 +1,6 @@
 Require Export Finite_term.
 Require Export Term.
-(*Require Import Term_equality.*)
+Require Import Term_equality.
 
 Set Implicit Arguments.
 
@@ -25,18 +25,14 @@ Fixpoint substitute (sigma : substitution) (t : fterm) {struct t} : term :=
   | FFun f args => Fun f (vmap (substitute sigma) args)
   end.
 
-(* DH bezig hier ... *)
-(*
 (* Applying the empty substitution to a finite term gives the trivial infinite term image *)
 Lemma empty_substitution_is_trivial :
-  forall (t : finite_term), substitute empty_substitution t == finite_term_as_term t.
+  forall (t : fterm), substitute empty_substitution t [~] t.
 Proof.
-  induction t as [x|f v]; simpl.
-	(* t = FVar x *)
-	apply empty_substitution_is_id.
-	(* t = FFun f subterms *)
-	(* TODO: Induction principle is probably no good (see ATerm.v in CoLoR) *)
-Abort.
+induction t as [x|f v]; simpl.
+(*
+apply term_bis_refl.
 *)
+Abort.
 
 End Substitution.
