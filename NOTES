@@ -1,1 +1,14 @@
-Be consistent in use of implicit arguments, import vs export
+CODING
+
+Be consistent in use of implicit arguments, notations, import vs export
+
+
+PROJECT
+
+We compile with "-R . ITR" where ITR stands for Infinitary Term Rewriting. A
+better name for the namespace of our code might be possible. A good name for
+the entire project would be even better.
+
+Use coqdoc.
+
+Reintroduce install-doc, dist, and install-dist from the CoLoR Makefile.
