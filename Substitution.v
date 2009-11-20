@@ -30,9 +30,9 @@ Lemma empty_substitution_is_trivial :
   forall (t : fterm), substitute empty_substitution t [~] t.
 Proof.
 induction t as [x|f v]; simpl.
-(*
 apply term_bis_refl.
-*)
-Abort.
+constructor.
+exact H.
+Qed.
 
 End Substitution.
