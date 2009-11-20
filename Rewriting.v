@@ -4,7 +4,7 @@ Require Export Term.
 Require Import Substitution.
 Require Import Context.
 Require Import Ordinals.
-
+Require Import Term_equality.
 
 Section Rules.
 
@@ -93,7 +93,7 @@ Record sequence : Type := {
     forall a : Ord,
     forall H : succ a < length,
     term_bis (target (steps a (lt_invariant_succ a length H))) (source (steps (succ a) H));
-(*
+
   (* Approaching any limit ordinal a < length from below,
      for all n, eventually terms are equal to the limit term up to depth n *)
   continuous_limit :
@@ -104,7 +104,7 @@ Record sequence : Type := {
       forall c, b < c -> forall H2 : c < a,
       term_eq_up_to n (source (steps c (lt_trans c a length H2 H1)))
                       (source (steps a H1));
-*)
+
   (* Approaching any limit ordinal < length from below,
      for all n, eventually the rule applications are below depth n *)
   continuous_strong :
@@ -127,7 +127,7 @@ Definition weakly_convergent (s : sequence) : Prop :=
   exists b, b < length s /\
     forall c d, b < c -> b < d ->
     forall H1 : c < length s, forall H2 : d < length s,
-    equal_up_to n (term_at s c H1)
+    term_eq_up_to n (term_at s c H1)
                   (term_at s d H2).
 
 (* If the length of the rewriting sequence is a limit ordinal,
@@ -156,8 +156,6 @@ Lemma compression : left_linear_trs system -> forall s : sequence,
                       term_bis (limit_term s (strong_implies_weak s SC)) (limit_term s' (strong_implies_weak s' SC')).
 Proof.
 Admitted.
-
-*)
 
 Local Close Scope ordinals_scope.
 
