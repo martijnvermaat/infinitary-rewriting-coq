@@ -33,10 +33,14 @@ Fixpoint hole_depth c :=
   Using latest Coq trunk, there is one obligation generated and it
   is solved automatically.
 *)
+(*
 Program Fixpoint fill (c : context) (t : term) : term :=
   match c with
   | Hole                  => t
   | CFun f i j H v1 c' v2 => Fun f (vappend v1 (vcons (fill c' t) v2))
   end.
+*)
+Definition fill : context -> term -> term.
+Admitted.
 
 End Contexts.

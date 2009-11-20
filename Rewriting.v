@@ -1,4 +1,4 @@
-Require Import List.
+Require Export List.
 Require Export Finite_term.
 Require Export Term.
 Require Import Substitution.
@@ -14,7 +14,7 @@ Variable X : Variables.
 Notation finite_term := (finite_term F X).
 
 (* Rewriting rules of finite terms *)
-Record rule : Type := {
+Record rule : Type := mkRule {
   lhs     : finite_term;
   rhs     : finite_term;
   rule_wf : is_var lhs = false /\ incl (vars rhs) (vars lhs)

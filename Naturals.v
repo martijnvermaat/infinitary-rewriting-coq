@@ -2,13 +2,9 @@
   The natural numbers.
 *)
 
-Require Import Term.
-(*Require Import Rewriting.*)
+Require Import Rewriting.
 
-
-(*
-  Signature for the natural numbers.
-*)
+(* Signature *)
 
 Inductive symbol : Set := zero | succ | plus.
 
@@ -38,9 +34,7 @@ Definition arity (f : symbol) : nat :=
   | plus => 2
   end.
 
-(*
-  Set of variabless.
-*)
+(* Variables *)
 
 Definition variable : Set := nat.
 
@@ -59,12 +53,22 @@ induction x as [|x IH]; destruct y;
   apply (proj2 (IH _)). inversion H. reflexivity.
 Qed.
 
-Definition SIG := mkSignature arity beq_symb_ok.
-Definition VARS := mkVariables beq_var_ok.
+(* Terms *)
 
-Notation term := (term SIG VARS).
-Notation F := (@Fun SIG VARS).
-Notation V := (@Var SIG VARS).
+Definition Sigma := mkSignature arity beq_symb_ok.
+Definition X := mkVariables beq_var_ok.
+
+(* Infinite terms *)
+Notation term := (term Sigma X).
+Notation F := (@Fun Sigma X).
+Notation V := (@Var Sigma X).
+
+(* Finite terms *)
+Notation fterm := (finite_term Sigma X).
+Notation FF := (@FFun Sigma X).
+Notation FV := (@FVar Sigma X).
+
+Notation fvnil := (vnil fterm).
 Notation vnil := (vnil term).
 
 (* Some terms *)
@@ -93,3 +97,13 @@ Eval simpl in (head (F plus (vcons (F succ (vcons (V 2) vnil)) (vcons (F zero vn
 Eval simpl in (head (F succ (vcons (V 1) vnil))).
 Eval simpl in (head (V 3)).
 Eval simpl in (head repeat_succ).
+
+(* Rewriting *)
+
+Definition l : fterm := FF succ (vcons (FV 1) fvnil).
+Definition r : fterm := FV 1.
+
+Variable wf : is_var l = false /\ incl (vars r) (vars l).
+
+Definition myRule : rule := mkRule Sigma X l r wf.
+(* Definition myTrs : (trs Sigma X) := rule :: nil. *)
