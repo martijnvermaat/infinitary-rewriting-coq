@@ -7,12 +7,11 @@ MAKEFLAGS := -r -j
 
 .SUFFIXES:
 
-.PHONY: clean clean-all clean-doc default config create_Makefile.coq create_Makefile.all doc tags all
+.PHONY: clean clean-all clean-doc default config create_Makefile.coq doc tags all
 
 COQC := $(COQBIN)coqc
 
 MAKECOQ := $(MAKE) -f Makefile.coq
-MAKEALL := $(MAKE) -f Makefile.all
 
 VFILES := $(shell find . -name \*.v)
 
@@ -21,27 +20,22 @@ PROJECT := ITR
 default: Makefile.coq
 	$(MAKECOQ) OTHERFLAGS="-dont-load-proofs"
 
-all: Makefile.all
-	time -f %e $(MAKEALL) OTHERFLAGS="-dont-load-proofs"
+all: Makefile.coq
+	$(MAKECOQ) OTHERFLAGS="-dont-load-proofs"
 
-config: create_Makefile.coq create_Makefile.all
+config: create_Makefile.coq
 
 create_Makefile.coq Makefile.coq:
-#	coq_makefile -R . $(PROJECT) $(VFILES) > Makefile.coq
-	coq_makefile $(VFILES) > Makefile.coq
+#	coq_makefile -R . $(PROJECT) $(VFILES) -no-install > Makefile.coq
+	coq_makefile -I . $(VFILES) -no-install > Makefile.coq
 	$(MAKECOQ) depend
-
-create_Makefile.all Makefile.all:
-#	coq_makefile -R . $(PROJECT) $(VFILES) $(PC_VFILE) > Makefile.all
-	coq_makefile $(VFILES) $(PC_VFILE) > Makefile.all
-	$(MAKEALL) depend
 
 clean:
 #	rm -f `find . -name \*~`
-	$(MAKEALL) clean
+	$(MAKECOQ) clean
 
 clean-all: clean
-	rm -f Makefile.coq Makefile.all
+	rm -f Makefile.coq
 
 clean-doc:
 #	rm -f doc/$(PROJECT).*.html doc/index.html
