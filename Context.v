@@ -24,27 +24,10 @@ Fixpoint hole_depth c :=
   end.
 
 (* Fill a hole in a context with a term *)
-(*
-  Again, we are stuck here without some form of casting. Of course,
-  the equality we need is in H, so it is easily solved with Program.
-  However, Coq crashes, so I can't try it.
-*)
-(*
-  Using latest Coq trunk, there is one obligation generated and it
-  is solved automatically.
-*)
-(*
-Program Fixpoint fill (c : context) (t : term) : term :=
-  match c with
-  | Hole                  => t
-  | CFun f i j H v1 c' v2 => Fun f (vappend v1 (vcons (fill c' t) v2))
-  end.
-*)
-
 Fixpoint fill (c : context) (t : term) : term :=
   match c with
   | Hole                  => t
-  | CFun f i j H v1 c' v2 => Fun f (eq_rect (i + S j) (vector term) (vappend v1 (vcons (fill c' t) v2)) (arity f) H)
+  | CFun f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
   end.
 
 End Contexts.
