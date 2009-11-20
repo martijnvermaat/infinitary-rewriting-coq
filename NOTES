@@ -5,9 +5,7 @@ Be consistent in use of implicit arguments, notations, import vs export
 
 PROJECT
 
-We compile with "-R . ITR" where ITR stands for Infinitary Term Rewriting. A
-better name for the namespace of our code might be possible. A good name for
-the entire project would be even better.
+Compile with -R . LibraryName. Also, come up with a library name.
 
 Use coqdoc.
 
