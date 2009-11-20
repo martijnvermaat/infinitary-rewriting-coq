@@ -64,41 +64,12 @@ Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   A solution might be to use Program and prove some things
   afterwards, but I can't try it... Coq crashes.
 *)
-(*
-Program Fixpoint vappend (n m : nat) (v : vector n) (w : vector m) : vector (n + m) :=
-  match n in nat return vector (n + m) with
-  | 0    => w
-  | S n' => vcons (@vhead n' v) (vappend (vtail v) w)
+
+Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
+  match n return vector n -> vector m -> vector (n + m) with
+  | 0    => fun _ w => w
+  | S n' => fun v w => vcons (vhead v) (vappend (vtail v) w)
   end.
-Obligations.
-(*
-2 obligation(s) remaining:
-Obligation 1 of vappend:
-forall n m : nat,
-vector n ->
-vector m -> forall n' : nat, let n'0 := n' in Fin (S n'0) -> S n'0 = n.
-
-Obligation 2 of vappend:
-forall n m : nat,
-vector n ->
-vector m -> forall n' : nat, let n'0 := n' in Fin (S n') -> S n' = n.
-*)
-Next Obligation.
-(*
-Anomaly: uncaught exception Not_found. Please report.
-*)
-(*
-  It works with latest Coq trunk. However, I don't think these are
-  obligations we can fulfill.
-*)
-simpl.
-intros n m v w n' H.
-Admitted.
-Next Obligation. Admitted.
-*)
-
-Definition vappend (n m : nat) (v : vector n) (w : vector m) : vector (n + m).
-Admitted.
 
 End vectors.
 

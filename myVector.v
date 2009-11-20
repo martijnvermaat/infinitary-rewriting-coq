@@ -58,12 +58,17 @@ Definition myvhead (n : nat) (v : myvector (S n)) : A :=
 Definition myvtail (n : nat) (v : myvector (S n)) : myvector n :=
   fun i : myFin n => (v (inr unit i)).
 
+Fixpoint myvappend (n m : nat) : myvector n -> myvector m -> myvector (n + m) :=
+  match n return myvector n -> myvector m -> myvector (n + m) with
+  | 0    => fun _ w => w
+  | S n' => fun v w => myvcons (myvhead v) (myvappend (myvtail v) w)
+  end.
+
 End myvector.
 
 Section map.
 
 Variables (A B : Type) (f : A -> B).
-
 
 Definition myvmap (n : nat) : myvector A n -> myvector B n :=
   fun v i => f (v i).

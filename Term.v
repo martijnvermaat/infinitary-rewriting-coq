@@ -28,4 +28,6 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
 
 End Terms.
 
+Coercion finite_term_as_term : finite_term >-> term.
+
 Implicit Arguments Var [F X].

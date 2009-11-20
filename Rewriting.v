@@ -79,7 +79,6 @@ Variable term_bis : term -> term -> Prop.
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ordinals_scope.
 
-(*
 (* Strongly continuous rewriting sequences *)
 Record sequence : Type := {
 
@@ -93,9 +92,8 @@ Record sequence : Type := {
   continuous_local :
     forall a : Ord,
     forall H : succ a < length,
-    term_bis (target (steps a (lt_invariant_succ a length H)))
-             (source (steps (succ a) H));
-
+    term_bis (target (steps a (lt_invariant_succ a length H))) (source (steps (succ a) H));
+(*
   (* Approaching any limit ordinal a < length from below,
      for all n, eventually terms are equal to the limit term up to depth n *)
   continuous_limit :
@@ -104,9 +102,9 @@ Record sequence : Type := {
     forall n : nat,
     exists b, b < a /\
       forall c, b < c -> forall H2 : c < a,
-      equal_up_to n (source (steps c (lt_trans c a length H2 H1)))
-                    (source (steps a H1));
-
+      term_eq_up_to n (source (steps c (lt_trans c a length H2 H1)))
+                      (source (steps a H1));
+*)
   (* Approaching any limit ordinal < length from below,
      for all n, eventually the rule applications are below depth n *)
   continuous_strong :

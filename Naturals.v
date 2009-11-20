@@ -106,4 +106,6 @@ Definition r : fterm := FV 1.
 Variable wf : is_var l = false /\ incl (vars r) (vars l).
 
 Definition myRule : rule := mkRule Sigma X l r wf.
-(* Definition myTrs : (trs Sigma X) := rule :: nil. *)
+Definition myTrs : (trs Sigma X) := myRule :: myRule :: nil.
+
+
