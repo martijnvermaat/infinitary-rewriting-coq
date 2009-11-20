@@ -22,12 +22,12 @@ end.
 
 Lemma beq_symb_ok : forall f g, beq_symb f g = true <-> f = g.
 Proof.
-(* This should work for any inductive symbol type *)
+(* This should work for any finite inductive symbol type *)
 intros f g.
 split; intro H.
-  (* beq_symb f g = true -> f = g *)
+(* beq_symb f g = true -> f = g *)
   destruct f; destruct g; simpl; (reflexivity || discriminate).
-  (* f = g ->  beq_symb f g = true *)
+(* f = g ->  beq_symb f g = true *)
   subst g; destruct f; simpl; reflexivity.
 Qed.
 
@@ -38,11 +38,33 @@ Definition arity (f : symbol) : nat :=
   | plus => 2
   end.
 
-Definition SIG := mkSignature arity beq_symb_ok.
+(*
+  Set of variabless.
+*)
 
-Notation term := (term SIG).
-Notation F := (@Fun SIG).
-Notation V := (@Var SIG).
+Definition variable : Set := nat.
+
+Fixpoint beq_var (x y : variable) : bool :=
+  match x, y with
+  | 0, 0       => true
+  | S x', S y' => beq_var x' y'
+  | _,    _    => false
+end.
+
+Lemma beq_var_ok : forall x y, beq_var x y = true <-> x = y.
+Proof.
+induction x as [|x IH]; destruct y;
+  simpl; split; intro H; try (reflexivity || discriminate).
+  f_equal. exact (proj1 (IH _) H).
+  apply (proj2 (IH _)). inversion H. reflexivity.
+Qed.
+
+Definition SIG := mkSignature arity beq_symb_ok.
+Definition VARS := mkVariables beq_var_ok.
+
+Notation term := (term SIG VARS).
+Notation F := (@Fun SIG VARS).
+Notation V := (@Var SIG VARS).
 Notation vnil := (vnil term).
 
 (* Some terms *)
