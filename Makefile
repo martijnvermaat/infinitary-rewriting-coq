@@ -1,7 +1,6 @@
-# Based on the Makefile from the CoLoR library by Frederic Blanqui and
-# as such governed by the CeCILL license, found at http://www.cecill.info/
+# Usage: just type 'make'
 #
-# Martijn Vermaat, 2009-11-20
+# After adding or removing Coq files, type 'make config'.
 
 MAKEFLAGS := -r -j
 
