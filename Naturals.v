@@ -100,12 +100,19 @@ Eval simpl in (head repeat_succ).
 
 (* Rewriting *)
 
-Definition l : fterm := FF succ (vcons (FV 1) fvnil).
-Definition r : fterm := FV 1.
+(* We build the rewrite rule succ(x)->x *)
 
-Variable wf : is_var l = false /\ incl (vars r) (vars l).
+Definition succ_x_x_l : fterm := FF succ (vcons (FV 1) fvnil).
+Definition succ_x_x_r : fterm := FV 1.
 
-Definition myRule : rule := mkRule Sigma X l r wf.
-Definition myTrs : (trs Sigma X) := myRule :: myRule :: nil.
+Lemma succ_x_x_wf : is_var succ_x_x_l = false /\
+                    incl (vars succ_x_x_r) (vars succ_x_x_l).
+Proof.
+split; simpl.
+reflexivity.
+intros a H.
+assumption.
+Qed.
 
-
+Definition succ_x_x : rule := mkRule Sigma X succ_x_x_l succ_x_x_r succ_x_x_wf.
+Definition succ_x_x_trs : (trs Sigma X) := succ_x_x :: nil.
