@@ -6,6 +6,7 @@ Require Import Context.
 Require Import Ordinals.
 Require Import Term_equality.
 
+
 Section Rules.
 
 Variable F : Signature.
@@ -28,10 +29,10 @@ Definition left_linear (r : rule) : Prop :=
 Definition trs := list rule.
 
 (* All rules are left-linear *)
-Fixpoint left_linear_trs (s : trs) : Prop :=
+Fixpoint trs_left_linear (s : trs) : Prop :=
   match s with
   | nil   => True
-  | r::rs => left_linear r /\ left_linear_trs rs
+  | r::rs => left_linear r /\ trs_left_linear rs
   end.
 
 End Rules.
@@ -40,7 +41,7 @@ End Rules.
 Implicit Arguments rule [F X].
 Implicit Arguments lhs [F X].
 Implicit Arguments rhs [F X].
-Implicit Arguments left_linear_trs [F X].
+Implicit Arguments trs_left_linear [F X].
 
 
 Section TRSs.
@@ -74,7 +75,15 @@ Definition depth (u : step) : nat :=
   | Step r H c s => hole_depth F X c
   end.
 
-Variable term_bis : term -> term -> Prop.
+(* Source and target are equal up to the depth of the rewrite step *)
+Lemma eq_up_to_rewriting_depth : forall s n, depth s > n -> term_eq_up_to n (source s) (target s).
+Proof.
+induction n.
+constructor.
+intro Hdepth.
+unfold target, source.
+(* Not sure if induction on n is of any use *)
+Admitted.
 
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ordinals_scope.
@@ -92,7 +101,7 @@ Record sequence : Type := {
   continuous_local :
     forall a : Ord,
     forall H : succ a < length,
-    term_bis (target (steps a (lt_invariant_succ a length H))) (source (steps (succ a) H));
+    target (steps a (lt_invariant_succ a length H)) [~] source (steps (succ a) H);
 
   (* Approaching any limit ordinal a < length from below,
      for all n, eventually terms are equal to the limit term up to depth n *)
@@ -142,18 +151,27 @@ Definition strongly_convergent (s : sequence) : Prop :=
 (* Any strongly convergent rewriting sequence is also weakly convergent *)
 Lemma strong_implies_weak : forall s, strongly_convergent s -> weakly_convergent s.
 Proof.
+intros s Hstrong' Hlimit n.
+assert (Hstrong := Hstrong' Hlimit n). clear Hstrong'.
+elim Hstrong.
+intros.
+exists x.
+split.
+apply H.
+intros c d LTxc LTxd LTcl LTdl.
+(* Do something with eq_up_to_rewriting_depth *)
 Admitted.
 
 (* Assume we can get a limit term for any weakly convergent rewriting sequence *)
 (* TODO: This would be a fixpoint using b from weakly_convergent *)
 Variable limit_term : forall s : sequence, weakly_convergent s -> term.
 
-Lemma compression : left_linear_trs system -> forall s : sequence,
+Lemma compression : trs_left_linear system -> forall s : sequence,
                     forall SC: strongly_convergent s,
                     exists s' : sequence,
                     exists SC' : strongly_convergent s',
                       length s' < omega /\ (* should be <= *)
-                      term_bis (limit_term s (strong_implies_weak s SC)) (limit_term s' (strong_implies_weak s' SC')).
+                      limit_term s (strong_implies_weak s SC) [~] limit_term s' (strong_implies_weak s' SC').
 Proof.
 Admitted.
 
