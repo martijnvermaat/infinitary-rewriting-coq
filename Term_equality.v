@@ -140,9 +140,19 @@ rewrite <- H4 in H1.
 discriminate.
 rewrite <- H4 in H2.
 discriminate.
+rewrite <- H5 in H2.
+
+(*
+injection H2.
+intros.
+rewrite <- H8.
+*)
+
+(*
 cut (f = f0).
 intro Heq.
 rewrite <- Heq.
+*)
 *)
 
 Lemma term_bis_refl : forall t, term_bis t t.
