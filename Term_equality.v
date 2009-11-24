@@ -98,7 +98,7 @@ Qed.
 Lemma term_eq_refl : forall t, term_eq t t.
 Proof.
 intros t n.
-generalize t. clear t.
+revert t.
 induction n as [| n IH]; intro t.
 constructor.
 destruct t.
@@ -111,21 +111,38 @@ Qed.
 Lemma term_eq_symm : forall t u, term_eq t u -> term_eq u t.
 Proof.
 intros t u H n.
-assert (H0 := H n). clear H.
-generalize t u H0. clear H0 u t.
+assert (H' := H n). clear H.
+revert t u H'.
 induction n; intros.
 constructor.
-inversion H0.
+inversion H'.
 constructor.
 constructor.
 intro.
 apply IHn.
-apply H1.
+apply H0.
 Qed.
 
 (* TODO
 Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
+intros t u v H0 H1 n.
+assert (H0' := H0 n). clear H0.
+assert (H1' := H1 n). clear H1.
+revert t u v H0' H1'.
+induction n as [| n IH]; intros.
+constructor.
+inversion H0'; inversion H1'.
+rewrite H1.
+rewrite <- H3.
+constructor.
+rewrite <- H4 in H1.
+discriminate.
+rewrite <- H4 in H2.
+discriminate.
+cut (f = f0).
+intro Heq.
+rewrite <- Heq.
 *)
 
 Lemma term_bis_refl : forall t, term_bis t t.
