@@ -123,15 +123,25 @@ apply IHn.
 apply H.
 Qed.
 
-(* TODO: The double inversion seems to lead to a bad situation...
+(* TODO: cleanup *)
 Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
 intros t u v H0 H1 n.
 assert (H0' := H0 n). clear H0.
 assert (H1' := H1 n). clear H1.
 revert t u v H0' H1'.
-induction n as [| n IH]; intros.
+induction n as [| n IH].
 constructor.
+inversion_clear 1. (* destruct 1 as [t u | n' x | n' f u' t' HFun]. *)
+intro. assumption.
+intro.
+dependent destruction H1'.
+constructor.
+intro i.
+apply IH with (u := (w i)).
+apply H.
+apply H0.
+(*
 inversion H0'; inversion H1'.
 rewrite H1.
 rewrite <- H3.
@@ -140,26 +150,24 @@ rewrite <- H4 in H1.
 discriminate.
 rewrite <- H4 in H2.
 discriminate.
-
+*)
 (*
 rewrite <- H5 in H2.
 inversion H2.
 rewrite H8.
 *)
-
 (*
 rewrite <- H5 in H2.
 injection H2.
 intros.
 rewrite <- H8.
 *)
-
 (*
 cut (f = f0).
 intro Heq.
 rewrite <- Heq.
 *)
-*)
+Qed.
 
 Lemma term_bis_refl : forall t, term_bis t t.
 cofix.
@@ -179,14 +187,14 @@ Qed.
 Lemma term_bis_trans : forall s t u, term_bis s t -> term_bis t u -> term_bis s u.
 cofix.
 destruct 1 as [x|f xs ys H1].
-inversion_clear 1; constructor.
+intro. assumption.
 intro H2.
 (*
 generalize H1; clear H1 .
 inversion H2 as [|g ys' zs].
 *)
 dependent destruction H2.
-rename w into zs; rename H into H2.
+rename w into zs, H into H2.
 constructor; intro i.
 apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
 Qed.
