@@ -115,15 +115,15 @@ assert (H' := H n). clear H.
 revert t u H'.
 induction n; intros.
 constructor.
-inversion H'.
+inversion_clear H'.
 constructor.
 constructor.
 intro.
 apply IHn.
-apply H0.
+apply H.
 Qed.
 
-(* TODO
+(* TODO: The double inversion seems to lead to a bad situation...
 Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
 intros t u v H0 H1 n.
@@ -140,9 +140,15 @@ rewrite <- H4 in H1.
 discriminate.
 rewrite <- H4 in H2.
 discriminate.
-rewrite <- H5 in H2.
 
 (*
+rewrite <- H5 in H2.
+inversion H2.
+rewrite H8.
+*)
+
+(*
+rewrite <- H5 in H2.
 injection H2.
 intros.
 rewrite <- H8.
