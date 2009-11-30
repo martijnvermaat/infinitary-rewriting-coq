@@ -75,6 +75,24 @@ Definition depth (u : step) : nat :=
   | Step r H c s => hole_depth F X c
   end.
 
+Require Import Equality.
+
+Lemma mm : forall c t u n, hole_depth F X c > n -> term_eq_up_to n (fill F X c t) (fill F X c u).
+Proof.
+intros c t u n.
+revert c.
+induction n.
+constructor.
+destruct c.
+intro H.
+inversion H.
+intro H.
+(* Goal: hole_depth c > n, so we can apply IHn on c *)
+unfold fill.
+
+Admitted.
+
+
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth : forall s n, depth s > n -> term_eq_up_to n (source s) (target s).
 Proof.
