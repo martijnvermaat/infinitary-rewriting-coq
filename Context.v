@@ -1,5 +1,7 @@
 Require Export Term.
 
+Set Implicit Arguments.
+
 Section Contexts.
 
 Variable F : Signature.
