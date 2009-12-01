@@ -23,6 +23,8 @@ CoInductive term_bis : term -> term -> Prop :=
 
 (* Equality of infinite terms up to a given depth *)
 
+(* Equality of infinite terms up to a given depth *)
+
 Inductive term_eq_up_to : nat -> term -> term -> Prop :=
   | teut_0   : forall t u : term, term_eq_up_to 0 t u
   | teut_var : forall n x, term_eq_up_to n (Var x) (Var x)

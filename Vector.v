@@ -98,12 +98,11 @@ Admitted.
 Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
   fun n m H => eq_add_S n m H.
 
+(*
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : S n = S m),
   vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
 intros.
-
-
 dependent inversion H.
 
 
@@ -140,27 +139,6 @@ Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
     | S m' => fun H => vcons (vhead v) (vcast (vtail v) (S_eq_inv H))
     end
   end.
-
-
-(*
-
-Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
-  match n return forall (v : vector A n) m (H : n = m), vector A m with 
-  | O   => fun _ m => 
-    match m return 0 = m -> vector A m with
-      | O => fun _ => (@vnil A)
-      | m => fun H => False_rect (vector A m) (disc_O_S H)
-      end
-  | S n => fun v m =>
-    match m return S n = m -> vector A m with
-    | O    => fun H => False_rect (vector A 0) (disc_S_O H)
-    | S m' => fun H i => match i with
-First => vhead v
-| Next i' => (vcast v H) i'
- (vcast (vtail v) (S_eq_inv H))
-    end
-  end.
-*)
  
 Lemma bah : 
   forall n (v : vector A (S n)) m (H : S n = m) (i : Fin m),
@@ -170,6 +148,11 @@ Admitted.
 
 
 
+
+Lemma bah : 
+  forall n (v : vector A (S n)) m (H : S n = m) (i : Fin m),
+  (vcast v H) i = vcast (vcons (vhead v) (vtail v)) H i.
+Admitted.
 
 Lemma vcast_vtail_vcons_i : 
   forall a n (v : vector A n) (H : n = n) (i : Fin n), 

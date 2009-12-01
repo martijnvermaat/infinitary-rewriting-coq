@@ -13,8 +13,8 @@ Notation term := (term F X).
 (* TODO: Alternatively define this as term over variables extended with a hole (option variable) *)
 Inductive context : Type :=
   | Hole : context
-  | CFun : forall f : F, forall i j : nat, i + S j = arity f ->
-			 vector term i -> context -> vector term j -> context.
+  | CFun : forall (f : F) (i j : nat), 
+           i + S j = arity f -> vector term i -> context -> vector term j -> context.
 
 Implicit Arguments CFun [i j].
 

@@ -19,6 +19,12 @@ Notation terms := (vector term).
 Notation fterm := (finite_term F X).
 Notation fterms := (vector fterm).
 
+Definition root (t : term) : X + F := 
+  match t with 
+  | Var x   => inl F x
+  | Fun f v => inr X f
+  end.
+
 (* Trivial image of finite_term in term *)
 Fixpoint finite_term_as_term (t : fterm) : term :=
   match t with
