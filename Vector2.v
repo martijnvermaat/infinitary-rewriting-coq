@@ -1,5 +1,3 @@
-Require Import Vector.
-
 Set Implicit Arguments.
 
 Inductive empty : Set := .

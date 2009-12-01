@@ -43,16 +43,24 @@ Definition vhead (n : nat) (v : vector (S n)) : A :=
 Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   fun i : Fin n => v (Next i).
 
-Lemma vtail_vcons : forall a n (v : vector n), vtail (vcons a v) = v.
+Lemma vcons_vhead_vtail : 
+  forall n (v : vector (S n)) (i : Fin (S n)),
+  vcons (vhead v) (vtail v) i = v i.
 Proof.
-intros a n v.
-unfold vtail; simpl.
-(* wat nu ... geen eta gelijkheid in Coq ... *)
+intros n v i.
+(* gedoe, zie Vector2.v *)
 Admitted.
+
+Lemma vtail_vcons : 
+  forall a n (v : vector n) (i : (Fin n)), 
+  vtail (vcons a v) i = v i.
+Proof.
+reflexivity.
+Qed.
 
 Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   match n return vector n -> vector m -> vector (n + m) with
-  | 0    => fun _ w => w
+  | O    => fun _ w => w
   | S n' => fun v w => vcons (vhead v) (vappend (vtail v) w)
   end.
 
@@ -98,25 +106,18 @@ Admitted.
 Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
   fun n m H => eq_add_S n m H.
 
-(*
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : S n = S m),
   vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
+Proof.
 intros.
-dependent inversion H.
+Admitted.
 
-
-or
-
+(*
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : n = m) (H0 : S n = S m),
   vcast (vcons a v) H0 = vcons a (vcast v H).
-
-or
-
 *)
-
-
 
 Definition disc_O_S : forall (n : nat), O <> S n :=
   fun n H =>
@@ -126,6 +127,7 @@ Definition disc_O_S : forall (n : nat), O <> S n :=
 Definition disc_S_O : forall (n : nat), S n <> O :=
   fun n H => disc_O_S (sym_eq H).
 
+(*
 Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
   match n return forall (v : vector A n) m (H : n = m), vector A m with 
   | O   => fun _ m => 
@@ -139,25 +141,6 @@ Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
     | S m' => fun H => vcons (vhead v) (vcast (vtail v) (S_eq_inv H))
     end
   end.
- 
-Lemma bah : 
-  forall n (v : vector A (S n)) m (H : S n = m) (i : Fin m),
-  (vcast v H) i = vcast (vcons (vhead v) (vtail v)) H i.
-Admitted.
-
-
-
-
-
-Lemma bah : 
-  forall n (v : vector A (S n)) m (H : S n = m) (i : Fin m),
-  (vcast v H) i = vcast (vcons (vhead v) (vtail v)) H i.
-Admitted.
-
-Lemma vcast_vtail_vcons_i : 
-  forall a n (v : vector A n) (H : n = n) (i : Fin n), 
-  vcast (vtail (vcons a v)) H i = v i.
-Proof.
-Admitted.
+*)
 
 End cast.
