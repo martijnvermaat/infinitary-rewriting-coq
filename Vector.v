@@ -103,15 +103,14 @@ Lemma vcast_pi :
   vcast v H = vcast v H'.
 Admitted.
 
-Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
-  fun n m H => eq_add_S n m H.
-
+(*
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : S n = S m),
   vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
 Proof.
 intros.
 Admitted.
+*)
 
 (*
 Lemma vcast_vcons : 
@@ -119,13 +118,6 @@ Lemma vcast_vcons :
   vcast (vcons a v) H0 = vcons a (vcast v H).
 *)
 
-Definition disc_O_S : forall (n : nat), O <> S n :=
-  fun n H =>
-  let P := (fun q : nat => match q with 0 => (False -> False) | S q => False end) in 
-  match H in (_ = q) return P q with refl_equal => (fun a => a) end.
-
-Definition disc_S_O : forall (n : nat), S n <> O :=
-  fun n H => disc_O_S (sym_eq H).
 
 (*
 Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=

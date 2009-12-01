@@ -1,3 +1,5 @@
+Require Import prelims.
+
 Set Implicit Arguments.
 
 Inductive empty : Set := .
@@ -78,3 +80,29 @@ Fixpoint vfold (n : nat) : vector A n -> B :=
   end.
 
 End fold.
+
+Section cast.
+
+Variable A : Type.
+
+Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
+  match H in (_ = m) return vector A m with 
+  | refl_equal => v
+  end.
+
+(*
+Lemma vcast_pi :
+  forall n (v : vector A n) m (H H' : n = m),
+  vcast v H = vcast v H'.
+*)
+Require Import Equality.
+
+Lemma vcast_vcons : 
+  forall (a : A) n (v : vector A n) m (H : S n = S m),
+  vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
+Proof.
+intros a n v m H.
+dependent destruction H.
+simpl.
+
+compute.
