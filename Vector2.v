@@ -51,6 +51,16 @@ Proof.
 intros n v [[]|i]; reflexivity.
 Qed.
 
+(* Just curious *)
+Definition ext_eq : Prop := forall A B (f g : A -> B), (forall x, f x = g x) -> f = g.
+Lemma vcons_vhead_vtail' :
+  ext_eq ->
+  forall n (v : vector (S n)),
+  vcons (vhead v) (vtail v) = v.
+Proof.
+intros H n v; apply H; apply vcons_vhead_vtail.
+Qed.
+
 Lemma vtail_vcons : 
   forall a n (v : vector n) (i : Fin n), 
   vtail (vcons a v) i = v i.
@@ -97,6 +107,15 @@ Lemma vcast_pi :
 *)
 Require Import Equality.
 
+(*
+Lemma vcast_vcons : 
+  forall (a : A) n (v : vector A n) m (H : S n = S m) (i : Fin (S m)),
+  vcast (vcons a v) H i = vcons a (vcast v (S_eq_inv H)) i.
+Proof.
+intros a n v m H [[]|i].
+dependent destruction H.
+reflexivity.
+
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : S n = S m),
   vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
@@ -106,3 +125,4 @@ dependent destruction H.
 simpl.
 
 compute.
+*)
