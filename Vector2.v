@@ -126,3 +126,5 @@ simpl.
 
 compute.
 *)
+
+End cast.
