@@ -9,10 +9,10 @@ Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m :=
 *)
 
 Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
-  fun (n m : nat) (Sn_eq_Sm : S n = S m) =>
-  match (sym_eq Sn_eq_Sm) in (_ = Sn) return pred Sn = pred (S m) with
-  | refl_equal => (refl_equal (pred (S m)))
-  end.
+  fun (n m : nat) (H : S n = S m) =>
+  match (sym_eq H) in (_ = Sn) return pred Sn = pred (S m) with
+  | refl_equal => refl_equal (pred (S m))
+end.
 
 Definition disc_O_S : forall (n : nat), O <> S n :=
   fun n H =>
