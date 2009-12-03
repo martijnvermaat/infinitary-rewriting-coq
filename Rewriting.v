@@ -6,7 +6,6 @@ Require Import Context.
 Require Import Ordinals.
 Require Import Term_equality.
 
-
 Section Rules.
 
 Variable F : Signature.
@@ -77,71 +76,10 @@ Definition depth (u : step) : nat :=
 
 Require Import Equality.
 
-Lemma mm : forall (c : context F X) t u n, hole_depth c > n -> term_eq_up_to n (fill c t) (fill c u).
+Lemma mm :
+  forall (c : context F X) t u n, 
+  hole_depth c > n -> term_eq_up_to n (fill c t) (fill c u).
 Proof.
-intros c t u n.
-revert c.
-induction n; simpl.
-constructor.
-destruct c; simpl; intro H.
-inversion H.
-constructor.
-revert v e.
-generalize (arity f).
-induction i; intro a.
-simpl.
-intros _ e k.
-destruct k.
-simpl.
-unfold vhead; simpl.
-apply IHn.
-auto with arith.
-simpl.
-apply term_eq_refl.
-intros v e k.
-destruct k.
-apply term_eq_refl.
-simpl.
-rewrite (vcast_vtail_vcons_i (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) (refl_equal (i + S j)) ).
-
-
-
-
-
-replace 
-  (vtail (vcons (vhead v) (vappend (vtail v) (vcons (fill c t) v0))))
-  with
-  (vappend (vtail v) (vcons (fill c t) v0)).
-
-2:reflexivity.
-
-replace 
-  (vtail (vcons (vhead v) (vappend (vtail v) (vcons (fill c t) v0))))
-  with
-  (vappend (vtail v) (vcons (fill c t) v0)).
-
-
-change
-   (term_eq_up_to n
-     (vcast
-        vappend (vtail v) (vcons (fill c t) v0)
-        (S_eq_inv e) k)
-     (vcast
-        vappend (vtail v) (vcons (fill c u) v0)
-        (S_eq_inv e) k)).
-
-
-unfold vtail; simpl.
-
-apply IHi.
-Qed.
-
-*)
-
-
-(*
-script for vcast2:
-
 intros c t u n.
 revert c.
 induction n; simpl.
@@ -155,33 +93,27 @@ induction i; simpl; intro a.
 intros _ e k.
 destruct k.
 simpl.
-rewrite (vcast_vcons2 (fill c t) v0 e).
+rewrite (vcast_vcons (fill c t) v0 e).
 simpl.
-
-rewrite (vcast_vcons2 (fill c u) v0 e).
+rewrite (vcast_vcons (fill c u) v0 e).
 simpl.
 apply IHn.
 auto with arith.
-
-rewrite (vcast_vcons2 (fill c t) v0 e).
-rewrite (vcast_vcons2 (fill c u) v0 e).
+rewrite (vcast_vcons (fill c t) v0 e).
+rewrite (vcast_vcons (fill c u) v0 e).
 simpl.
 apply term_eq_refl.
-
 intros v e k.
 destruct k.
-rewrite (vcast_vcons2 (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) e);
-rewrite (vcast_vcons2 (vhead v) (vappend (vtail v) (vcons (fill c u) v0)) e);
+rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) e);
+rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c u) v0)) e);
 simpl.
 apply term_eq_refl.
-rewrite (vcast_vcons2 (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) e);
-rewrite (vcast_vcons2 (vhead v) (vappend (vtail v) (vcons (fill c u) v0)) e);
+rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) e);
+rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c u) v0)) e);
 simpl.
 apply IHi.
 Qed.
-*)
-
-
 
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth : forall s n, depth s > n -> term_eq_up_to n (source s) (target s).

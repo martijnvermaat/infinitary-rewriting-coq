@@ -1,4 +1,5 @@
 Require Import prelims.
+Require Import Equality.
 
 Set Implicit Arguments.
 
@@ -100,8 +101,6 @@ Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
   match H in (_ = m) return vector A m with 
   | refl_equal => v
   end.
-
-Require Import Equality.
 
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : S n = S m) (i : Fin (S m)),

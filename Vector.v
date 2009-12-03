@@ -1,3 +1,6 @@
+Require Import prelims.
+Require Import Equality.
+
 Set Implicit Arguments.
 
 (*
@@ -98,26 +101,14 @@ Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
   | refl_equal => v
   end.
 
-Lemma vcast_pi :
-  forall n (v : vector A n) m (H H' : n = m),
-  vcast v H = vcast v H'.
-Admitted.
-
-(*
 Lemma vcast_vcons : 
-  forall (a : A) n (v : vector A n) m (H : S n = S m),
-  vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
+  forall (a : A) n (v : vector A n) m (H : S n = S m) (i : Fin (S m)),
+  vcast (vcons a v) H i = vcons a (vcast v (S_eq_inv H)) i.
 Proof.
-intros.
-Admitted.
-*)
-
-(*
-Lemma vcast_vcons : 
-  forall (a : A) n (v : vector A n) m (H : n = m) (H0 : S n = S m),
-  vcast (vcons a v) H0 = vcons a (vcast v H).
-*)
-
+intros a n v m H i.
+dependent destruction H.
+reflexivity.
+Qed.
 
 (*
 Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
