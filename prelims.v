@@ -4,24 +4,10 @@ Definition S_eq : forall (n m : nat), n = m -> S n = S m :=
   fun n m H => f_equal S H.
 
 Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
-  fun n m H => eq_add_S n m H.
-
-(*
-Definition aha := 
-fun (n m : nat) (Sn_eq_Sm : S n = S m) =>
-let H := refl_equal (n = m) in
-eq_rect 
-  (pred (S n) = pred (S m)) 
-  (fun P : Prop => P)
-  (eq_rect (S m) 
-           (fun n0 : nat => pred n0 = pred (S m)) 
-           (refl_equal (pred (S m))) 
-           (S n) 
-           (sym_eq Sn_eq_Sm)
-  ) 
-  (n = m) 
-  H.
-*)
+  fun (n m : nat) (Sn_eq_Sm : S n = S m) =>
+  match (sym_eq Sn_eq_Sm) in (_ = Sn) return pred Sn = pred (S m) with
+  | refl_equal => (refl_equal (pred (S m)))
+  end.
 
 Definition disc_O_S : forall (n : nat), O <> S n :=
   fun n H =>

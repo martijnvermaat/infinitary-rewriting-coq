@@ -53,6 +53,7 @@ Qed.
 
 (* Just curious *)
 Definition ext_eq : Prop := forall A B (f g : A -> B), (forall x, f x = g x) -> f = g.
+
 Lemma vcons_vhead_vtail' :
   ext_eq ->
   forall n (v : vector (S n)),
@@ -100,31 +101,21 @@ Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
   | refl_equal => v
   end.
 
-(*
-Lemma vcast_pi :
-  forall n (v : vector A n) m (H H' : n = m),
-  vcast v H = vcast v H'.
-*)
 Require Import Equality.
 
-(*
 Lemma vcast_vcons : 
   forall (a : A) n (v : vector A n) m (H : S n = S m) (i : Fin (S m)),
   vcast (vcons a v) H i = vcons a (vcast v (S_eq_inv H)) i.
 Proof.
-intros a n v m H [[]|i].
+intros a n v m H i.
 dependent destruction H.
 reflexivity.
+Qed.
 
-Lemma vcast_vcons : 
-  forall (a : A) n (v : vector A n) m (H : S n = S m),
-  vcast (vcons a v) H = vcons a (vcast v (S_eq_inv H)).
-Proof.
-intros a n v m H.
-dependent destruction H.
-simpl.
-
-compute.
+(*
+Lemma vcast_pi :
+  forall n (v : vector A n) m (H H' : n = m),
+  vcast v H = vcast v H'.
 *)
 
 End cast.
