@@ -3,6 +3,11 @@ Set Implicit Arguments.
 Definition S_eq : forall (n m : nat), n = m -> S n = S m := 
   fun n m H => f_equal S H.
 
+(*
+Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
+  fun n m H => eq_add_S n m H.
+*)
+
 Definition S_eq_inv : forall (n m : nat), S n = S m -> n = m := 
   fun (n m : nat) (Sn_eq_Sm : S n = S m) =>
   match (sym_eq Sn_eq_Sm) in (_ = Sn) return pred Sn = pred (S m) with
