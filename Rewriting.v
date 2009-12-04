@@ -77,7 +77,7 @@ Definition depth (u : step) : nat :=
 Require Import Equality.
 
 Lemma mm :
-  forall (c : context F X) t u n, 
+  forall (c : context F X) t u n,
   hole_depth c > n -> term_eq_up_to n (fill c t) (fill c u).
 Proof.
 intros c t u n.
@@ -118,12 +118,12 @@ Qed.
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth : forall s n, depth s > n -> term_eq_up_to n (source s) (target s).
 Proof.
-induction n.
-constructor.
-intro Hdepth.
-unfold target, source.
-(* Not sure if induction on n is of any use *)
-Admitted.
+destruct s.
+simpl.
+intros n H.
+apply mm.
+assumption.
+Qed.
 
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ordinals_scope.
