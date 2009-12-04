@@ -57,8 +57,13 @@ inversion_clear X.
 (* ? *)
 *)
 
+Lemma ord_le_succ : forall (alpha beta : ord),
+  ord_le (Succ alpha) (Succ beta) ->
+  ord_le alpha beta.
+Admitted.
+
 (* Bruno Barras Lemma *)
-Lemma ord_le_Limit_r : forall alpha f n,
+Lemma ord_le_Limit_r : forall (alpha : ord) (f : nat -> ord) (n : nat),
   ord_le alpha (f n) ->
   ord_le alpha (Limit f).
 Proof.
@@ -72,9 +77,9 @@ intro m.
 apply (IHl m g n).
 inversion_clear H.
 apply H0.
-Qed. 
+Qed.
 
-Lemma ord_le_refl : forall alpha : ord, ord_le alpha alpha.
+Lemma ord_le_refl : forall (alpha : ord), ord_le alpha alpha.
 Proof.
 induction alpha as [| alpha IHs | f IHl].
 constructor.
@@ -85,6 +90,25 @@ intro n.
 apply ord_le_Limit_r with (n := n).
 apply IHl.
 Qed.
+
+(*
+Lemma ord_le_trans : forall (alpha beta gamma : ord), ord_le alpha beta ->
+                       ord_le beta gamma -> ord_le alpha gamma.
+Proof.
+induction alpha as [| alpha IHs | f IHl].
+constructor.
+intros beta gamma H1 H2.
+destruct H2.
+inversion_clear H1.
+inversion i.
+apply Ord_le_Succ with (i := i).
+apply IHs with (beta := alpha0).
+apply ord_le_succ.
+assumption.
+assumption.
+apply Ord_le_Succ.
+(* we've gone wrong it seems... *)
+*)
 
 
 (*
