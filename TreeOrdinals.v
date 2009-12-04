@@ -91,6 +91,17 @@ apply ord_le_Limit_r with (n := n).
 apply IHl.
 Qed.
 
+Lemma ord_le_trans : forall (alpha beta gamma : ord), ord_le alpha beta ->
+                       ord_le beta gamma -> ord_le alpha gamma.
+Proof.
+intros alpha beta gamma H1 H2.
+destruct H2.
+inversion_clear H1.
+constructor.
+inversion_clear i.
+admit.
+Admitted.
+
 (*
 Lemma ord_le_trans : forall (alpha beta gamma : ord), ord_le alpha beta ->
                        ord_le beta gamma -> ord_le alpha gamma.
