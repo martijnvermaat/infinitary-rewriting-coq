@@ -1,3 +1,4 @@
+Require Import prelims.
 Require Export List.
 Require Export Finite_term.
 Require Export Term.
@@ -74,54 +75,13 @@ Definition depth (u : step) : nat :=
   | Step r H c s => hole_depth c
   end.
 
-Require Import Equality.
-
-Lemma mm :
-  forall (c : context F X) t u n,
-  hole_depth c > n -> term_eq_up_to n (fill c t) (fill c u).
-Proof.
-intros c t u n.
-revert c.
-induction n; simpl.
-constructor.
-destruct c; simpl; intro H.
-inversion H.
-constructor.
-revert v e.
-generalize (arity f).
-induction i; simpl; intro a.
-intros _ e k.
-destruct k.
-simpl.
-rewrite (vcast_vcons (fill c t) v0 e).
-simpl.
-rewrite (vcast_vcons (fill c u) v0 e).
-simpl.
-apply IHn.
-auto with arith.
-rewrite (vcast_vcons (fill c t) v0 e).
-rewrite (vcast_vcons (fill c u) v0 e).
-simpl.
-apply term_eq_refl.
-intros v e k.
-destruct k.
-rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) e);
-rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c u) v0)) e);
-simpl.
-apply term_eq_refl.
-rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c t) v0)) e);
-rewrite (vcast_vcons (vhead v) (vappend (vtail v) (vcons (fill c u) v0)) e);
-simpl.
-apply IHi.
-Qed.
-
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth : forall s n, depth s > n -> term_eq_up_to n (source s) (target s).
 Proof.
 destruct s.
 simpl.
 intros n H.
-apply mm.
+apply fill_eq_up_to.
 assumption.
 Qed.
 

@@ -1,4 +1,6 @@
+Require Import prelims.
 Require Export Term.
+Require Export Term_equality.
 
 Set Implicit Arguments.
 
@@ -32,9 +34,35 @@ Fixpoint fill (c : context) (t : term) : term :=
   | CFun f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
   end.
 
+(* Filling a context gives terms equal up to the hole depth *)
+Lemma fill_eq_up_to :
+  forall (c : context) t u n,
+  hole_depth c > n -> term_eq_up_to n (fill c t) (fill c u).
+Proof.
+intros c t u n.
+revert c.
+induction n; simpl.
+constructor.
+destruct c; simpl; intro H.
+inversion H.
+constructor.
+revert v e.
+generalize (arity f).
+induction i; simpl; intro a.
+intros _ e k.
+destruct k; repeat (rewrite vcast_vcons).
+apply IHn.
+auto with arith.
+apply term_eq_refl.
+intros v e k.
+destruct k; repeat (rewrite vcast_vcons).
+apply term_eq_refl.
+apply IHi.
+Qed.
+
 
 (*
-(* waarom eigenlijk niet de diepte van een context in het type? als volgt: *)
+(* TODO: waarom eigenlijk niet de diepte van een context in het type? als volgt: *)
 
 Inductive context : nat -> Type :=
   | Hole : context 0
@@ -60,8 +88,6 @@ Fixpoint fill (d : nat) (c : context d) (t : term) : term :=
 - een andere vraag die opkomt is: waarom parameteriseren we niet meteen met de positie van de hole ...
 
 *)
-
-
 *)
 
 
