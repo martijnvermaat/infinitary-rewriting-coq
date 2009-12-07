@@ -1,10 +1,10 @@
 (*
-  Read:
-   surreal numbers in coq
-   ordinal theoretic proof theory
-   http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html
+  Formalisation of tree ordinals based on the notes:
 
-  We can also choose to represent a limit by a stream instead of a function...
+    Peter Hancock, "Ordinal theoretic proof theory"
+
+  See also the formalisation in Isabelle by Michael Compton:
+  http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html
 *)
 
 Inductive ord : Set :=
@@ -47,22 +47,103 @@ Inductive ord_le : ord -> ord -> Prop :=
   | Ord_le_Limit : forall (f : nat -> ord) (beta : ord),
                    (forall n, ord_le (f n) beta) -> ord_le (Limit f) beta.
 
-(*
+(* Volgens mij is het kantine lemma niet waar, er bestaat _een_ i zodat
+   ord_le alpha (pred beta i), maar dit is niet zo voor alle i *)
 Lemma kantine :
-  forall (alpha beta : Ord) (t : Pd beta),
-  Ord_le (Succ alpha) beta -> Ord_le alpha (Pd_pd beta t).
+  forall (alpha beta : ord) (i : pred_type beta),
+  ord_le (Succ alpha) beta -> ord_le alpha (pred beta i).
 Proof.
-intros.
-inversion_clear X.
+intros alpha beta t H.
+inversion_clear H.
 (* ? *)
-*)
+Admitted.
 
+Lemma ord_le_not_succ_zero : forall (alpha : ord),
+  ord_le (Succ alpha) Zero -> False.
+Proof.
+intros alpha H.
+inversion_clear H.
+inversion_clear i.
+Qed.
+
+Lemma aaa : forall (alpha beta : ord) (i : pred_type beta),
+  ord_le alpha (pred beta i) -> ord_le alpha beta.
+Proof.
+Admitted.
+
+Lemma mmm : forall (alpha beta : ord),
+  (ord_le alpha beta -> False) -> ord_le (Succ alpha) (Succ beta) -> False.
+Proof.
+intros alpha beta H1 H2.
+inversion_clear H2.
+destruct i.
+destruct u.
+exact (H1 H).
+apply H1.
+
+
+Admitted.
+
+Lemma ord_le_not_succ_succ_one : forall (alpha : ord),
+  ord_le (Succ (Succ alpha)) (Succ Zero) -> False.
+Proof.
+intros alpha H.
+inversion_clear H.
+destruct i.
+destruct u.
+apply (ord_le_not_succ_zero alpha).
+assumption.
+assumption.
+Qed.
+
+(*
 Lemma ord_le_succ : forall (alpha beta : ord),
   ord_le (Succ alpha) (Succ beta) ->
   ord_le alpha beta.
-Admitted.
+Proof.
+induction alpha; destruct beta.
+constructor.
+constructor.
+constructor.
+intro H.
+inversion_clear H.
 
-(* Bruno Barras Lemma *)
+
+inversion_clear H0.
+inversion_clear i0.
+
+contradiction with ord_le_not_succ_zero.
+
+
+
+intros alpha beta H.
+
+destruct beta.
+
+
+inversion_clear H.
+
+
+Admitted.
+*)
+
+Lemma ord_le_Succ_r : forall (alpha beta : ord),
+  ord_le alpha beta ->
+  ord_le alpha (Succ beta).
+Proof.
+induction alpha as [| alpha IHs | f IHl]; intros beta H.
+constructor.
+inversion_clear H.
+apply Ord_le_Succ with (i := inr unit i).
+assumption.
+constructor.
+intro n.
+apply IHl.
+inversion_clear H.
+apply H0.
+Qed.
+
+(* Suggested by Bruno Barras *)
 Lemma ord_le_Limit_r : forall (alpha : ord) (f : nat -> ord) (n : nat),
   ord_le alpha (f n) ->
   ord_le alpha (Limit f).
@@ -78,6 +159,19 @@ apply (IHl m g n).
 inversion_clear H.
 apply H0.
 Qed.
+
+(*
+Lemma sfsdfds : forall (alpha beta : ord) (i : pred_type beta),
+  ord_le alpha (pred beta i) ->
+  ord_le alpha beta.
+Proof.
+induction alpha as [| alpha IHs | f IHl]; intros beta i H.
+constructor.
+apply Ord_le_Succ with (i := i).
+(* ... *)
+apply (IHs (pred beta i) (inr (pred_type beta) i)).
+*)
+
 
 Lemma ord_le_refl : forall (alpha : ord), ord_le alpha alpha.
 Proof.
