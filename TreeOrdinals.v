@@ -69,6 +69,51 @@ Qed.
 Lemma aaa : forall (alpha beta : ord) (i : pred_type beta),
   ord_le alpha (pred beta i) -> ord_le alpha beta.
 Proof.
+induction alpha as [| alpha IHs | f IHl]; intros beta i H.
+constructor.
+apply Ord_le_Succ with i.
+inversion_clear H.
+apply IHs with i0.
+assumption.
+constructor.
+intro n.
+inversion_clear H.
+apply IHl with i.
+auto.
+Qed.
+
+Lemma bbb : 
+  forall alpha beta, 
+  ord_le alpha beta -> 
+  forall (i : pred_type alpha), ord_le (pred alpha i) beta.
+Proof.
+induction 1; simpl; intros.
+destruct i.
+destruct i0 as [[]|j'].
+apply aaa with (1:=H).
+apply aaa with (1:=IHord_le j').
+destruct i.
+apply H0.
+Qed.
+
+
+
+(*
+intros.
+destruct alpha.
+constructor.
+apply Ord_le_Succ with i.
+*)
+
+Lemma ord_le_succ_mm :
+  forall (alpha beta : ord),
+  ord_le (Succ alpha) beta ->
+  ord_le alpha beta.
+Proof.
+intros.
+inversion_clear H.
+
+
 Admitted.
 
 Lemma mmm : forall (alpha beta : ord),
@@ -185,9 +230,64 @@ apply ord_le_Limit_r with (n := n).
 apply IHl.
 Qed.
 
-Lemma ord_le_trans : forall (alpha beta gamma : ord), ord_le alpha beta ->
-                       ord_le beta gamma -> ord_le alpha gamma.
+(*
+Inductive ord_le : ord -> ord -> Prop :=
+  | Ord_le_Zero : forall alpha, ord_le Zero alpha
+  | Ord_le_Succ : forall (alpha beta : ord) (i : pred_type beta),
+                  ord_le alpha (pred beta i) -> ord_le (Succ alpha) beta
+  | Ord_le_Limit : forall (f : nat -> ord) (beta : ord),
+                   (forall n, ord_le (f n) beta) -> ord_le (Limit f) beta.
+*)
+
+
+Lemma zz :
+  forall alpha,
+  ord_le alpha Zero -> forall beta, ord_le alpha beta.
 Proof.
+induction alpha as [| alpha IHs | f IHl]; intros H beta.
+constructor.
+inversion_clear H.
+elim i.
+inversion_clear H.
+constructor.
+intro n.
+apply IHl.
+apply H0.
+Qed.
+
+Lemma ord_le_trans : forall (alpha beta : ord), ord_le alpha beta ->
+                       forall gamma, ord_le beta gamma -> ord_le alpha gamma.
+Proof.
+intros a b.
+induction 1 as [ beta | alpha beta i H IHs | f beta H IHl ]; intros gamma Hbc.
+constructor.
+induction Hbc as [ gamma | beta gamma j H0 _ | f gamma H0 IHbc ].
+destruct i.
+apply Ord_le_Succ with j.
+apply IHs.
+destruct i as [[]|i']; simpl in *|-*.
+exact H0.
+fold pred_type in i'.
+apply bbb.
+exact H0.
+destruct i as [n i]; simpl in *|-*.
+fold pred_type in i.
+apply IHbc with (1:=H) (2:=IHs).
+constructor.
+intro n.
+exact (IHl n gamma Hbc).
+Qed.
+
+
+
+
+(*
+intros a b.
+induction 1 as [ beta | alpha beta i H IHs | f ]; intro Hbc.
+constructor.
+*)
+
+(*
 intros alpha beta gamma H1 H2.
 destruct H2.
 inversion_clear H1.
@@ -195,7 +295,7 @@ constructor.
 inversion_clear i.
 admit.
 Admitted.
-
+*)
 (*
 Lemma ord_le_trans : forall (alpha beta gamma : ord), ord_le alpha beta ->
                        ord_le beta gamma -> ord_le alpha gamma.
