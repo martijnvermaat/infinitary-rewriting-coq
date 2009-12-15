@@ -91,22 +91,38 @@ Qed.
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ord_scope.
 
-(* TODO *)
-Axiom lt_invariant_succ :
-  forall alpha beta,
-    Succ alpha < beta ->
-    alpha < beta.
+(* TODO
 
-Axiom lt_trans :
-  forall alpha beta gamma,
-    alpha < beta ->
-    beta < gamma ->
-    alpha < gamma.
+Should we include the limit term in the sequence record?
 
-(* TODO: maybe we should really use <= instead of < *)
+If the length of the sequence is l, then the limit term would be the term
+at position l in the sequence.
+
+l = Zero    : we should have no limit term
+l = Succ l' : limit term should be the target of step l'
+l = Lim f   : limit term lets us define weak convergence?
+
+Maybe a better way:
+
+Not include the limit term (sequences might not have one), and define
+weak convergence as 'there exists a limit term t and ... t ...'
+
+Then we would have to construct the limit, using a property like
+'approaching the end of the sequence, terms get equal up to any depth'
+
+This is basically what we now use as definition of weak convergence, but
+than we could use a more direct translation of the literature using the
+constructed limit.
+
+See also the definitions by Kennaway.
+
+*)
 
 (* Strongly continuous rewriting sequences *)
 Record sequence : Type := {
+
+  (* TODO: maybe we should include the limit term, this would help
+     to give a more direct definition of weakly_convergent *)
 
   (* Length of rewriting sequence *)
   length : ord;
@@ -117,7 +133,7 @@ Record sequence : Type := {
   (* Successive rewriting steps have equal target/source terms *)
   continuous_local :
     forall alpha (H : Succ alpha < length),
-      target (steps alpha (lt_invariant_succ alpha length H))
+      target (steps alpha (ord_lt_succ_left alpha length H))
       [~]
       source (steps (Succ alpha) H);
 
@@ -129,22 +145,23 @@ Record sequence : Type := {
         alpha < Limit f /\
         forall beta (H2 : beta < Limit f),
           alpha < beta ->
-          term_eq_up_to n (source (steps beta (lt_trans beta (Limit f) length H2 H1)))
+          term_eq_up_to n (source (steps beta (ord_lt_trans beta (Limit f) length H2 H1)))
                           (source (steps (Limit f) H1));
 
   (* Approaching any limit ordinal < length from below,
      for all n, eventually the rule applications are below depth n *)
   continuous_strong :
     forall f (H1 : Limit f < length) n,
-    exists alpha,
-      alpha < Limit f /\
-      forall beta (H2 : beta < Limit f),
-        alpha < beta ->
-        depth (steps beta (lt_trans beta (Limit f) length H2 H1)) > n
+      exists alpha,
+        alpha < Limit f /\
+        forall beta (H2 : beta < Limit f),
+          alpha < beta ->
+          depth (steps beta (ord_lt_trans beta (Limit f) length H2 H1)) > n
 
 }.
 
 (* Shorthand for reaching source term at step a in rewriting sequence s *)
+(* TODO: if we include limit term in sequences, alpha may be <= the length *)
 Definition term_at s alpha H := source (steps s alpha H).
 
 (* If the length of the rewriting sequence is a limit ordinal,
@@ -177,6 +194,23 @@ Definition strongly_convergent (s : sequence) : Prop :=
   | _ => True
   end.
 
+(* Convergence is only distinct from continuity when length is a limit ordinal *)
+(* TODO: think about right definitions for limit term and weak convergence *)
+(*
+Lemma length_no_limit_continuity_implies_convergence :
+  forall s,
+    match length s with
+    | Zero    => strongly_convergent s
+    | Succ _  => strongly_convergent s
+    | Limit _ => True
+    end.
+Proof.
+intro s.
+destruct s as [l s c_local c_limit c_strong]; simpl.
+destruct l.
+unfold strongly_convergent.
+*)
+
 (* Any strongly convergent rewriting sequence is also weakly convergent *)
 (* TODO *)
 Lemma strong_implies_weak :
@@ -200,6 +234,7 @@ Admitted.
 (* TODO: This would be a fixpoint using b from weakly_convergent *)
 Variable limit_term : forall s : sequence, weakly_convergent s -> term.
 
+(* TODO: define omega *)
 Variable omega : ord.
 
 Lemma compression :

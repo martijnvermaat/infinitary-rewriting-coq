@@ -25,6 +25,8 @@ Inductive ord : Set :=
   | Succ  : ord -> ord
   | Limit : (nat -> ord) -> ord.
 
+(* TODO: define omega *)
+
 Fixpoint pred_type (alpha : ord) : Set :=
   match alpha with
   | Zero       => False
@@ -48,27 +50,27 @@ Fixpoint pred (alpha : ord) : pred_type alpha -> ord :=
 
 Inductive ord_le : ord -> ord -> Prop :=
   | Ord_le_Zero  : forall alpha,
-                     ord_le Zero alpha
-  | Ord_le_Succ  : forall (alpha beta : ord) (i : pred_type beta),
-                     ord_le alpha (pred beta i) ->
-                     ord_le (Succ alpha) beta
-  | Ord_le_Limit : forall (f : nat -> ord) (beta : ord),
-                     (forall n, ord_le (f n) beta) ->
-                     ord_le (Limit f) beta.
+                     Zero <= alpha
+  | Ord_le_Succ  : forall alpha beta i,
+                     alpha <= pred beta i ->
+                     Succ alpha <= beta
+  | Ord_le_Limit : forall f beta,
+                     (forall n, f n <= beta) ->
+                     Limit f <= beta
+where "alpha <= beta" := (ord_le alpha beta) : ord_scope.
+
+(* TODO: Why not  alpha < beta  <=>  alpha <= beta /\ ~ beta <= alpha  ? *)
+(*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
+(*Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).*)
+Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.
+Infix " < " := ord_lt : ord_scope.
 
 (* Should we use this as our ordinal equality? Then <= is trivially
    antisymmetric, while it is not for structural equality.
    (I think this is fixed though, if we impose the increasing restriction
    of the limit functions) *)
-Definition ord_eq (alpha beta : ord) := ord_le alpha beta /\ ord_le beta alpha.
-
-(* Why not  alpha < beta  <=>  alpha <= beta /\ ~ beta <= alpha  ? *)
-(*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
-Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).
-
-Infix " <= " := ord_le : ord_scope.
+Definition ord_eq alpha beta := alpha <= beta /\ beta <= alpha.
 Infix " == " := ord_eq (no associativity, at level 75) : ord_scope.
-Infix " < " := ord_lt : ord_scope.
 
 (* First predecessor of a successor is the original ordinal. *)
 Lemma first_pred_after_succ_id :
@@ -79,7 +81,7 @@ Qed.
 
 (* No successor ordinal <= zero *)
 Lemma ord_le_not_succ_zero :
-  forall alpha, Succ alpha <= Zero -> False.
+  forall alpha, ~ Succ alpha <= Zero.
 Proof.
 intros alpha H.
 inversion_clear H.
@@ -88,7 +90,7 @@ Qed.
 
 (* No double successor <= 1 *)
 Lemma ord_le_not_succ_succ_one :
-  forall alpha, Succ (Succ alpha) <= Succ Zero -> False.
+  forall alpha, ~ Succ (Succ alpha) <= Succ Zero.
 Proof.
 intros alpha H.
 inversion_clear H.
@@ -272,6 +274,66 @@ Proof.
 intros.
 unfold ord_eq.
 split; assumption.
+Qed.
+
+(* TODO: Can we prove <= is total? *)
+
+(* < is transitive *)
+Lemma ord_lt_trans :
+  forall alpha beta gamma,
+    alpha < beta ->
+    beta < gamma ->
+    alpha < gamma.
+Proof.
+unfold ord_lt.
+intros alpha beta gamma H1 H2.
+split.
+apply ord_le_trans with beta.
+apply H1.
+apply H2.
+intro H.
+apply H2.
+apply ord_le_trans with alpha.
+assumption.
+apply H1.
+Qed.
+
+(* < is irreflexive *)
+Lemma ord_lt_irrefl :
+  forall alpha, ~ alpha < alpha.
+Proof.
+intros alpha H.
+destruct H.
+contradiction.
+Qed.
+
+(* < is asymmetric *)
+Lemma ord_lt_aymm :
+  forall alpha beta,
+    alpha < beta ->
+    ~ beta < alpha.
+Proof.
+intros alpha beta H1 H2.
+destruct H1.
+destruct H2.
+contradiction.
+Qed.
+
+(* If the successor of alpha < beta, alpha < beta *)
+Lemma ord_lt_succ_left :
+  forall alpha beta,
+    Succ alpha < beta ->
+    alpha < beta.
+Proof.
+intros alpha beta H.
+destruct H as [H1 H2].
+split; rewrite (first_pred_after_succ_id alpha).
+apply ord_le_pred_left.
+assumption.
+intro H.
+apply H2.
+apply ord_le_succ_right.
+assumption.
 Qed.
 
 Close Scope ord_scope.
