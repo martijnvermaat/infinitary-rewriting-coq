@@ -16,9 +16,9 @@ Definition zero z := pred_type z -> False.
 Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha).
 *)
 
-Delimit Scope ordinal_scope with ord.
+Delimit Scope ord_scope with ord.
 
-Open Scope ordinal_scope.
+Open Scope ord_scope.
 
 Inductive ord : Set :=
   | Zero  : ord
@@ -56,12 +56,18 @@ Inductive ord_le : ord -> ord -> Prop :=
                      (forall n, ord_le (f n) beta) ->
                      ord_le (Limit f) beta.
 
+(* Should we use this as our ordinal equality? Then <= is trivially
+   antisymmetric, while it is not for structural equality.
+   (I think this is fixed though, if we impose the increasing restriction
+   of the limit functions) *)
 Definition ord_eq (alpha beta : ord) := ord_le alpha beta /\ ord_le beta alpha.
 
+(* Why not  alpha < beta  <=>  alpha <= beta /\ ~ beta <= alpha  ? *)
 Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.
 
-Notation "alpha <= beta" := (ord_le alpha beta) : ordinal_scope.
-Notation "alpha < beta" := (ord_lt alpha beta) : ordinal_scope.
+Infix "<=" := ord_le : ord_scope.
+Infix "==" := ord_eq (no associativity, at level 75) : ord_scope.
+Infix "<" := ord_lt : ord_scope.
 
 (* First predecessor of a successor is the original ordinal. *)
 Lemma first_pred_after_succ_id :
@@ -174,6 +180,16 @@ apply ord_le_pred_left.
 assumption.
 Qed.
 
+(* If the successor of alpha <= the successor of beta, alpha <= beta *)
+Lemma ord_le_succ :
+  forall alpha beta,
+    Succ alpha <= Succ beta ->
+    alpha <= beta.
+Proof.
+inversion_clear 1.
+destruct i as [[] |]; [| apply ord_le_pred_right with p]; assumption.
+Qed.
+
 (* Suggested by Bruno Barras *)
 (* If alpha <= a function value, alpha <= the limit of that function *)
 Lemma ord_le_limit_right :
@@ -199,7 +215,9 @@ Lemma ord_le_limit_left :
     Limit f <= alpha ->
     f n <= alpha.
 Proof.
-(* TODO *)
+intros alpha f n H.
+inversion_clear H.
+trivial.
 Admitted.
 
 (* <= is reflexive *)
@@ -217,7 +235,6 @@ apply IH.
 Qed.
 
 (* <= is transitive *)
-(* TODO: move gamma to front *)
 Lemma ord_le_trans :
   forall alpha beta gamma,
     alpha <= beta ->
@@ -243,34 +260,17 @@ intro n.
 exact (IH n gamma H2).
 Qed.
 
-(*
-Lemma ord_le_succ :
-  forall (alpha beta : ord),
-    ord_le (Succ alpha) (Succ beta) ->
-    ord_le alpha beta.
+(* We cannot prove this for = *)
+(* <= is antisymmetric *)
+Lemma ord_le_antisymm :
+  forall alpha beta,
+    alpha <= beta ->
+    beta <= alpha ->
+    alpha == beta.
 Proof.
-induction alpha; destruct beta.
-constructor.
-constructor.
-constructor.
-intro H.
-inversion_clear H.
+intros.
+unfold ord_eq.
+split; assumption.
+Qed.
 
-
-inversion_clear H0.
-inversion_clear i0.
-
-contradiction with ord_le_not_succ_zero.
-
-
-
-intros alpha beta H.
-
-destruct beta.
-
-
-inversion_clear H.
-
-
-Admitted.
-*)
+Close Scope ord_scope.

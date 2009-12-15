@@ -199,5 +199,5 @@ Qed.
 
 End term_equality.
 
-Infix " [~] " := term_bis (no associativity, at level 70).
-Infix " [=] " := term_eq (no associativity, at level 70).
+Infix "[~]" := term_bis (no associativity, at level 70).
+Infix "[=]" := term_eq (no associativity, at level 70).
