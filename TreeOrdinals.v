@@ -7,13 +7,23 @@
   http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html
 *)
 
+(*
+Definition fam (A : Type) : Type := { I : Set & I -> A }.
+Definition pow (A : Type) : Type := A -> Set.
+
+Definition zero z := pred_type z -> False.
+
+Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha).
+*)
+
+Delimit Scope ordinal_scope with ord.
+
+Open Scope ordinal_scope.
+
 Inductive ord : Set :=
   | Zero  : ord
   | Succ  : ord -> ord
   | Limit : (nat -> ord) -> ord.
-
-Definition fam (A : Type) : Type := { I : Set & I -> A }.
-Definition pow (A : Type) : Type := A -> Set.
 
 Fixpoint pred_type (alpha : ord) : Set :=
   match alpha with
@@ -21,8 +31,6 @@ Fixpoint pred_type (alpha : ord) : Set :=
   | Succ alpha => (unit + pred_type alpha) % type
   | Limit f    => { n : nat & pred_type (f n) }
   end.
-
-Definition zero z := pred_type z -> False.
 
 Notation "!" := (False_rect _).
 
@@ -34,43 +42,46 @@ Fixpoint pred (alpha : ord) : pred_type alpha -> ord :=
                            | inr t  => pred alpha t
                            end
   | Limit f    => fun i => match i with
-                        | existT n t => pred (f n) t
-                        end
+                           | existT n t => pred (f n) t
+                           end
   end.
 
-Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha).
-
 Inductive ord_le : ord -> ord -> Prop :=
-  | Ord_le_Zero : forall alpha, ord_le Zero alpha
-  | Ord_le_Succ : forall (alpha beta : ord) (i : pred_type beta),
-                  ord_le alpha (pred beta i) -> ord_le (Succ alpha) beta
+  | Ord_le_Zero  : forall alpha,
+                     ord_le Zero alpha
+  | Ord_le_Succ  : forall (alpha beta : ord) (i : pred_type beta),
+                     ord_le alpha (pred beta i) ->
+                     ord_le (Succ alpha) beta
   | Ord_le_Limit : forall (f : nat -> ord) (beta : ord),
-                   (forall n, ord_le (f n) beta) -> ord_le (Limit f) beta.
+                     (forall n, ord_le (f n) beta) ->
+                     ord_le (Limit f) beta.
 
-(* Volgens mij is het kantine lemma niet waar, er bestaat _een_ i zodat
-   ord_le alpha (pred beta i), maar dit is niet zo voor alle i *)
-Lemma kantine :
-  forall (alpha beta : ord) (i : pred_type beta),
-  ord_le (Succ alpha) beta -> ord_le alpha (pred beta i).
+Definition ord_eq (alpha beta : ord) := ord_le alpha beta /\ ord_le beta alpha.
+
+Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.
+
+Notation "alpha <= beta" := (ord_le alpha beta) : ordinal_scope.
+Notation "alpha < beta" := (ord_lt alpha beta) : ordinal_scope.
+
+(* First predecessor of a successor is the original ordinal. *)
+Lemma first_pred_after_succ_id :
+  forall alpha, alpha = pred (Succ alpha) (inl (pred_type alpha) tt).
 Proof.
-intros alpha beta t H.
-inversion_clear H.
-(* ? *)
-Admitted.
+trivial.
+Qed.
 
-(* No successor ordinal is le than zero *)
+(* No successor ordinal <= zero *)
 Lemma ord_le_not_succ_zero :
-  forall (alpha : ord),
-    ord_le (Succ alpha) Zero -> False.
+  forall alpha, Succ alpha <= Zero -> False.
 Proof.
 intros alpha H.
 inversion_clear H.
 elim i.
 Qed.
 
-(* No double successor is le than 1 *)
-Lemma ord_le_not_succ_succ_one : forall (alpha : ord),
-  ord_le (Succ (Succ alpha)) (Succ Zero) -> False.
+(* No double successor <= 1 *)
+Lemma ord_le_not_succ_succ_one :
+  forall alpha, Succ (Succ alpha) <= Succ Zero -> False.
 Proof.
 intros alpha H.
 inversion_clear H.
@@ -81,11 +92,30 @@ assumption.
 assumption.
 Qed.
 
-(* If alpha is le than a predecessor of beta, alpha is le than beta *)
+(* If alpha <= zero, alpha <= any ordinal *)
+(* TODO: move beta to front *)
+Lemma ord_le_zero_all :
+  forall alpha,
+    alpha <= Zero ->
+    forall beta,
+      alpha <= beta.
+Proof.
+induction alpha as [| alpha IHs | f IHl]; intros H beta.
+constructor.
+inversion_clear H.
+elim i.
+inversion_clear H.
+constructor.
+intro n.
+apply IHl.
+apply H0.
+Qed.
+
+(* If alpha <= a predecessor of beta, alpha <= beta *)
 Lemma ord_le_pred_right :
-  forall (alpha beta : ord) (i : pred_type beta),
-    ord_le alpha (pred beta i) ->
-    ord_le alpha beta.
+  forall alpha beta (i : pred_type beta),
+    alpha <= pred beta i ->
+    alpha <= beta.
 Proof.
 induction alpha as [| alpha IHs | f IHl]; intros beta i H.
 constructor.
@@ -100,11 +130,12 @@ apply IHl with i.
 auto.
 Qed.
 
-(* If alpha is le than beta, all predecessors of alpha are le than beta *)
+(* If alpha <= beta, all predecessors of alpha <= beta *)
+(* TODO: i to front *)
 Lemma ord_le_pred_left :
   forall alpha beta,
-    ord_le alpha beta ->
-    forall (i : pred_type alpha), ord_le (pred alpha i) beta.
+    alpha <= beta ->
+    forall (i : pred_type alpha), pred alpha i <= beta.
 Proof.
 induction 1; simpl; intros.
 destruct i.
@@ -115,66 +146,11 @@ destruct i.
 apply H0.
 Qed.
 
-(*
-Lemma ord_le_succ_mm :
-  forall (alpha beta : ord),
-    ord_le (Succ alpha) beta ->
-    ord_le alpha beta.
-*)
-
-(*
-Lemma mmm :
-  forall (alpha beta : ord),
-    (ord_le alpha beta -> False) ->
-    ord_le (Succ alpha) (Succ beta) ->
-    False.
-Proof.
-intros alpha beta H1 H2.
-inversion_clear H2.
-destruct i.
-destruct u.
-exact (H1 H).
-apply H1.
-Admitted.
-*)
-
-(*
-Lemma ord_le_succ :
-  forall (alpha beta : ord),
-    ord_le (Succ alpha) (Succ beta) ->
-    ord_le alpha beta.
-Proof.
-induction alpha; destruct beta.
-constructor.
-constructor.
-constructor.
-intro H.
-inversion_clear H.
-
-
-inversion_clear H0.
-inversion_clear i0.
-
-contradiction with ord_le_not_succ_zero.
-
-
-
-intros alpha beta H.
-
-destruct beta.
-
-
-inversion_clear H.
-
-
-Admitted.
-*)
-
-(* If alpha is le than beta, alpha is le than the successor of beta *)
+(* If alpha <= beta, alpha <= the successor of beta *)
 Lemma ord_le_succ_right :
-  forall (alpha beta : ord),
-    ord_le alpha beta ->
-    ord_le alpha (Succ beta).
+  forall alpha beta,
+    alpha <= beta ->
+    alpha <= Succ beta.
 Proof.
 induction alpha as [| alpha IHs | f IHl]; intros beta H.
 constructor.
@@ -188,12 +164,24 @@ inversion_clear H.
 apply H0.
 Qed.
 
-(* Suggested by Bruno Barras
-   If alpha is le than a function value, alpha is le than the limit of that function *)
+(* If the successor of alpha <= beta, alpha <= beta *)
+Lemma ord_le_succ_left :
+  forall alpha beta,
+    Succ alpha <= beta ->
+    alpha <= beta.
+Proof.
+intros alpha beta H.
+rewrite (first_pred_after_succ_id alpha).
+apply ord_le_pred_left.
+assumption.
+Qed.
+
+(* Suggested by Bruno Barras *)
+(* If alpha <= a function value, alpha <= the limit of that function *)
 Lemma ord_le_limit_right :
-  forall (alpha : ord) (f : nat -> ord) (n : nat),
-    ord_le alpha (f n) ->
-    ord_le alpha (Limit f).
+  forall alpha f n,
+    alpha <= f n ->
+    alpha <= Limit f.
 Proof.
 induction alpha as [| alpha IHs | f IHl]; intros g n H.
 constructor.
@@ -207,22 +195,18 @@ inversion_clear H.
 apply H0.
 Qed.
 
-(*
-Lemma sfsdfds : forall (alpha beta : ord) (i : pred_type beta),
-  ord_le alpha (pred beta i) ->
-  ord_le alpha beta.
+(* If a limit <= alpha, any value value of the function <= alpha *)
+Lemma ord_le_limit_left :
+  forall alpha f n,
+    Limit f <= alpha ->
+    f n <= alpha.
 Proof.
-induction alpha as [| alpha IHs | f IHl]; intros beta i H.
-constructor.
-apply Ord_le_Succ with (i := i).
-(* ... *)
-apply (IHs (pred beta i) (inr (pred_type beta) i)).
-*)
+(* TODO *)
+Admitted.
 
-(* ord_le is reflexive *)
+(* <= is reflexive *)
 Lemma ord_le_refl :
-  forall (alpha : ord),
-    ord_le alpha alpha.
+  forall alpha, alpha <= alpha.
 Proof.
 induction alpha as [| alpha IHs | f IHl].
 constructor.
@@ -234,31 +218,14 @@ apply ord_le_limit_right with n.
 apply IHl.
 Qed.
 
-(* If alpha is le than zero, alpha is le than any ordinal *)
-Lemma zz :
-  forall alpha,
-    ord_le alpha Zero ->
-    forall beta,
-      ord_le alpha beta.
-Proof.
-induction alpha as [| alpha IHs | f IHl]; intros H beta.
-constructor.
-inversion_clear H.
-elim i.
-inversion_clear H.
-constructor.
-intro n.
-apply IHl.
-apply H0.
-Qed.
-
-(* ord_le is transitive *)
+(* <= is transitive *)
+(* TODO: move gamma to front *)
 Lemma ord_le_trans :
-  forall (alpha beta : ord),
-    ord_le alpha beta ->
+  forall alpha beta,
+    alpha <= beta ->
     forall gamma,
-      ord_le beta gamma ->
-      ord_le alpha gamma.
+      beta <= gamma ->
+      alpha <= gamma.
 Proof.
 intros a b.
 induction 1 as [ beta | alpha beta i H IHs | f beta H IHl ]; intros gamma Hbc.
@@ -299,6 +266,34 @@ apply Ord_le_Succ.
 (* we've gone wrong it seems... *)
 *)
 
-Definition ord_eq (alpha beta : ord) := ord_le alpha beta /\ ord_le beta alpha.
+(*
+Lemma ord_le_succ :
+  forall (alpha beta : ord),
+    ord_le (Succ alpha) (Succ beta) ->
+    ord_le alpha beta.
+Proof.
+induction alpha; destruct beta.
+constructor.
+constructor.
+constructor.
+intro H.
+inversion_clear H.
 
-Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.
+
+inversion_clear H0.
+inversion_clear i0.
+
+contradiction with ord_le_not_succ_zero.
+
+
+
+intros alpha beta H.
+
+destruct beta.
+
+
+inversion_clear H.
+
+
+Admitted.
+*)
