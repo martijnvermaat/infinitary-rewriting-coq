@@ -46,16 +46,15 @@ Definition vhead (n : nat) (v : vector (S n)) : A :=
 Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   fun i : Fin n => v (Next i).
 
-Lemma vcons_vhead_vtail : 
+Lemma vcons_vhead_vtail :
   forall n (v : vector (S n)) (i : Fin (S n)),
   vcons (vhead v) (vtail v) i = v i.
 Proof.
-intros n v i.
-(* gedoe, zie Vector2.v *)
-Admitted.
+dependent destruction i; reflexivity.
+Qed.
 
-Lemma vtail_vcons : 
-  forall a n (v : vector n) (i : (Fin n)), 
+Lemma vtail_vcons :
+  forall a n (v : vector n) (i : (Fin n)),
   vtail (vcons a v) i = v i.
 Proof.
 reflexivity.
@@ -97,11 +96,11 @@ Section cast.
 Variable A : Type.
 
 Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
-  match H in (_ = m) return vector A m with 
+  match H in (_ = m) return vector A m with
   | refl_equal => v
   end.
 
-Lemma vcast_vcons : 
+Lemma vcast_vcons :
   forall (a : A) n (v : vector A n) m (H : S n = S m) (i : Fin (S m)),
   vcast (vcons a v) H i = vcons a (vcast v (S_eq_inv H)) i.
 Proof.
@@ -112,8 +111,8 @@ Qed.
 
 (*
 Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
-  match n return forall (v : vector A n) m (H : n = m), vector A m with 
-  | O   => fun _ m => 
+  match n return forall (v : vector A n) m (H : n = m), vector A m with
+  | O   => fun _ m =>
     match m return 0 = m -> vector A m with
       | O => fun _ => (@vnil A)
       | m => fun H => False_rect (vector A m) (disc_O_S H)

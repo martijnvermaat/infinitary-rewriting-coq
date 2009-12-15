@@ -66,9 +66,9 @@ Definition ord_eq (alpha beta : ord) := ord_le alpha beta /\ ord_le beta alpha.
 (*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
 Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).
 
-Infix "<=" := ord_le : ord_scope.
-Infix "==" := ord_eq (no associativity, at level 75) : ord_scope.
-Infix "<" := ord_lt : ord_scope.
+Infix " <= " := ord_le : ord_scope.
+Infix " == " := ord_eq (no associativity, at level 75) : ord_scope.
+Infix " < " := ord_lt : ord_scope.
 
 (* First predecessor of a successor is the original ordinal. *)
 Lemma first_pred_after_succ_id :

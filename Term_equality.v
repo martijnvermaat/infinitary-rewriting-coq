@@ -34,11 +34,11 @@ Definition term_eq (t u : term) :=
 (* We do not see how to prove the following lemma without appeal to JMeq
    (as used by the tactic [dependent destruction]):
 *)
-
 Lemma teut_fun_inv :
   forall n f v w,
   term_eq_up_to (S n) (Fun f v) (Fun f w) ->
   forall i, term_eq_up_to n (v i) (w i).
+Proof.
 intros n f v w H.
 dependent destruction H.
 assumption.
@@ -48,6 +48,7 @@ Lemma term_eq_fun_inv :
   forall f v w,
   term_eq (Fun f v) (Fun f w) ->
   forall i, term_eq (v i) (w i).
+Proof.
 intros f v w H i n.
 apply teut_fun_inv with (1 := H (S n)).
 Qed.
@@ -121,50 +122,21 @@ apply IHn.
 apply H.
 Qed.
 
-(* TODO: cleanup *)
 Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
-intros t u v H0 H1 n.
-assert (H0' := H0 n). clear H0.
-assert (H1' := H1 n). clear H1.
-revert t u v H0' H1'.
+intros t u v H1 H2 n.
+assert (H1' := H1 n); clear H1.
+assert (H2' := H2 n); clear H2.
+revert t u v H1' H2'.
 induction n as [| n IH].
 constructor.
-inversion_clear 1. (* destruct 1 as [t u | n' x | n' f u' t' HFun]. *)
-intro. assumption.
-intro.
-dependent destruction H1'.
+intros t u v H1.
+inversion_clear H1; intro H2.
+assumption.
+dependent destruction H2.
 constructor.
 intro i.
-apply IH with (u := (w i)).
-apply H.
-apply H0.
-(*
-inversion H0'; inversion H1'.
-rewrite H1.
-rewrite <- H3.
-constructor.
-rewrite <- H4 in H1.
-discriminate.
-rewrite <- H4 in H2.
-discriminate.
-*)
-(*
-rewrite <- H5 in H2.
-inversion H2.
-rewrite H8.
-*)
-(*
-rewrite <- H5 in H2.
-injection H2.
-intros.
-rewrite <- H8.
-*)
-(*
-cut (f = f0).
-intro Heq.
-rewrite <- Heq.
-*)
+apply IH with (u := w i); trivial.
 Qed.
 
 Lemma term_bis_refl : forall t, term_bis t t.
@@ -199,5 +171,5 @@ Qed.
 
 End term_equality.
 
-Infix "[~]" := term_bis (no associativity, at level 70).
-Infix "[=]" := term_eq (no associativity, at level 70).
+Infix " [~] " := term_bis (no associativity, at level 70).
+Infix " [=] " := term_eq (no associativity, at level 70).

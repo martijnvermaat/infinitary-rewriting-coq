@@ -29,10 +29,10 @@ Fixpoint substitute (sigma : substitution) (t : fterm) {struct t} : term :=
 Lemma empty_substitution_is_trivial :
   forall (t : fterm), substitute empty_substitution t [~] t.
 Proof.
-induction t as [x|f v]; simpl.
+induction t.
 apply term_bis_refl.
 constructor.
-exact H.
+assumption.
 Qed.
 
 End Substitution.

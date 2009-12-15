@@ -10,7 +10,7 @@ Section Terms.
 Variable F : Signature.
 Variable X : Variables.
 
-(* infinite terms *)
+(* Infinite terms *)
 CoInductive term : Type :=
   | Var : X -> term
   | Fun : forall f : F, vector term (arity f) -> term.
