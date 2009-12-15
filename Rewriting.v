@@ -76,7 +76,10 @@ Definition depth (u : step) : nat :=
   end.
 
 (* Source and target are equal up to the depth of the rewrite step *)
-Lemma eq_up_to_rewriting_depth : forall s n, depth s > n -> term_eq_up_to n (source s) (target s).
+Lemma eq_up_to_rewriting_depth :
+  forall s n,
+    depth s > n ->
+    term_eq_up_to n (source s) (target s).
 Proof.
 destruct s.
 simpl.
@@ -86,71 +89,100 @@ assumption.
 Qed.
 
 (* From now on, the default scope is that of our ordinals *)
-Local Open Scope ordinals_scope.
+Local Open Scope ord_scope.
+
+(* TODO *)
+Axiom lt_invariant_succ :
+  forall alpha beta,
+    Succ alpha < beta ->
+    alpha < beta.
+
+Axiom lt_trans :
+  forall alpha beta gamma,
+    alpha < beta ->
+    beta < gamma ->
+    alpha < gamma.
+
+(* TODO: maybe we should really use <= instead of < *)
 
 (* Strongly continuous rewriting sequences *)
 Record sequence : Type := {
 
   (* Length of rewriting sequence *)
-  length : Ord;
+  length : ord;
 
   (* Projection from ordinals (up to length) to steps *)
-  steps : forall a : Ord, a < length -> step;
+  steps : forall alpha, alpha < length -> step;
 
   (* Successive rewriting steps have equal target/source terms *)
   continuous_local :
-    forall a : Ord,
-    forall H : succ a < length,
-    target (steps a (lt_invariant_succ a length H)) [~] source (steps (succ a) H);
+    forall alpha (H : Succ alpha < length),
+      target (steps alpha (lt_invariant_succ alpha length H))
+      [~]
+      source (steps (Succ alpha) H);
 
-  (* Approaching any limit ordinal a < length from below,
+  (* Approaching any limit ordinal < length from below,
      for all n, eventually terms are equal to the limit term up to depth n *)
   continuous_limit :
-    forall a : Ord, limit a ->
-    forall H1 : a < length,
-    forall n : nat,
-    exists b, b < a /\
-      forall c, b < c -> forall H2 : c < a,
-      term_eq_up_to n (source (steps c (lt_trans c a length H2 H1)))
-                      (source (steps a H1));
+    forall f (H1 : Limit f < length) n,
+      exists alpha,
+        alpha < Limit f /\
+        forall beta (H2 : beta < Limit f),
+          alpha < beta ->
+          term_eq_up_to n (source (steps beta (lt_trans beta (Limit f) length H2 H1)))
+                          (source (steps (Limit f) H1));
 
   (* Approaching any limit ordinal < length from below,
      for all n, eventually the rule applications are below depth n *)
   continuous_strong :
-    forall a : Ord, limit a ->
-    forall H1 : a < length,
-    forall n : nat,
-    exists b, b < a /\
-      forall c, b < c -> forall H2 : c < a,
-      depth (steps c (lt_trans c a length H2 H1)) > n
+    forall f (H1 : Limit f < length) n,
+    exists alpha,
+      alpha < Limit f /\
+      forall beta (H2 : beta < Limit f),
+        alpha < beta ->
+        depth (steps beta (lt_trans beta (Limit f) length H2 H1)) > n
+
 }.
 
 (* Shorthand for reaching source term at step a in rewriting sequence s *)
-Definition term_at s (a : Ord) H := source (steps s a H).
+Definition term_at s alpha H := source (steps s alpha H).
 
 (* If the length of the rewriting sequence is a limit ordinal,
    for all n, eventually terms are equal up to depth n *)
 Definition weakly_convergent (s : sequence) : Prop :=
-  limit (length s) ->
-  forall n : nat,
-  exists b, b < length s /\
-    forall c d, b < c -> b < d ->
-    forall H1 : c < length s, forall H2 : d < length s,
-    term_eq_up_to n (term_at s c H1)
-                  (term_at s d H2).
+  match length s with
+  | Limit f =>
+    forall n,
+      exists b,
+        b < length s /\
+        forall c d (H1 : c < length s) (H2 : d < length s),
+          b < c ->
+          b < d ->
+          term_eq_up_to n (term_at s c H1)
+                          (term_at s d H2)
+  | _ => True
+  end.
 
 (* If the length of the rewriting sequence is a limit ordinal,
    for all n, eventually the rule applications are below depth n *)
 Definition strongly_convergent (s : sequence) : Prop :=
-  limit (length s) ->
-  forall n : nat,
-  exists b, b < length s /\
-    forall c, b < c -> forall H : c < length s,
-    depth (steps s c H) > n.
+  match length s with
+  | Limit f =>
+    forall n,
+      exists b,
+        b < length s /\
+        forall c (H : c < length s),
+          b < c ->
+          depth (steps s c H) > n
+  | _ => True
+  end.
 
 (* Any strongly convergent rewriting sequence is also weakly convergent *)
-Lemma strong_implies_weak : forall s, strongly_convergent s -> weakly_convergent s.
+(* TODO *)
+Lemma strong_implies_weak :
+  forall s, strongly_convergent s -> weakly_convergent s.
 Proof.
+(*
 intros s Hstrong' Hlimit n.
 assert (Hstrong := Hstrong' Hlimit n). clear Hstrong'.
 elim Hstrong.
@@ -160,8 +192,7 @@ split.
 apply H.
 intros c d LTxc LTxd LTcl LTdl.
 destruct H as [H1 H2].
-
-
+*)
 (* Do something with eq_up_to_rewriting_depth *)
 Admitted.
 
@@ -169,15 +200,19 @@ Admitted.
 (* TODO: This would be a fixpoint using b from weakly_convergent *)
 Variable limit_term : forall s : sequence, weakly_convergent s -> term.
 
-Lemma compression : trs_left_linear system -> forall s : sequence,
-                    forall SC: strongly_convergent s,
-                    exists s' : sequence,
-                    exists SC' : strongly_convergent s',
-                      length s' < omega /\ (* should be <= *)
-                      limit_term s (strong_implies_weak s SC) [~] limit_term s' (strong_implies_weak s' SC').
+Variable omega : ord.
+
+Lemma compression :
+  trs_left_linear system ->
+  forall s (SC : strongly_convergent s),
+    exists s', exists SC' : strongly_convergent s',
+      length s' <= omega /\
+        limit_term s (strong_implies_weak s SC)
+        [~]
+        limit_term s' (strong_implies_weak s' SC').
 Proof.
 Admitted.
 
-Local Close Scope ordinals_scope.
+Local Close Scope ord_scope.
 
 End TRSs.
