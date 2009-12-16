@@ -278,6 +278,34 @@ Qed.
 
 (* TODO: Can we prove <= is total? *)
 
+(* == is reflexive *)
+Lemma ord_eq_refl :
+  forall alpha, alpha == alpha.
+Proof.
+split; apply ord_le_refl.
+Qed.
+
+(* == is symmetric *)
+Lemma ord_eq_symm :
+  forall alpha beta,
+    alpha == beta ->
+    beta == alpha.
+Proof.
+split; apply H.
+Qed.
+
+(* == is transitive *)
+Lemma ord_eq_trans :
+  forall alpha beta gamma,
+    alpha == beta ->
+    beta == gamma ->
+    alpha == gamma.
+Proof.
+destruct 1.
+destruct 1.
+split; apply ord_le_trans with beta; assumption.
+Qed.
+
 (* < is transitive *)
 Lemma ord_lt_trans :
   forall alpha beta gamma,
