@@ -364,4 +364,52 @@ apply ord_le_succ_right.
 assumption.
 Qed.
 
+(*
+   Below we try to seperate the good from the bad
+*)
+
+(* Good ordinals are those where the limit functions are increasing *)
+Fixpoint good alpha : Prop :=
+  match alpha with
+  | Zero      => True
+  | Succ beta => good beta
+  | Limit f   => forall n, good (f n) /\ forall m, (n < m)%nat -> (f n) < (f m)
+  end.
+
+Lemma ord_le_zero_zero :
+  Zero < Zero -> False.
+Proof.
+destruct 1.
+contradiction.
+Qed.
+
+(* Needed for rewrite ... at occurrence *)
+Require Import Setoid.
+
+(* For any good alpha <= zero, alpha = zero *)
+Lemma ord_le_zero_good :
+  forall alpha,
+    good alpha ->
+    alpha <= Zero ->
+    alpha = Zero.
+Proof.
+induction alpha as [| alpha _ | f IH]; intros G H.
+reflexivity.
+elim (ord_le_not_succ_zero alpha H).
+elimtype False.
+apply ord_le_zero_zero.
+simpl in G.
+destruct (G 1) as [G1 Gnm].
+destruct (G 2) as [G2 _].
+inversion_clear H.
+rewrite <- (IH 1) at 1.
+rewrite <- (IH 2).
+apply Gnm.
+constructor.
+assumption.
+apply H0.
+assumption.
+apply H0.
+Qed.
+
 Close Scope ord_scope.
