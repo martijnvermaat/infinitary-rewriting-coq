@@ -490,6 +490,14 @@ Qed.
 
 Definition omega := Limit id.
 
+Lemma n_le_omega : forall (n : nat), n <= omega.
+Proof.
+induction n as [| n IH]; simpl; unfold omega.
+constructor.
+apply Ord_le_Succ with (i := existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
+apply ord_le_refl.
+Qed.
+
 Lemma n_lt_omega : forall (n : nat), n < omega.
 Proof.
 induction n as [| n IH]; simpl; split; unfold omega.
