@@ -25,7 +25,14 @@ Inductive ord : Set :=
   | Succ  : ord -> ord
   | Limit : (nat -> ord) -> ord.
 
-(* TODO: define omega *)
+(* Image of naturals in ordinals *)
+Fixpoint nat_as_ord (n : nat) : ord :=
+  match n with
+  | O   => Zero
+  | S n => Succ (nat_as_ord n)
+  end.
+
+Coercion nat_as_ord : nat >-> ord.
 
 Fixpoint pred_type (alpha : ord) : Set :=
   match alpha with
@@ -336,7 +343,7 @@ contradiction.
 Qed.
 
 (* < is asymmetric *)
-Lemma ord_lt_aymm :
+Lemma ord_lt_asymm :
   forall alpha beta,
     alpha < beta ->
     ~ beta < alpha.
@@ -411,5 +418,100 @@ apply H0.
 assumption.
 apply H0.
 Qed.
+
+(* < on nat is the same as < on ord *)
+(* This proof is een zooitje, but at least it ends with Qed *)
+Lemma lt_nat_ord : forall n m, (n < m)%nat <-> nat_as_ord n < nat_as_ord m.
+Proof.
+induction n; intro m; split; intro H.
+simpl.
+destruct H.
+split.
+constructor.
+simpl.
+apply ord_le_not_succ_zero.
+simpl.
+split.
+constructor.
+apply ord_le_not_succ_zero.
+destruct m.
+elimtype False.
+apply (ord_lt_irrefl (nat_as_ord 0) H).
+auto with arith.
+simpl.
+split.
+destruct H.
+simpl.
+apply Ord_le_Succ with (i := inl (pred_type (Succ (nat_as_ord n))) tt).
+apply ord_le_succ_right.
+apply ord_le_refl.
+simpl.
+apply Ord_le_Succ with (i := inl (pred_type (nat_as_ord m)) tt).
+elim (IHn m).
+intros.
+elim H0.
+intros.
+assumption.
+auto with arith.
+intro.
+destruct m.
+contradict H.
+auto with arith.
+simpl in H0.
+assert (H1 := ord_le_succ (nat_as_ord m) (nat_as_ord n) H0).
+contradict H1.
+elimtype (nat_as_ord n < nat_as_ord m).
+intros.
+assumption.
+apply (IHn m).
+auto with arith.
+destruct m.
+destruct H.
+simpl in H.
+contradict H.
+apply (ord_le_not_succ_zero (nat_as_ord n)).
+elimtype (n < m)%nat.
+auto with arith.
+intros.
+auto with arith.
+apply (IHn m).
+split; destruct H.
+apply (ord_le_succ (nat_as_ord n) (nat_as_ord m) H).
+intro.
+apply H0.
+simpl.
+apply Ord_le_Succ with (i := inl (pred_type (nat_as_ord n)) tt).
+simpl.
+assumption.
+Qed.
+
+(* TODO: I think proofs like the above would benefit from adding
+   some lemma's about ord_le as hints *)
+
+Definition omega := Limit id.
+
+Lemma n_lt_omega : forall (n : nat), n < omega.
+Proof.
+induction n as [| n IH]; simpl; split; unfold omega.
+
+constructor.
+
+intro H.
+inversion_clear H as [| | f beta H'].
+apply (ord_le_not_succ_zero Zero (H' 1)).
+
+destruct IH as [H1 H2].
+inversion_clear H1.
+apply Ord_le_Succ with (i := existT (fun (n : nat) => pred_type n) 1 (inl (pred_type 0) tt)).
+constructor.
+destruct i as [[|m] t]; simpl in t, H.
+elim t.
+apply Ord_le_Succ with (i := existT (fun (n : nat) => pred_type n) (S m) t).
+simpl.
+Admitted.
+
+Lemma lt : forall alpha beta, ((alpha <= beta /\ ~ beta <= alpha) <-> (exists i, alpha <= (pred beta i))).
+Proof.
+Admitted.
 
 Close Scope ord_scope.
