@@ -200,6 +200,23 @@ inversion_clear 1.
 destruct i as [[] |]; [| apply ord_le_pred_right with p]; assumption.
 Qed.
 
+(* No successor of alpha is <= alpha *)
+Lemma ord_le_not_succ :
+  forall alpha, ~ Succ alpha <= alpha.
+Proof.
+induction alpha as [| alpha IH | f IH]; intro H.
+apply ord_le_not_succ_zero with Zero.
+assumption.
+apply IH.
+apply (ord_le_succ (Succ alpha) alpha H).
+inversion_clear H as [| a b i H' |].
+inversion_clear H' as [| | a b H].
+destruct i as [n i].
+apply IH with n.
+apply Ord_le_Succ with i.
+apply H.
+Qed.
+
 (* Suggested by Bruno Barras *)
 (* If alpha <= a function value, alpha <= the limit of that function *)
 Lemma ord_le_limit_right :
@@ -384,9 +401,10 @@ Fixpoint good alpha : Prop :=
   end.
 
 Lemma ord_le_zero_zero :
-  Zero < Zero -> False.
+  ~ Zero < Zero.
 Proof.
-destruct 1.
+intro H.
+destruct H.
 contradiction.
 Qed.
 
@@ -500,23 +518,17 @@ Qed.
 
 Lemma n_lt_omega : forall (n : nat), n < omega.
 Proof.
-induction n as [| n IH]; simpl; split; unfold omega.
-
-constructor.
-
+destruct n; split.
+apply n_le_omega.
 intro H.
 inversion_clear H as [| | f beta H'].
 apply (ord_le_not_succ_zero Zero (H' 1)).
-
-destruct IH as [H1 H2].
-inversion_clear H1.
-apply Ord_le_Succ with (i := existT (fun (n : nat) => pred_type n) 1 (inl (pred_type 0) tt)).
-constructor.
-destruct i as [[|m] t]; simpl in t, H.
-elim t.
-apply Ord_le_Succ with (i := existT (fun (n : nat) => pred_type n) (S m) t).
-simpl.
-Admitted.
+apply Ord_le_Succ with (i := existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
+apply ord_le_refl.
+intro H.
+inversion_clear H as [| | f beta H'].
+apply (ord_le_not_succ (S n) (H' (S (S n)))).
+Qed.
 
 Lemma lt : forall alpha beta, ((alpha <= beta /\ ~ beta <= alpha) <-> (exists i, alpha <= (pred beta i))).
 Proof.
