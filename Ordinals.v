@@ -532,6 +532,39 @@ Qed.
 
 Lemma lt : forall alpha beta, ((alpha <= beta /\ ~ beta <= alpha) <-> (exists i, alpha <= (pred beta i))).
 Proof.
+split; intro H.
+destruct H as [H1 H2].
+
+induction beta as [| beta _ | f IH].
+(* beta might not be the right choice here... *)
+
+contradict H2.
+constructor.
+
+exists (inl (pred_type beta) tt).
+simpl.
+admit.
+
+admit.
+
+split.
+destruct alpha.
+constructor.
+elim H.
+intros.
+apply Ord_le_Succ with x.
+apply (ord_le_succ_left alpha (pred beta x) H0).
+elim H.
+intros.
+constructor.
+inversion_clear H0.
+intro.
+apply (ord_le_pred_right (o n) beta x).
+apply H1.
+intro H1.
+elim H.
+intros.
+
 Admitted.
 
 Close Scope ord_scope.
