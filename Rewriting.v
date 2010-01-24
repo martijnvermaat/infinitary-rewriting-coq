@@ -122,6 +122,7 @@ Record sequence : Type := {
 
   (* Length of rewriting sequence *)
   length : ord;
+  length_good : good length;
 
   (* Projection from ordinals (up to length) to steps *)
   steps : forall alpha, alpha < length -> step;
@@ -146,6 +147,7 @@ Definition depth_at s alpha H := depth (steps s alpha H).
 Definition weakly_continuous (s : sequence) : Prop :=
   forall f (H1 : Limit f < length s) n,
     exists alpha,
+      good alpha /\
       alpha < Limit f /\
       forall beta (H2 : beta < Limit f),
         alpha < beta ->
@@ -157,49 +159,30 @@ Definition weakly_continuous (s : sequence) : Prop :=
 Definition strongly_continuous (s : sequence) : Prop :=
   forall f (H1 : Limit f < length s) n,
     exists alpha,
+      good alpha /\
       alpha < Limit f /\
       forall beta (H2 : beta < Limit f),
         alpha < beta ->
         depth_at s beta (ord_lt_trans beta (Limit f) (length s) H2 H1) > n.
 
-(* A rewriting sequence with length a limit ordinal has a limit term if
-   for all n, eventually terms are equal up to n *)
-(* TODO: for definitions like this we need the functions of limit ordinals
-   to be increasing, otherwise Limit f might just as well be equal to 4 *)
-Definition has_limit_term (s : sequence) : Prop :=
+(* The rewriting sequence is weakly continuous, and furthermore,
+   if the length of the rewriting sequence is a limit ordinal,
+   for all n, eventually terms are equal to each other up to depth n *)
+(* NOTE: this implements the notion of cauchy convergence *)
+Definition weakly_convergent (s : sequence) : Prop :=
+  weakly_continuous s /\
+  (* TODO: maybe this should not not use a match construct *)
   match length s with
-  | Limit _ =>
+  | Limit f =>
       forall n,
         exists alpha,
+          good alpha /\
           alpha < length s /\
           forall beta gamma (H1 : beta < length s) (H2 : gamma < length s),
             alpha < beta ->
             alpha < gamma ->
             term_eq_up_to n (term_at s beta H1)
                             (term_at s gamma H2)
-  | _ => False
-  end.
-
-(* TODO: Assume we can construct a limit term for any sequence that has one *)
-(* The limit term of the rewriting sequence would be some fixpoint using alpha
-   from has_limit_term *)
-Variable limit_term : forall s : sequence, has_limit_term s -> term.
-
-(* The rewriting sequence is weakly continuous, and furthermore,
-   if the length of the rewriting sequence is a limit ordinal,
-   for all n, eventually terms are equal to the limit term up to depth n *)
-Definition weakly_convergent (s : sequence) : Prop :=
-  weakly_continuous s /\
-  match length s with
-  | Limit f =>
-      exists HL : has_limit_term s,
-        forall n,
-          exists alpha,
-            alpha < length s /\
-            forall beta (H : beta < length s),
-              alpha < beta ->
-              term_eq_up_to n (term_at s beta H)
-                              (limit_term s HL)
   | _ => True
   end.
 
@@ -212,6 +195,7 @@ Definition strongly_convergent (s : sequence) : Prop :=
   | Limit f =>
       forall n,
         exists alpha,
+          good alpha /\
           alpha < length s /\
           forall beta (H : beta < length s),
             alpha < beta ->
@@ -222,6 +206,17 @@ Definition strongly_convergent (s : sequence) : Prop :=
 (* Strong convergence is only distinct from strong continuity when length is
    a limit ordinal *)
 Lemma continuity_implies_convergence_weak :
+  forall s,
+    weakly_continuous s ->
+    ~ weakly_convergent s ->
+    exists f, length s = Limit f.
+Proof.
+intros s CONT CONV.
+Admitted.
+
+(* Strong convergence is only distinct from strong continuity when length is
+   a limit ordinal *)
+Lemma continuity_implies_convergence_weak' :
   forall s,
     match length s with
     | Limit _ => True
@@ -269,20 +264,25 @@ destruct H as [H1 H2].
 (* Do something with eq_up_to_rewriting_depth *)
 Admitted.
 
-(* TODO: define omega *)
-Variable omega : ord.
-
-(*
 Lemma compression :
   trs_left_linear system ->
-  forall s (SC : strongly_continuous s),
-    exists s', exists SC' : strongly_continuous s',
+  forall s (L : Zero < length s) (SC : strongly_continuous s),
+    exists s', exists L' : Zero < length s', exists SC' : strongly_continuous s',
       length s' <= omega /\
-        limit_term s (strong_implies_weak s SC)
-        [~]
-        limit_term s' (strong_implies_weak s' SC').
+      term_at s Zero L [~] term_at s' Zero L' /\
+      forall n,
+        exists alpha, exists alpha',
+          good alpha /\
+          good alpha' /\
+          alpha < length s /\
+          alpha' < length s' /\
+          forall beta beta' (H1 : beta < length s) (H2 : beta' < length s'),
+            alpha < beta ->
+            alpha' < beta' ->
+            term_eq_up_to n (term_at s beta H1)
+                            (term_at s' beta' H2).
 Proof.
-*)
+Admitted.
 
 Local Close Scope ord_scope.
 
