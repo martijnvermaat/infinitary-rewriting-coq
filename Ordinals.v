@@ -530,9 +530,17 @@ inversion_clear H as [| | f beta H'].
 apply (ord_le_not_succ (S n) (H' (S (S n)))).
 Qed.
 
-Lemma lt : forall alpha beta, ((alpha <= beta /\ ~ beta <= alpha) <-> (exists i, alpha <= (pred beta i))).
+Lemma le_not_pred_right :
+  forall alpha i, ~ alpha <= pred alpha i.
 Proof.
-split; intro H.
+induction alpha as [| alpha IH | f IH]; intros i H.
+destruct i.
+inversion_clear H.
+Admitted.
+
+Lemma lt_right : forall alpha beta, alpha <= beta /\ ~ beta <= alpha -> exists i, alpha <= (pred beta i).
+Proof.
+intros alpha beta H.
 destruct H as [H1 H2].
 
 induction beta as [| beta _ | f IH].
@@ -543,17 +551,20 @@ constructor.
 
 exists (inl (pred_type beta) tt).
 simpl.
-admit.
+Admitted.
 
-admit.
-
+Lemma lt_left : forall alpha beta, (exists i, alpha <= (pred beta i)) -> alpha <= beta /\ ~ beta <= alpha.
 split.
+
 destruct alpha.
+
 constructor.
+
 elim H.
 intros.
 apply Ord_le_Succ with x.
 apply (ord_le_succ_left alpha (pred beta x) H0).
+
 elim H.
 intros.
 constructor.
@@ -561,9 +572,16 @@ inversion_clear H0.
 intro.
 apply (ord_le_pred_right (o n) beta x).
 apply H1.
+
 intro H1.
 elim H.
 intros.
+destruct alpha.
+
+destruct beta.
+destruct x.
+inversion_clear H1.
+
 
 Admitted.
 
