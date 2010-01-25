@@ -70,6 +70,7 @@ where "alpha <= beta" := (ord_le alpha beta) : ord_scope.
 (*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
 (*Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).*)
 Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.
+
 Infix " < " := ord_lt : ord_scope.
 
 (* Should we use this as our ordinal equality? Then <= is trivially
@@ -409,7 +410,7 @@ contradiction.
 Qed.
 
 (* Needed for rewrite ... at occurrence *)
-Require Import Setoid.
+(*Require Import Setoid.*)
 
 (* For any good alpha <= zero, alpha = zero *)
 Lemma ord_le_zero_good :
@@ -427,7 +428,8 @@ simpl in G.
 destruct (G 1) as [G1 Gnm].
 destruct (G 2) as [G2 _].
 inversion_clear H.
-rewrite <- (IH 1) at 1.
+pattern Zero at 1.
+rewrite <- (IH 1).
 rewrite <- (IH 2).
 apply Gnm.
 constructor.
