@@ -506,7 +506,18 @@ Qed.
 (* TODO: I think proofs like the above would benefit from adding
    some lemma's about ord_le as hints *)
 
-Definition omega := Limit id.
+(*
+TODO: Weird, why does this not work when Setoid is not required?
+
+  Require Import Setoid.
+  Definition omega := Limit id.
+
+But the following (equivalent?!) does work:
+
+  Definition id' (n : nat) : ord := id n.
+  Definition omega := Limit id'.
+*)
+Definition omega := Limit (fun o => o).
 
 Lemma n_le_omega : forall (n : nat), n <= omega.
 Proof.
