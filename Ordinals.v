@@ -437,7 +437,7 @@ apply H0.
 Qed.
 
 (* < on nat is the same as < on ord *)
-Require Import Lt.
+Require Import Lt. (* For 'auto with arith' *)
 (* This proof is een zooitje, but at least it ends with Qed *)
 Lemma lt_nat_ord : forall n m, (n < m)%nat <-> nat_as_ord n < nat_as_ord m.
 Proof.
