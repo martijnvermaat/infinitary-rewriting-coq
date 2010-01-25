@@ -512,10 +512,13 @@ TODO: Weird, why does this not work when Setoid is not required?
   Require Import Setoid.
   Definition omega := Limit id.
 
-But the following (equivalent?!) does work:
+But the following does work:
 
   Definition id' (n : nat) : ord := id n.
   Definition omega := Limit id'.
+
+We have our coercion nat_as_ord, but for some reason it is not used when
+the Setoid module is required.
 *)
 Definition omega := Limit (fun o => o).
 
