@@ -131,7 +131,7 @@ Record sequence : Type := {
   locally_continuous :
     forall alpha (H : Succ alpha < length),
       target (steps alpha (ord_lt_succ_left alpha length H))
-      [~]
+      [=]
       source (steps (Succ alpha) H)
 
 }.
@@ -145,129 +145,121 @@ Definition depth_at s alpha H := depth (steps s alpha H).
 (* Approaching any limit ordinal < length from below,
    for all n, eventually terms are equal to the limit term up to depth n *)
 Definition weakly_continuous (s : sequence) : Prop :=
-  forall f (H1 : Limit f < length s) n,
+  forall f (Hf : Limit f < length s) n,
     exists alpha,
       good alpha /\
       alpha < Limit f /\
-      forall beta (H2 : beta < Limit f),
+      forall beta (Hb : beta < Limit f),
         alpha < beta ->
-        term_eq_up_to n (term_at s beta (ord_lt_trans beta (Limit f) (length s) H2 H1))
-                        (term_at s (Limit f) H1).
+        term_eq_up_to n (term_at s beta (ord_lt_trans beta (Limit f) (length s) Hb Hf))
+                        (term_at s (Limit f) Hf).
 
 (* Approaching any limit ordinal < length from below,
    for all n, eventually the rule applications are below depth n *)
+(* NOTE: we really also need weakly_continuous in this definition,
+   otherwise we lose 'connection' between terms before a limit
+   position and the term at that limit position. *)
 Definition strongly_continuous (s : sequence) : Prop :=
-  forall f (H1 : Limit f < length s) n,
+  weakly_continuous s /\
+  forall f (Hf : Limit f < length s) n,
     exists alpha,
       good alpha /\
       alpha < Limit f /\
-      forall beta (H2 : beta < Limit f),
+      forall beta (Hb : beta < Limit f),
         alpha < beta ->
-        depth_at s beta (ord_lt_trans beta (Limit f) (length s) H2 H1) > n.
+        depth_at s beta (ord_lt_trans beta (Limit f) (length s) Hb Hf) > n.
 
 (* The rewriting sequence is weakly continuous, and furthermore,
    if the length of the rewriting sequence is a limit ordinal,
    for all n, eventually terms are equal to each other up to depth n *)
 (* NOTE: this implements the notion of cauchy convergence *)
+(* This is the new definition, stating that any position beta after
+   alpha has its term equal to its successor term.
+   TODO: decide if this is correct. *)
 Definition weakly_convergent (s : sequence) : Prop :=
   weakly_continuous s /\
-  (* TODO: maybe this should not not use a match construct *)
-  match length s with
-  | Limit f =>
-      forall n,
-        exists alpha,
-          good alpha /\
-          alpha < length s /\
-          forall beta gamma (H1 : beta < length s) (H2 : gamma < length s),
-            alpha < beta ->
-            alpha < gamma ->
-            term_eq_up_to n (term_at s beta H1)
-                            (term_at s gamma H2)
-  | _ => True
-  end.
+  (is_limit (length s) ->
+    forall n,
+      exists alpha,
+        good alpha /\
+        alpha < length s /\
+        forall beta (Hb : (Succ beta) < length s),
+          alpha < beta ->
+          term_eq_up_to n
+            (term_at s beta (ord_lt_succ_left beta (length s) Hb))
+            (term_at s (Succ beta) Hb)).
+
+(*
+(* This is the old definition, stating that any two positions beta and
+   gamma after alpha have equal terms up to n. *)
+Definition weakly_convergent (s : sequence) : Prop :=
+  weakly_continuous s /\
+  (is_limit (length s) ->
+    forall n,
+      exists alpha,
+        good alpha /\
+        alpha < length s /\
+        forall beta gamma (Hb : beta < length s) (Hg : gamma < length s),
+          alpha < beta ->
+          alpha < gamma ->
+          term_eq_up_to n (term_at s beta Hb) (term_at s gamma Hg)).
+*)
 
 (* The rewriting sequence is strongly continuous, and furthermore,
    if the length of the rewriting sequence is a limit ordinal,
    for all n, eventually the rule applications are below depth n *)
 Definition strongly_convergent (s : sequence) : Prop :=
   strongly_continuous s /\
-  match length s with
-  | Limit f =>
-      forall n,
-        exists alpha,
-          good alpha /\
-          alpha < length s /\
-          forall beta (H : beta < length s),
-            alpha < beta ->
-            depth_at s beta H > n
-  | _ => True
-  end.
-
-(* Strong convergence is only distinct from strong continuity when length is
-   a limit ordinal *)
-Lemma continuity_implies_convergence_weak :
-  forall s,
-    weakly_continuous s ->
-    ~ weakly_convergent s ->
-    exists f, length s = Limit f.
-Proof.
-intros s CONT CONV.
-Admitted.
-
-(* Strong convergence is only distinct from strong continuity when length is
-   a limit ordinal *)
-Lemma continuity_implies_convergence_weak' :
-  forall s,
-    match length s with
-    | Limit _ => True
-    | _       => weakly_continuous s -> weakly_convergent s
-    end.
-Proof.
-intro s.
-destruct s as [l s c_local c_limit c_strong]; simpl.
-destruct l.
-unfold strongly_convergent.
-Admitted.
-
-(* Weak convergence is only distinct from weak continuity when length is
-   a limit ordinal *)
-Lemma continuity_implies_convergence_strong :
-  forall s,
-    match length s with
-    | Limit _ => True
-    | _       => strongly_continuous s -> strongly_convergent s
-    end.
-Proof.
-Admitted.
-
-(* Any strongly continuous rewriting sequence is also weakly continuous *)
-Lemma strong_continuity_implies_weak_continuity :
-  forall s, strongly_continuous s -> weakly_continuous s.
-Proof.
-Admitted.
+  (is_limit (length s) ->
+    forall n,
+      exists alpha,
+        good alpha /\
+        alpha < length s /\
+        forall beta (Hb : beta < length s),
+          alpha < beta ->
+          depth_at s beta Hb > n).
 
 (* Any strongly convergent rewriting sequence is also weakly convergent *)
 Lemma strong_convergence_implies_weak_convergence :
   forall s, strongly_convergent s -> weakly_convergent s.
 Proof.
-(*
-intros s Hstrong' Hlimit n.
-assert (Hstrong := Hstrong' Hlimit n). clear Hstrong'.
-elim Hstrong.
-intros.
-exists x.
+intros s s_conv.
+destruct s_conv as [[w_cont s_cont] s_conv].
 split.
+exact w_cont.
+intros limit n.
+elim (s_conv limit n).
+intros alpha H.
+destruct H as [Ha' [Ha H]].
+exists alpha.
+split.
+exact Ha'.
+split.
+exact Ha.
+(* NOTE: zouden we de oude definitie voor weakly_convergent (zie comments boven),
+   dan werd dit een ingewikkelder verhaal, iets als inductie op verschil tussen
+   beta en gamma (liefst eindig, maar daarvoor moet alpha stricter):
+   0: beta en gamma zijn gelijk
+   1: gebruik eq_up_to_rewriting_depth
+   n+1: gebruik eq_up_to_rewriting depth en IH met transitiviteit van term_eq_up_to *)
+intros beta Hb Hab.
+apply term_eq_up_to_trans with (target (steps s beta (ord_lt_succ_left beta (length s) Hb))).
+apply eq_up_to_rewriting_depth.
 apply H.
-intros c d LTxc LTxd LTcl LTdl.
-destruct H as [H1 H2].
-*)
-(* Do something with eq_up_to_rewriting_depth *)
-Admitted.
+exact Hab.
+apply locally_continuous.
+Qed.
 
+(*
+   TODO:
+   * notion of concatenating rewriting sequences
+*)
 Lemma compression :
   trs_left_linear system ->
-  forall s (L : Zero < length s) (SC : strongly_continuous s),
-    exists s', exists L' : Zero < length s', exists SC' : strongly_continuous s',
+  forall s (L : Zero < length s),
+    strongly_convergent s ->
+    exists s', exists L' : Zero < length s',
+      strongly_convergent s' /\
       length s' <= omega /\
       term_at s Zero L [~] term_at s' Zero L' /\
       forall n,
@@ -276,13 +268,27 @@ Lemma compression :
           good alpha' /\
           alpha < length s /\
           alpha' < length s' /\
-          forall beta beta' (H1 : beta < length s) (H2 : beta' < length s'),
+          forall beta beta' (Hb : beta < length s) (Hb' : beta' < length s'),
             alpha < beta ->
             alpha' < beta' ->
-            term_eq_up_to n (term_at s beta H1)
-                            (term_at s' beta' H2).
+            term_eq_up_to n (term_at s beta Hb)
+                            (term_at s' beta' Hb').
 Proof.
-Admitted.
+intros LL s s_nonzero s_conv.
+destruct s as [s_length s_length_good s_steps s_cont].
+induction s_length as [| s_length IH | f IH].
+
+(* length s = Zero *)
+unfold length in s_nonzero.
+contradict (ord_le_zero_zero s_nonzero).
+
+(* length s = Succ _ *)
+admit.
+
+(* length s = Limit _ *)
+admit.
+
+Qed.
 
 Local Close Scope ord_scope.
 

@@ -94,6 +94,25 @@ apply eq2bis.
 apply H0.
 Qed.
 
+Lemma term_eq_up_to_trans :
+  forall n t u v,
+    term_eq_up_to n t u ->
+    term_eq_up_to n u v ->
+    term_eq_up_to n t v.
+Proof.
+induction n as [| n IH].
+constructor.
+intros t u v H1.
+inversion_clear H1; intro H2.
+assumption.
+dependent destruction H2.
+constructor.
+intro i.
+apply IH with (u := w i); trivial.
+Qed.
+
+(* TODO: define term_eq_refl and term_eq_symm using the
+   term_eq_up_to_* equivalents, just like the *_trans case. *)
 Lemma term_eq_refl : forall t, term_eq t t.
 Proof.
 intros t n.
@@ -125,18 +144,7 @@ Qed.
 Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
 intros t u v H1 H2 n.
-assert (H1' := H1 n); clear H1.
-assert (H2' := H2 n); clear H2.
-revert t u v H1' H2'.
-induction n as [| n IH].
-constructor.
-intros t u v H1.
-inversion_clear H1; intro H2.
-assumption.
-dependent destruction H2.
-constructor.
-intro i.
-apply IH with (u := w i); trivial.
+apply (term_eq_up_to_trans (H1 n) (H2 n)).
 Qed.
 
 Lemma term_bis_refl : forall t, term_bis t t.

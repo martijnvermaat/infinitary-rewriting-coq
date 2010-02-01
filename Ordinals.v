@@ -599,4 +599,6 @@ inversion_clear H1.
 
 Admitted.
 
+Definition is_limit o : Prop := exists f, Limit f = o.
+
 Close Scope ord_scope.
