@@ -253,6 +253,8 @@ Qed.
 (*
    TODO:
    * notion of concatenating rewriting sequences
+   * what does it mean that our sequences of length 0 have no term?
+     (e.g. we need the L predicate in the compression lemma below)
 *)
 Lemma compression :
   trs_left_linear system ->

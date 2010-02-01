@@ -72,17 +72,21 @@ Notation fvnil := (vnil fterm).
 Notation vnil := (vnil term).
 
 (* Some terms *)
+(*
 Check (F zero (vnil)).
 Check (V 2).
 Check (F plus (vcons (F succ (vcons (V 2) vnil)) (vcons (F zero vnil) vnil))).
 Check (F succ (vcons (V 1) vnil)).
 Check (V 3).
+*)
 
 (* succ(succ(succ(succ(succ(...))))) *)
 CoFixpoint repeat_succ : term :=
   F succ (vcons repeat_succ vnil).
 
+(*
 Check repeat_succ.
+*)
 
 (* Test the head of a term *)
 Definition head (t : term) : nat :=
@@ -93,10 +97,12 @@ Definition head (t : term) : nat :=
   | Fun plus _ => 1007
   end.
 
+(*
 Eval simpl in (head (F plus (vcons (F succ (vcons (V 2) vnil)) (vcons (F zero vnil) vnil)))).
 Eval simpl in (head (F succ (vcons (V 1) vnil))).
 Eval simpl in (head (V 3)).
 Eval simpl in (head repeat_succ).
+*)
 
 (* Rewriting *)
 
