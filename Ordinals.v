@@ -389,6 +389,14 @@ apply ord_le_succ_right.
 assumption.
 Qed.
 
+(* If alpha < beta, alpha <= beta *)
+Lemma ord_lt_ord_le :
+  forall alpha beta, alpha < beta -> alpha <= beta.
+Proof.
+intros alpha beta H.
+apply H.
+Qed.
+
 (*
    Below we try to seperate the good from the bad
 *)
