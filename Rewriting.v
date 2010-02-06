@@ -90,32 +90,10 @@ Qed.
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ord_scope.
 
-(* TODO
-
-Should we include the limit term in the sequence record?
-
-If the length of the sequence is l, then the limit term would be the term
-at position l in the sequence.
-
-l = Zero    : we should have no limit term
-l = Succ l' : limit term should be the target of step l'
-l = Lim f   : limit term lets us define weak convergence?
-
-Maybe a better way:
-
-Not include the limit term (sequences might not have one), and define
-weak convergence as 'there exists a limit term t and ... t ...'
-
-Then we would have to construct the limit, using a property like
-'approaching the end of the sequence, terms get equal up to any depth'
-
-This is basically what we now use as definition of weak convergence, but
-than we could use a more direct translation of the literature using the
-constructed limit.
-
-See also the definitions by Kennaway.
-
-*)
+(* NOTE: Here in Rewriting2.v we explicitely list the terms in the sequence.
+   This means we always have a first and a last term, but we have to
+   explicitely say that the rewriting steps are from and to successive terms
+   in the sequence. *)
 
 (* Rewriting sequences *)
 Record sequence : Type := {
@@ -124,23 +102,18 @@ Record sequence : Type := {
   length : ord;
   length_good : good length;
 
+  (* Projection from ordinals (up to and including length) to terms *)
+  terms : forall alpha, alpha <= length -> term;
+
   (* Projection from ordinals (up to length) to steps *)
   steps : forall alpha, alpha < length -> step;
 
-  (* Successive rewriting steps have equal target/source terms *)
-  locally_continuous :
-    forall alpha (H : Succ alpha < length),
-      target (steps alpha (ord_lt_succ_left alpha length H))
-      [=]
-      source (steps (Succ alpha) H)
+  steps_fit :
+    forall alpha (H : alpha < length),
+      source (steps alpha H) [=] terms alpha (ord_lt_ord_le alpha length H) /\
+      target (steps alpha H) [=] terms (Succ alpha) (ord_lt_ord_le_succ alpha length H)
 
 }.
-
-(* Shorthand for source term at step alpha in rewriting sequence s *)
-Definition term_at s alpha H := source (steps s alpha H).
-
-(* Shorthand for rewriting depth at step alpha in rewriting sequence s *)
-Definition depth_at s alpha H := depth (steps s alpha H).
 
 (* Approaching any limit ordinal < length from below,
    for all n, eventually terms are equal to the limit term up to depth n *)
@@ -151,8 +124,8 @@ Definition weakly_continuous (s : sequence) : Prop :=
       alpha < Limit f /\
       forall beta (Hb : beta < Limit f),
         alpha < beta ->
-        term_eq_up_to n (term_at s beta (ord_lt_trans beta (Limit f) (length s) Hb Hf))
-                        (term_at s (Limit f) Hf).
+        term_eq_up_to n (terms s beta (ord_lt_ord_le beta (length s) (ord_lt_trans beta (Limit f) (length s) Hb Hf)))
+                        (terms s (Limit f) (ord_lt_ord_le (Limit f) (length s) Hf)).
 
 (* Approaching any limit ordinal < length from below,
    for all n, eventually the rule applications are below depth n *)
@@ -167,15 +140,11 @@ Definition strongly_continuous (s : sequence) : Prop :=
       alpha < Limit f /\
       forall beta (Hb : beta < Limit f),
         alpha < beta ->
-        depth_at s beta (ord_lt_trans beta (Limit f) (length s) Hb Hf) > n.
+        depth (steps s beta (ord_lt_trans beta (Limit f) (length s) Hb Hf)) > n.
 
 (* The rewriting sequence is weakly continuous, and furthermore,
    if the length of the rewriting sequence is a limit ordinal,
    for all n, eventually terms are equal to each other up to depth n *)
-(* NOTE: this implements the notion of cauchy convergence *)
-(* This is the new definition, stating that any position beta after
-   alpha has its term equal to its successor term.
-   TODO: decide if this is correct. *)
 Definition weakly_convergent (s : sequence) : Prop :=
   weakly_continuous s /\
   (is_limit (length s) ->
@@ -183,27 +152,10 @@ Definition weakly_convergent (s : sequence) : Prop :=
       exists alpha,
         good alpha /\
         alpha < length s /\
-        forall beta (Hb : (Succ beta) < length s),
+        forall beta (Hb : beta < length s),
           alpha < beta ->
-          term_eq_up_to n
-            (term_at s beta (ord_lt_succ_left beta (length s) Hb))
-            (term_at s (Succ beta) Hb)).
-
-(*
-(* This is the old definition, stating that any two positions beta and
-   gamma after alpha have equal terms up to n. *)
-Definition weakly_convergent (s : sequence) : Prop :=
-  weakly_continuous s /\
-  (is_limit (length s) ->
-    forall n,
-      exists alpha,
-        good alpha /\
-        alpha < length s /\
-        forall beta gamma (Hb : beta < length s) (Hg : gamma < length s),
-          alpha < beta ->
-          alpha < gamma ->
-          term_eq_up_to n (term_at s beta Hb) (term_at s gamma Hg)).
-*)
+          term_eq_up_to n (terms s beta (ord_lt_succ_left beta (length s) Hb))
+                          (terms s (length s) ?).
 
 (* The rewriting sequence is strongly continuous, and furthermore,
    if the length of the rewriting sequence is a limit ordinal,
@@ -217,7 +169,7 @@ Definition strongly_convergent (s : sequence) : Prop :=
         alpha < length s /\
         forall beta (Hb : beta < length s),
           alpha < beta ->
-          depth_at s beta Hb > n).
+          depth (steps s beta Hb) > n).
 
 (* Any strongly convergent rewriting sequence is also weakly convergent *)
 Lemma strong_convergence_implies_weak_convergence :

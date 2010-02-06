@@ -68,8 +68,9 @@ where "alpha <= beta" := (ord_le alpha beta) : ord_scope.
 
 (* TODO: Why not  alpha < beta  <=>  alpha <= beta /\ ~ beta <= alpha  ? *)
 (*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
-(*Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.*)
-Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).
+(*Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).*)
+Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.
+
 Infix " < " := ord_lt : ord_scope.
 
 (* Should we use this as our ordinal equality? Then <= is trivially
@@ -337,38 +338,17 @@ Lemma ord_lt_trans :
     beta < gamma ->
     alpha < gamma.
 Proof.
-intros alpha beta gamma.
-destruct 1 as [i].
-destruct 1 as [j].
-exists j.
-apply ord_le_trans with beta; [apply ord_le_pred_right with i |]; assumption.
-Qed.
-
-(* TODO: move this lemma to a better place *)
-Lemma ord_le_not_pred_right_strong :
-  forall alpha beta i,
-    alpha <= beta ->
-    ~ beta <= pred alpha i.
-Proof.
-induction alpha as [| alpha IH | f IH]; intros beta i H1 H2.
-destruct i.
-destruct i.
-destruct u.
-apply ord_le_not_succ with alpha.
-apply ord_le_trans with beta; assumption.
-exact (IH beta p (ord_le_succ_left alpha beta H1) H2).
-destruct i.
-inversion_clear H1.
-exact (IH x beta p (H x) H2).
-Qed.
-
-(* TODO: move this lemma too *)
-Lemma ord_le_not_pred_right :
-  forall alpha i, ~ alpha <= pred alpha i.
-Proof.
-intros.
-apply ord_le_not_pred_right_strong.
-apply ord_le_refl.
+unfold ord_lt.
+intros alpha beta gamma H1 H2.
+split.
+apply ord_le_trans with beta.
+apply H1.
+apply H2.
+intro H.
+apply H2.
+apply ord_le_trans with alpha.
+assumption.
+apply H1.
 Qed.
 
 (* < is irreflexive *)
@@ -376,8 +356,8 @@ Lemma ord_lt_irrefl :
   forall alpha, ~ alpha < alpha.
 Proof.
 intros alpha H.
-destruct H as [i H].
-exact (ord_le_not_pred_right alpha i H).
+destruct H.
+contradiction.
 Qed.
 
 (* < is asymmetric *)
@@ -387,10 +367,9 @@ Lemma ord_lt_asymm :
     ~ beta < alpha.
 Proof.
 intros alpha beta H1 H2.
-destruct H1 as [i H1].
-destruct H2 as [j H2].
-apply (ord_le_not_pred_right_strong alpha beta j);
-  [apply ord_le_pred_right with i |]; assumption.
+destruct H1.
+destruct H2.
+contradiction.
 Qed.
 
 (* If the successor of alpha < beta, alpha < beta *)
@@ -399,10 +378,14 @@ Lemma ord_lt_succ_left :
     Succ alpha < beta ->
     alpha < beta.
 Proof.
-intros alpha beta.
-destruct 1 as [i H].
-exists i.
-apply ord_le_succ_left.
+intros alpha beta H.
+destruct H as [H1 H2].
+split; rewrite (first_pred_after_succ_id alpha).
+apply ord_le_pred_left.
+assumption.
+intro H.
+apply H2.
+apply ord_le_succ_right.
 assumption.
 Qed.
 
@@ -410,10 +393,8 @@ Qed.
 Lemma ord_lt_ord_le :
   forall alpha beta, alpha < beta -> alpha <= beta.
 Proof.
-intros alpha beta.
-destruct 1 as [i H].
-apply ord_le_pred_right with i.
-assumption.
+intros alpha beta H.
+apply H.
 Qed.
 
 (* If alpha < beta, the successor of alpha <= beta *)
@@ -422,11 +403,13 @@ Lemma ord_lt_ord_le_succ :
     alpha < beta ->
     Succ alpha <= beta.
 Proof.
-intros alpha beta.
-destruct 1 as [i H].
-apply Ord_le_Succ with i.
-assumption.
-Qed.
+(*
+   TODO: I don't think we can prove this... our definition of < does not
+   seem to play nice with constructive reasoning.
+   Can we do this with the strict external relation given by Peter Hancock?
+   Try this in Ordinals2.v
+*)
+Admitted.
 
 (*
    Below we try to seperate the good from the bad
@@ -440,13 +423,12 @@ Fixpoint good alpha : Prop :=
   | Limit f   => forall n, good (f n) /\ forall m, (n < m)%nat -> (f n) < (f m)
   end.
 
-(* TODO: find appropriate place for this lemma *)
 Lemma ord_le_zero_zero :
   ~ Zero < Zero.
 Proof.
 intro H.
-destruct H as [i H].
-elim i.
+destruct H.
+contradiction.
 Qed.
 
 (* For any good alpha <= zero, alpha = zero *)
@@ -476,8 +458,6 @@ assumption.
 apply H0.
 Qed.
 
-(* TODO: redo this for new < definition *)
-(*
 (* < on nat is the same as < on ord *)
 Require Import Lt. (* For 'auto with arith' *)
 (* This proof is een zooitje, but at least it ends with Qed *)
@@ -544,7 +524,6 @@ apply Ord_le_Succ with (i := inl (pred_type (nat_as_ord n)) tt).
 simpl.
 assumption.
 Qed.
-*)
 
 (* TODO: I think proofs like the above would benefit from adding
    some lemma's about ord_le as hints *)
@@ -575,10 +554,25 @@ Qed.
 
 Lemma n_lt_omega : forall (n : nat), n < omega.
 Proof.
-intro n.
-exists (existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
+destruct n; split.
+apply n_le_omega.
+intro H.
+inversion_clear H as [| | f beta H'].
+apply (ord_le_not_succ_zero Zero (H' 1)).
+apply Ord_le_Succ with (i := existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
 apply ord_le_refl.
+intro H.
+inversion_clear H as [| | f beta H'].
+apply (ord_le_not_succ (S n) (H' (S (S n)))).
 Qed.
+
+Lemma le_not_pred_right :
+  forall alpha i, ~ alpha <= pred alpha i.
+Proof.
+induction alpha as [| alpha IH | f IH]; intros i H.
+destruct i.
+inversion_clear H.
+Admitted.
 
 Lemma lt_right : forall alpha beta, alpha <= beta /\ ~ beta <= alpha -> exists i, alpha <= (pred beta i).
 Proof.
@@ -623,6 +617,7 @@ destruct alpha.
 destruct beta.
 destruct x.
 inversion_clear H1.
+
 
 Admitted.
 
