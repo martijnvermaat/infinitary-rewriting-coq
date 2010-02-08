@@ -245,7 +245,7 @@ Proof.
 intros alpha f n H.
 inversion_clear H.
 trivial.
-Admitted.
+Qed.
 
 (* <= is reflexive *)
 Lemma ord_le_refl :
@@ -406,6 +406,19 @@ apply ord_le_succ_left.
 assumption.
 Qed.
 
+(* If alpha < beta, alpha < the successor of beta *)
+Lemma ord_lt_succ_right :
+  forall alpha beta,
+    alpha < beta ->
+    alpha < Succ beta.
+Proof.
+intros alpha beta.
+destruct 1 as [i H].
+exists (inl (pred_type beta) tt).
+apply ord_le_pred_right with i.
+assumption.
+Qed.
+
 (* If alpha < beta, alpha <= beta *)
 Lemma ord_lt_ord_le :
   forall alpha beta, alpha < beta -> alpha <= beta.
@@ -434,6 +447,7 @@ Lemma ord_lt_pred_right :
     alpha < pred beta i ->
     alpha < beta.
 Proof.
+(* TODO *)
 Admitted.
 
 Lemma ord_lt_not_le :
@@ -446,6 +460,52 @@ destruct H1 as [i H1].
 apply (ord_le_not_pred_right_strong beta alpha i); assumption.
 Qed.
 
+(* TODO: this needs cleanup *)
+Lemma sdfsdf :
+  forall alpha beta i,
+    alpha <= pred (Succ beta) i ->
+    alpha <= beta.
+Proof.
+induction alpha; intros.
+simpl in H.
+destruct i.
+destruct u.
+assumption.
+apply Ord_le_Zero.
+destruct beta.
+destruct i.
+destruct u.
+destruct (ord_le_not_succ_zero alpha H).
+destruct p.
+apply Ord_le_Succ with (inl (pred_type beta) tt).
+simpl.
+simpl in H.
+destruct i.
+destruct u.
+apply ord_le_succ.
+assumption.
+destruct p.
+apply ord_le_succ_left.
+destruct u.
+assumption.
+apply ord_le_succ_left.
+apply ord_le_pred_right with p.
+assumption.
+simpl in H.
+destruct i.
+destruct u.
+assumption.
+destruct p.
+apply ord_le_limit_right with x.
+apply ord_le_pred_right with p.
+assumption.
+apply Ord_le_Limit.
+intro.
+inversion_clear H0.
+apply H with i.
+apply H1.
+Qed.
+
 (* If alpha < beta and beta <= gamma, alpha < gamma *)
 (* TODO: variations and move to appropriate place *)
 Lemma ord_lt_trans_le_right :
@@ -454,6 +514,19 @@ Lemma ord_lt_trans_le_right :
     beta <= gamma ->
     alpha < gamma.
 Proof.
+intros.
+destruct H.
+destruct gamma.
+assert (H1 := ord_le_zero_all beta (pred beta x) H0).
+destruct (ord_le_not_pred_right beta x H1).
+destruct H0.
+destruct x.
+exists i.
+apply ord_le_trans with alpha0.
+simpl in H.
+apply sdfsdf with x.
+assumption.
+assumption.
 (* TODO: we need this *)
 Admitted.
 
@@ -470,7 +543,7 @@ Fixpoint good alpha : Prop :=
   end.
 
 (* TODO: find appropriate place for this lemma *)
-Lemma ord_le_zero_zero :
+Lemma ord_lt_zero_zero :
   ~ Zero < Zero.
 Proof.
 intro H.
@@ -522,31 +595,6 @@ Lemma good_succ_intro :
     good (Succ alpha).
 Proof.
 intros.
-assumption.
-Qed.
-
-(* TODO: move *)
-Lemma mmm :
-  forall beta T,
-    ((forall alpha : ord, alpha <= Succ beta -> T) ->
-      (forall alpha : ord, alpha <= beta -> T)).
-Proof.
-intros.
-apply X with alpha.
-apply ord_le_succ_right.
-assumption.
-Qed.
-
-(* TODO: move *)
-Lemma nnn :
-  forall beta T,
-    ((forall alpha : ord, alpha < Succ beta -> T) ->
-      (forall alpha : ord, alpha < beta -> T)).
-Proof.
-intros.
-apply X with alpha.
-destruct H.
-exists (inr unit x).
 assumption.
 Qed.
 

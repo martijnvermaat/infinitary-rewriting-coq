@@ -162,6 +162,49 @@ Definition strongly_convergent (s : sequence) : Prop :=
     is_limit lambda ->
     depth_increasing s lambda Hl.
 
+(* TODO: move *)
+Lemma mmm :
+  forall beta T,
+    ((forall alpha : ord, alpha <= Succ beta -> T) ->
+      (forall alpha : ord, alpha <= beta -> T)).
+Proof.
+intros.
+apply X0 with alpha.
+apply ord_le_succ_right.
+assumption.
+Defined.
+
+(* TODO: move *)
+Lemma nnn :
+  forall beta T,
+    ((forall alpha : ord, alpha < Succ beta -> T) ->
+      (forall alpha : ord, alpha < beta -> T)).
+Proof.
+intros.
+apply X0 with alpha.
+destruct H.
+exists (inr unit x).
+assumption.
+Defined.
+
+(*
+Lemma aaa :
+  forall s_length s_terms s_steps,
+    (forall (alpha : ord) (H : alpha < Succ s_length),
+      source (s_steps alpha H)
+        [=] s_terms alpha (ord_lt_ord_le alpha (Succ s_length) H) /\
+      target (s_steps alpha H)
+        [=] s_terms (Succ alpha) (ord_lt_ord_le_succ alpha (Succ s_length) H)) ->
+    (forall (alpha : ord) (H : alpha < s_length),
+      source (nnn s_length step s_steps alpha H)
+        [=] mmm s_length term s_terms alpha (ord_lt_ord_le alpha s_length H) /\
+        target (nnn s_length step s_steps alpha H)
+          [=] mmm s_length term s_terms (Succ alpha) (ord_lt_ord_le_succ alpha s_length H)).
+Proof.
+intros.
+assert (M := H alpha (ord_lt_succ_right alpha s_length H0)).
+*)
+
 (*
    TODO:
    * notion of concatenating rewriting sequences
