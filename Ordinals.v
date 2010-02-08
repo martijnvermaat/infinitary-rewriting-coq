@@ -505,6 +505,51 @@ assumption.
 apply H0.
 Qed.
 
+(* If the successor of alpha is good, alpha is good *)
+Lemma good_succ_elim :
+  forall alpha,
+    good (Succ alpha) ->
+    good alpha.
+Proof.
+intros.
+assumption.
+Qed.
+
+(* If alpha is good, the successor of alpha is good *)
+Lemma good_succ_intro :
+  forall alpha,
+    good alpha ->
+    good (Succ alpha).
+Proof.
+intros.
+assumption.
+Qed.
+
+(* TODO: move *)
+Lemma mmm :
+  forall beta T,
+    ((forall alpha : ord, alpha <= Succ beta -> T) ->
+      (forall alpha : ord, alpha <= beta -> T)).
+Proof.
+intros.
+apply X with alpha.
+apply ord_le_succ_right.
+assumption.
+Qed.
+
+(* TODO: move *)
+Lemma nnn :
+  forall beta T,
+    ((forall alpha : ord, alpha < Succ beta -> T) ->
+      (forall alpha : ord, alpha < beta -> T)).
+Proof.
+intros.
+apply X with alpha.
+destruct H.
+exists (inr unit x).
+assumption.
+Qed.
+
 (* TODO: redo this for new < definition *)
 (*
 (* < on nat is the same as < on ord *)

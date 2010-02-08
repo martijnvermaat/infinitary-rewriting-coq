@@ -105,7 +105,7 @@ Record sequence : Type := {
   (* Projection from ordinals (up to length) to steps *)
   steps : forall alpha, alpha < length -> step;
 
-  steps_fit :
+  local_continuity :
     forall alpha (H : alpha < length),
       source (steps alpha H) [=] terms alpha (ord_lt_ord_le alpha length H) /\
       target (steps alpha H) [=] terms (Succ alpha) (ord_lt_ord_le_succ alpha length H)
@@ -152,7 +152,7 @@ Definition strongly_continuous (s : sequence) : Prop :=
 Definition weakly_convergent (s : sequence) : Prop :=
   forall lambda (Hl : lambda <= length s),
     is_limit lambda ->
-    distance_decreasing s lambda (ord_lt_ord_le lambda (length s) Hl).
+    distance_decreasing s lambda Hl.
 
 (* Approaching any limit ordinal <= length from below,
    for all n, eventually the rule applications are below depth n *)
@@ -160,7 +160,7 @@ Definition strongly_convergent (s : sequence) : Prop :=
   weakly_convergent s /\
   forall lambda (Hl : lambda <= length s),
     is_limit lambda ->
-    depth_increasing s lambda (ord_lt_ord_le lambda (length s) Hl).
+    depth_increasing s lambda Hl.
 
 (*
    TODO:
@@ -170,33 +170,31 @@ Definition strongly_convergent (s : sequence) : Prop :=
 *)
 Lemma compression :
   trs_left_linear system ->
-  forall s (L : Zero < length s),
+  forall s,
     strongly_convergent s ->
-    exists s', exists L' : Zero < length s',
+    exists s',
       strongly_convergent s' /\
       length s' <= omega /\
-      term_at s Zero L [~] term_at s' Zero L' /\
-      forall n,
-        exists alpha, exists alpha',
-          good alpha /\
-          good alpha' /\
-          alpha < length s /\
-          alpha' < length s' /\
-          forall beta beta' (Hb : beta < length s) (Hb' : beta' < length s'),
-            alpha < beta ->
-            alpha' < beta' ->
-            term_eq_up_to n (term_at s beta Hb)
-                            (term_at s' beta' Hb').
+      terms s Zero (Ord_le_Zero (length s))
+        [=] terms s' Zero (Ord_le_Zero (length s')) /\
+      terms s (length s) (ord_le_refl (length s))
+        [=] terms s' (length s') (ord_le_refl (length s')).
 Proof.
-intros LL s s_nonzero s_conv.
-destruct s as [s_length s_length_good s_steps s_cont].
+intros LL s SC.
+destruct s as [s_length LG s_terms s_steps LC].
 induction s_length as [| s_length IH | f IH].
 
 (* length s = Zero *)
-unfold length in s_nonzero.
-contradict (ord_le_zero_zero s_nonzero).
+exists (Build_sequence Zero LG s_terms s_steps LC).
+split.
+assumption.
+split.
+apply Ord_le_Zero.
+split; apply term_eq_refl.
 
 (* length s = Succ _ *)
+(* Apply IH for first s_length segment *)
+assert (s' := IH (good_succ_elim s_length LG) (mmm s_length term s_terms) (nnn s_length step s_steps)).
 admit.
 
 (* length s = Limit _ *)
