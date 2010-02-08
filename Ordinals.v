@@ -428,8 +428,37 @@ apply Ord_le_Succ with i.
 assumption.
 Qed.
 
+(* TODO: move *)
+Lemma ord_lt_pred_right :
+  forall alpha beta (i : pred_type beta),
+    alpha < pred beta i ->
+    alpha < beta.
+Proof.
+Admitted.
+
+Lemma ord_lt_not_le :
+  forall alpha beta,
+    alpha < beta ->
+    ~ beta <= alpha.
+Proof.
+intros alpha beta H1 H2.
+destruct H1 as [i H1].
+apply (ord_le_not_pred_right_strong beta alpha i); assumption.
+Qed.
+
+(* If alpha < beta and beta <= gamma, alpha < gamma *)
+(* TODO: variations and move to appropriate place *)
+Lemma ord_lt_trans_le_right :
+  forall alpha beta gamma,
+    alpha < beta ->
+    beta <= gamma ->
+    alpha < gamma.
+Proof.
+(* TODO: we need this *)
+Admitted.
+
 (*
-   Below we try to seperate the good from the bad
+   Below we try to separate the good from the bad
 *)
 
 (* Good ordinals are those where the limit functions are increasing *)

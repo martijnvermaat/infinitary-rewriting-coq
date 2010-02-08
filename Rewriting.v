@@ -81,10 +81,7 @@ Lemma eq_up_to_rewriting_depth :
     term_eq_up_to n (source s) (target s).
 Proof.
 destruct s.
-simpl.
-intros n H.
 apply fill_eq_up_to.
-assumption.
 Qed.
 
 (* From now on, the default scope is that of our ordinals *)
@@ -115,92 +112,55 @@ Record sequence : Type := {
 
 }.
 
+Definition distance_decreasing (s : sequence) (lambda : ord) (Hl : lambda <= length s) : Prop :=
+  forall n,
+    exists alpha,
+      good alpha /\
+      alpha < lambda /\
+      forall beta (Hb : beta < lambda),
+        alpha < beta ->
+        term_eq_up_to n (terms s beta (ord_le_trans beta lambda (length s)
+                                                    (ord_lt_ord_le beta lambda Hb) Hl))
+                        (terms s lambda Hl).
+
+Definition depth_increasing (s : sequence) (lambda : ord) (Hl : lambda <= length s) : Prop :=
+  forall n,
+    exists alpha,
+      good alpha /\
+      alpha < lambda /\
+      forall beta (Hb : beta < lambda),
+        alpha < beta ->
+        depth (steps s beta (ord_lt_trans_le_right beta lambda (length s) Hb Hl)) > n.
+
 (* Approaching any limit ordinal < length from below,
    for all n, eventually terms are equal to the limit term up to depth n *)
 Definition weakly_continuous (s : sequence) : Prop :=
-  forall f (Hf : Limit f < length s) n,
-    exists alpha,
-      good alpha /\
-      alpha < Limit f /\
-      forall beta (Hb : beta < Limit f),
-        alpha < beta ->
-        term_eq_up_to n (terms s beta (ord_lt_ord_le beta (length s) (ord_lt_trans beta (Limit f) (length s) Hb Hf)))
-                        (terms s (Limit f) (ord_lt_ord_le (Limit f) (length s) Hf)).
+  forall lambda (Hl : lambda < length s),
+    is_limit lambda ->
+    distance_decreasing s lambda (ord_lt_ord_le lambda (length s) Hl).
 
 (* Approaching any limit ordinal < length from below,
    for all n, eventually the rule applications are below depth n *)
-(* NOTE: we really also need weakly_continuous in this definition,
-   otherwise we lose 'connection' between terms before a limit
-   position and the term at that limit position. *)
 Definition strongly_continuous (s : sequence) : Prop :=
   weakly_continuous s /\
-  forall f (Hf : Limit f < length s) n,
-    exists alpha,
-      good alpha /\
-      alpha < Limit f /\
-      forall beta (Hb : beta < Limit f),
-        alpha < beta ->
-        depth (steps s beta (ord_lt_trans beta (Limit f) (length s) Hb Hf)) > n.
+  forall lambda (Hl : lambda < length s),
+    is_limit lambda ->
+    depth_increasing s lambda (ord_lt_ord_le lambda (length s) Hl).
 
-(* The rewriting sequence is weakly continuous, and furthermore,
-   if the length of the rewriting sequence is a limit ordinal,
-   for all n, eventually terms are equal to each other up to depth n *)
+(* Approaching any limit ordinal <= length from below,
+   for all n, eventually terms are equal to the limit term up to depth n *)
 Definition weakly_convergent (s : sequence) : Prop :=
-  weakly_continuous s /\
-  (is_limit (length s) ->
-    forall n,
-      exists alpha,
-        good alpha /\
-        alpha < length s /\
-        forall beta (Hb : beta < length s),
-          alpha < beta ->
-          term_eq_up_to n (terms s beta (ord_lt_succ_left beta (length s) Hb))
-                          (terms s (length s) ?).
+  forall lambda (Hl : lambda <= length s),
+    is_limit lambda ->
+    distance_decreasing s lambda (ord_lt_ord_le lambda (length s) Hl).
 
-(* The rewriting sequence is strongly continuous, and furthermore,
-   if the length of the rewriting sequence is a limit ordinal,
+(* Approaching any limit ordinal <= length from below,
    for all n, eventually the rule applications are below depth n *)
 Definition strongly_convergent (s : sequence) : Prop :=
-  strongly_continuous s /\
-  (is_limit (length s) ->
-    forall n,
-      exists alpha,
-        good alpha /\
-        alpha < length s /\
-        forall beta (Hb : beta < length s),
-          alpha < beta ->
-          depth (steps s beta Hb) > n).
-
-(* Any strongly convergent rewriting sequence is also weakly convergent *)
-Lemma strong_convergence_implies_weak_convergence :
-  forall s, strongly_convergent s -> weakly_convergent s.
-Proof.
-intros s s_conv.
-destruct s_conv as [[w_cont s_cont] s_conv].
-split.
-exact w_cont.
-intros limit n.
-elim (s_conv limit n).
-intros alpha H.
-destruct H as [Ha' [Ha H]].
-exists alpha.
-split.
-exact Ha'.
-split.
-exact Ha.
-(* NOTE: zouden we de oude definitie voor weakly_convergent (zie comments boven),
-   dan werd dit een ingewikkelder verhaal, iets als inductie op verschil tussen
-   beta en gamma (liefst eindig, maar daarvoor moet alpha stricter):
-   0: beta en gamma zijn gelijk
-   1: gebruik eq_up_to_rewriting_depth
-   n+1: gebruik eq_up_to_rewriting depth en IH met transitiviteit van term_eq_up_to *)
-intros beta Hb Hab.
-apply term_eq_up_to_trans with (target (steps s beta (ord_lt_succ_left beta (length s) Hb))).
-apply eq_up_to_rewriting_depth.
-apply H.
-exact Hab.
-apply locally_continuous.
-Qed.
+  weakly_convergent s /\
+  forall lambda (Hl : lambda <= length s),
+    is_limit lambda ->
+    depth_increasing s lambda (ord_lt_ord_le lambda (length s) Hl).
 
 (*
    TODO:
