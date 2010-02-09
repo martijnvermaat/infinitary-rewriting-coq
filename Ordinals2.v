@@ -210,6 +210,7 @@ Fixpoint ord_le_pred_right' (alpha : ord) :
   | Succ alpha' => 
     fun H : Succ alpha' <= pred beta i => 
     ord_le_pred_right' (pred beta i) projT1 (Ord_le_Succ_inv _ _ H)
+...
 
 (*
 projT1 = 
