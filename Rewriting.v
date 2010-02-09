@@ -258,27 +258,39 @@ assert
                target (s_steps' alpha H) [=]
                s_terms' (Succ alpha) (ord_lt_ord_le_succ alpha s_length H)).
 intros alpha H.
+assert (H8 := (LC alpha (ord_lt_succ_right alpha s_length H))).
+(*
 elim (LC alpha (ord_lt_succ_right alpha s_length H)); intros H1 H2.
-split.
+*)
 unfold s_steps'.
 unfold nnn.
 unfold s_terms'.
 unfold mmm.
+
+cut ( (ord_lt_ord_le alpha (Succ s_length)
+            (ord_lt_succ_right alpha s_length H)) =  (ord_le_succ_right alpha s_length (ord_lt_ord_le alpha s_length H))).
+
+
+cut ((ord_lt_ord_le_succ alpha (Succ s_length)
+            (ord_lt_succ_right alpha s_length H)) =  (ord_le_succ_right (Succ alpha) s_length
+        (ord_lt_ord_le_succ alpha s_length H))).
+intros H27 H64.
+
+rewrite <- H27.
+rewrite <- H64.
+exact H8.
+
+
+simpl.
+
+case H.
+simpl.
+unfold ord_le_pred_right.
+case H.
 simpl.
 
 
 
-
-clear IH.
-unfold ord_le_succ_right.
-simpl.
-
-unfold ord_lt_ord_le.
-simpl.
-
-
-
-simpl.
 
 (* length s = Succ _ *)
 (* Apply IH for first s_length segment *)

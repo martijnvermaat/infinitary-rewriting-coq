@@ -155,7 +155,7 @@ intro n.
 inversion_clear H.
 apply IH with i.
 trivial.
-Qed.
+Defined.
 
 Definition disc_O_S : forall (alpha : ord), Zero <> Succ alpha :=
   fun alpha H =>
