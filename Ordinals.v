@@ -55,6 +55,19 @@ Fixpoint pred (alpha : ord) : pred_type alpha -> ord :=
                            end
   end.
 
+(*
+Fixpoint ord_le_bool (alpha : ord) : ord -> bool :=
+  fun beta => 
+  match alpha with 
+  | Zero => true
+  | Succ alpha => 
+  match beta with
+  | Zero => false
+  | Succ beta => ord_le_bool alpha beta
+  | Lim f => ???
+end.
+*)
+
 Inductive ord_le : ord -> ord -> Prop :=
   | Ord_le_Zero  : forall alpha,
                      Zero <= alpha
@@ -69,7 +82,7 @@ where "alpha <= beta" := (ord_le alpha beta) : ord_scope.
 (* TODO: Why not  alpha < beta  <=>  alpha <= beta /\ ~ beta <= alpha  ? *)
 (*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
 (*Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.*)
-Definition ord_lt (alpha beta : ord) := exists i, ord_le alpha (pred beta i).
+Definition ord_lt (alpha beta : ord) := exists i, alpha <= (pred beta i).
 Infix " < " := ord_lt : ord_scope.
 
 (* Should we use this as our ordinal equality? Then <= is trivially
@@ -144,6 +157,66 @@ apply IH with i.
 trivial.
 Qed.
 
+
+(*
+Inductive ord_le : ord -> ord -> Prop :=
+    Ord_le_Zero : forall alpha : ord, Zero <= alpha
+  | Ord_le_Succ : forall (alpha beta : ord) (i : pred_type beta),
+                  alpha <= pred beta i -> Succ alpha <= beta
+  | Ord_le_Limit : forall (f : nat -> ord) (beta : ord),
+                   (forall n : nat, f n <= beta) -> Limit f <= beta
+*)
+
+Definition disc_O_S : forall (alpha : ord), Zero <> Succ alpha :=
+  fun alpha H =>
+  let P := (fun beta : ord => match beta with Zero => (False -> False) | Succ beta => False | Limit f => False end) in 
+  match H in (_ = q) return P q with refl_equal => (fun a => a) end.
+
+
+Definition disc_O_L : forall (f : nat -> ord), Zero <> Limit f :=
+  fun f H =>
+  let P := (fun beta : ord => match beta with Zero => (False -> False) | Succ beta => False | Limit f => False end) in 
+  match H in (_ = q) return P q with refl_equal => (fun a => a) end.
+
+Definition disc_L_S : forall (f : nat -> ord) (alpha : ord), Limit f <> Succ alpha :=
+  fun alpha f H =>
+  let P := (fun beta : ord => match beta with Zero => False | Succ beta => False | Limit f => False -> False end) in 
+  match H in (_ = q) return P q with refl_equal => (fun a => a) end.
+
+(*
+Variable P : nat -> Prop.
+Definition d := (ex P).
+Print d.
+*)
+
+Definition S_eq_inv : forall alpha alpha', Succ alpha = Succ alpha' -> alpha = alpha'.
+Admitted.
+
+Definition blah : forall (P : ord -> Prop) alpha alpha', alpha = alpha' -> P alpha -> P alpha'.
+Admitted.
+
+Definition Ord_le_Succ_inv :
+  forall (alpha beta : ord), 
+  Succ alpha <= beta -> 
+  exists i : pred_type beta, alpha <= pred beta i :=
+  fun alpha beta H =>
+  match H in (Salpha <= beta) return (Salpha = Succ alpha ->
+              exists i : pred_type beta, alpha <= pred beta i) with
+| Ord_le_Zero beta => fun e : Zero = Succ alpha => False_rect _ (disc_O_S alpha e)
+| Ord_le_Succ alpha' beta i H0 => fun e : Succ alpha' = Succ alpha => ex_intro (fun i : pred_type beta => alpha <= pred beta i) i (blah (fun a => a <= pred beta i) alpha' alpha (S_eq_inv _ _ e) H0)
+| Ord_le_Limit f beta H0 => fun e => False_rect _ (disc_L_S f alpha e)
+end
+(refl_equal (Succ alpha)).
+
+
+Fixpoint ord_le_pred_right' (alpha : ord) : 
+  forall (beta : ord) (i : pred_type beta) (H : alpha <= pred beta i),
+  alpha <= beta :=
+fun beta i H =>
+match alpha with 
+
+
+
 (* If alpha <= beta, all predecessors of alpha <= beta *)
 Lemma ord_le_pred_left :
   forall alpha beta (i : pred_type alpha),
@@ -159,6 +232,8 @@ apply IH.
 destruct i.
 apply IH.
 Qed.
+
+
 
 (* If alpha <= beta, alpha <= the successor of beta *)
 Lemma ord_le_succ_right :
@@ -176,7 +251,17 @@ intro n.
 apply IH.
 inversion_clear H.
 trivial.
-Qed.
+Defined.
+
+
+
+
+Fixpoint ord_le_succ_right' (alpha beta : ord) (H : alpha <= beta) : alpha <= Succ beta :=
+match H in alpha <= beta return alpha <= Succ beta with 
+| Ord_le_Zero beta => Ord_le_Zero (Succ beta)
+| Ord_le_Succ alpha beta i H0 => Ord_le_Succ alpha (Succ beta) (inr unit i) H0
+| Ord_le_Limit f beta H0 => Ord_le_Limit f (Succ beta) (fun n => (ord_le_succ_right' (f n) beta (H0 n)))
+end.
 
 (* If the successor of alpha <= beta, alpha <= beta *)
 Lemma ord_le_succ_left :
@@ -417,7 +502,7 @@ destruct 1 as [i H].
 exists (inl (pred_type beta) tt).
 apply ord_le_pred_right with i.
 assumption.
-Qed.
+Defined. (**)
 
 (* If alpha < beta, alpha <= beta *)
 Lemma ord_lt_ord_le :
@@ -427,7 +512,7 @@ intros alpha beta.
 destruct 1 as [i H].
 apply ord_le_pred_right with i.
 assumption.
-Qed.
+Defined.
 
 (* If alpha < beta, the successor of alpha <= beta *)
 Lemma ord_lt_ord_le_succ :
@@ -439,7 +524,7 @@ intros alpha beta.
 destruct 1 as [i H].
 apply Ord_le_Succ with i.
 assumption.
-Qed.
+Defined.
 
 (* TODO: move *)
 Lemma ord_lt_pred_right :
@@ -562,7 +647,7 @@ induction alpha as [| alpha _ | f IH]; intros G H.
 reflexivity.
 elim (ord_le_not_succ_zero alpha H).
 elimtype False.
-apply ord_le_zero_zero.
+apply ord_lt_zero_zero.
 simpl in G.
 destruct (G 1) as [G1 Gnm].
 destruct (G 2) as [G2 _].

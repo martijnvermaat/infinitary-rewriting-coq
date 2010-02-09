@@ -182,9 +182,8 @@ Lemma nnn :
 Proof.
 intros.
 apply X0 with alpha.
-destruct H.
-exists (inr unit x).
-assumption.
+apply ord_lt_succ_right.
+exact H.
 Defined.
 
 (*
@@ -203,6 +202,17 @@ Lemma aaa :
 Proof.
 intros.
 assert (M := H alpha (ord_lt_succ_right alpha s_length H0)).
+*)
+
+
+(*
+Lemma pi : forall (alpha beta : ord) (H H' : alpha <= beta), H = H'.
+Proof.
+induction alpha.
+destruct beta.
+destruct H.
+induction alpha.
+intros.
 *)
 
 (*
@@ -234,6 +244,41 @@ assumption.
 split.
 apply Ord_le_Zero.
 split; apply term_eq_refl.
+set (s_terms' := (mmm s_length term s_terms)).
+
+(*
+set (s_terms' := (nnn s_length term (fun alpha HH => s_terms alpha (ord_lt_ord_le_succ alpha (Succ s_length) HH)))).
+*)
+set (s_steps' := (nnn s_length step s_steps)).
+assert 
+  (LC' : 
+  forall (alpha : ord) (H : alpha < s_length),
+               source (s_steps' alpha H) [=]
+               s_terms' alpha (ord_lt_ord_le alpha s_length H) /\
+               target (s_steps' alpha H) [=]
+               s_terms' (Succ alpha) (ord_lt_ord_le_succ alpha s_length H)).
+intros alpha H.
+elim (LC alpha (ord_lt_succ_right alpha s_length H)); intros H1 H2.
+split.
+unfold s_steps'.
+unfold nnn.
+unfold s_terms'.
+unfold mmm.
+simpl.
+
+
+
+
+clear IH.
+unfold ord_le_succ_right.
+simpl.
+
+unfold ord_lt_ord_le.
+simpl.
+
+
+
+simpl.
 
 (* length s = Succ _ *)
 (* Apply IH for first s_length segment *)
