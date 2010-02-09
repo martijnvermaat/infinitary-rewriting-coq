@@ -181,10 +181,12 @@ Definition disc_L_S : forall (f : nat -> ord) (alpha : ord), Limit f <> Succ alp
 Definition S_eq_inv : forall alpha alpha', Succ alpha = Succ alpha' -> alpha = alpha'.
 Admitted.
 
-Definition rew_ord : forall (P : ord -> Type) alpha alpha', alpha = alpha' -> P alpha -> P alpha'.
-Admitted.
+Definition rewrite (X : Type) (P : X -> Type) (x y : X) (e : x = y) (p : P x) : P y :=
+  match e in _ = y return P y with 
+  | refl_equal => p
+  end.
 
-Definition Ord_le_Succ_inv :
+Definition ord_le_Succ_inv :
   forall (alpha beta : ord), 
   Succ alpha <= beta -> 
   sigT (fun i : pred_type beta => alpha <= pred beta i) :=
@@ -198,9 +200,34 @@ Definition Ord_le_Succ_inv :
   | Ord_le_Succ alpha' beta i H0 => 
       fun e : Succ alpha' = Succ alpha => 
       existT (fun i : pred_type beta => alpha <= pred beta i) 
-             i (rew_ord (fun a => a <= pred beta i) alpha' alpha (S_eq_inv _ _ e) H0)
+             i (rewrite _ (fun a => a <= pred beta i) _ _ (S_eq_inv _ _ e) H0)
   | Ord_le_Limit f beta H0 => fun e => False_rect _ (disc_L_S f alpha e)
 end (refl_equal (Succ alpha)).
+
+Definition ord_le_Limit_inv :
+  forall (f : nat -> ord) (beta : ord), 
+  Limit f <= beta -> 
+  forall n, f n <= beta.
+intros.
+inversion H.
+
+Show Proof.
+
+Definition ord_le_limit_inv :
+  forall (f : nat -> ord) (beta : ord), 
+  Limit f <= beta -> 
+  forall n, f n <= beta :=
+  fun f beta H => 
+  match H in Limit_f <= beta return Limit_f = Limit f -> forall n, f n <= beta with
+  | Ord_le_Zero beta => fun e : Zero = Limit f => False_rect _ (disc_O_L f e)
+  | Ord_le_Succ alpha beta i H0 => 
+      fun e : Succ alpha = Limit f => False_rect _ (disc_L_S f alpha (sym_eq e))
+  | Ord_le_Limit f' beta H0 => 
+      fun e : Limit f' = Limit f => 
+      rewrite _ (fun g : nat -> ord => forall n, g n <= beta) _ _ 
+      (f_equal (fun o : ord => match o with Zero => f' | Succ _ => f' | Limit f'' => f'' end) e) 
+      H0
+  end (refl_equal (Limit f)).
 
 Fixpoint ord_le_pred_right' (alpha : ord) : 
   forall (beta : ord) (i : pred_type beta), alpha <= pred beta i -> alpha <= beta :=
@@ -209,16 +236,13 @@ Fixpoint ord_le_pred_right' (alpha : ord) :
   | Zero        => fun _ => Ord_le_Zero beta
   | Succ alpha' => 
     fun H : Succ alpha' <= pred beta i => 
-    ord_le_pred_right' (pred beta i) projT1 (Ord_le_Succ_inv _ _ H)
-...
-
-(*
-projT1 = 
-fun (A : Type) (P : A -> Type) (x : sigT P) => let (a, _) := x in a
-     : forall (A : Type) (P : A -> Type), sigT P -> A
-
-Arguments A, P are implicit
-*)
+    Ord_le_Succ alpha' beta i 
+      (ord_le_pred_right' alpha' (pred beta i) 
+        (projT1 (ord_le_Succ_inv _ _ H)) (projT2 (ord_le_Succ_inv _ _ H)))
+  | Limit f => 
+      fun H : Limit f <= pred beta i => 
+      Ord_le_Limit f beta (fun n => (ord_le_pred_right' (f n) beta i (ord_le_limit_inv f (pred beta i) H n)))
+end.
 
 (* If alpha <= beta, all predecessors of alpha <= beta *)
 Lemma ord_le_pred_left :
