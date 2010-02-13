@@ -92,6 +92,9 @@ Local Open Scope ord_scope.
    explicitely say that the rewriting steps are from and to successive terms
    in the sequence. *)
 
+Axiom ord_le_pi : forall alpha beta (H H' : alpha <= beta), H = H'.
+Axiom ord_lt_pi : forall alpha beta (H H' : alpha < beta), H = H'.
+
 (* Rewriting sequences *)
 Record sequence : Type := {
 
@@ -162,65 +165,57 @@ Definition strongly_convergent (s : sequence) : Prop :=
     is_limit lambda ->
     depth_increasing s lambda Hl.
 
-(* TODO: move *)
-Lemma mmm :
-  forall beta T,
-    ((forall alpha : ord, alpha <= Succ beta -> T) ->
-      (forall alpha : ord, alpha <= beta -> T)).
-Proof.
-intros.
-apply X0 with alpha.
-apply ord_le_succ_right.
-assumption.
-Defined.
-
-(* TODO: move *)
-Lemma nnn :
-  forall beta T,
-    ((forall alpha : ord, alpha < Succ beta -> T) ->
-      (forall alpha : ord, alpha < beta -> T)).
-Proof.
-intros.
-apply X0 with alpha.
-apply ord_lt_succ_right.
-exact H.
-Defined.
-
-(*
-Lemma aaa :
-  forall s_length s_terms s_steps,
-    (forall (alpha : ord) (H : alpha < Succ s_length),
-      source (s_steps alpha H)
-        [=] s_terms alpha (ord_lt_ord_le alpha (Succ s_length) H) /\
-      target (s_steps alpha H)
-        [=] s_terms (Succ alpha) (ord_lt_ord_le_succ alpha (Succ s_length) H)) ->
+Lemma locally_convergent_succ_elim :
+  forall
+    (s_length : ord)
+    (s_terms : (forall alpha : ord, alpha <= Succ s_length -> term))
+    (s_steps : (forall alpha : ord, alpha < Succ s_length -> step))
+    (LC : (forall (alpha : ord) (H : alpha < Succ s_length),
+      source (s_steps alpha H) [=]
+        s_terms alpha (ord_lt_ord_le alpha (Succ s_length) H) /\
+      target (s_steps alpha H) [=]
+        s_terms (Succ alpha) (ord_lt_ord_le_succ alpha (Succ s_length) H))),
     (forall (alpha : ord) (H : alpha < s_length),
-      source (nnn s_length step s_steps alpha H)
-        [=] mmm s_length term s_terms alpha (ord_lt_ord_le alpha s_length H) /\
-        target (nnn s_length step s_steps alpha H)
-          [=] mmm s_length term s_terms (Succ alpha) (ord_lt_ord_le_succ alpha s_length H)).
+      source (s_steps alpha (ord_lt_succ_right alpha s_length H)) [=]
+        s_terms alpha (ord_le_succ_right alpha s_length (ord_lt_ord_le alpha s_length H)) /\
+      target (s_steps alpha (ord_lt_succ_right alpha s_length H)) [=]
+        s_terms (Succ alpha)(ord_le_succ_right (Succ alpha) s_length (ord_lt_ord_le_succ alpha s_length H))).
 Proof.
 intros.
-assert (M := H alpha (ord_lt_succ_right alpha s_length H0)).
-*)
+rewrite
+  (ord_le_pi alpha (Succ s_length)
+    (ord_le_succ_right alpha s_length (ord_lt_ord_le alpha s_length H))
+    (ord_lt_ord_le alpha (Succ s_length) (ord_lt_succ_right alpha s_length H))).
+rewrite
+  (ord_le_pi (Succ alpha) (Succ s_length)
+    (ord_le_succ_right (Succ alpha) s_length (ord_lt_ord_le_succ alpha s_length H))
+    (ord_lt_ord_le_succ alpha (Succ s_length) (ord_lt_succ_right alpha s_length H))).
+exact (LC alpha (ord_lt_succ_right alpha s_length H)).
+Qed.
 
-
-(*
-Lemma pi : forall (alpha beta : ord) (H H' : alpha <= beta), H = H'.
+Lemma strongly_convergent_succ_elim :
+  forall
+    (s_length : ord)
+    (s_length_good : good s_length)
+    (s_terms : (forall alpha : ord, alpha <= Succ s_length -> term))
+    (s_steps : (forall alpha : ord, alpha < Succ s_length -> step))
+    (LC : (forall alpha (H : alpha < Succ s_length),
+      source (s_steps alpha H) [=] s_terms alpha (ord_lt_ord_le alpha (Succ s_length) H) /\
+      target (s_steps alpha H) [=] s_terms (Succ alpha) (ord_lt_ord_le_succ alpha (Succ s_length) H)))
+    (SC : strongly_convergent (Build_sequence (Succ s_length) s_length_good s_terms s_steps LC)),
+    strongly_convergent (Build_sequence
+      s_length
+      (good_succ_elim s_length s_length_good)
+      (fun alpha H => (s_terms alpha (ord_le_succ_right alpha s_length H)))
+      (fun alpha H => (s_steps alpha (ord_lt_succ_right alpha s_length H)))
+      (locally_convergent_succ_elim s_length s_terms s_steps LC)).
 Proof.
-induction alpha.
-destruct beta.
-destruct H.
-induction alpha.
 intros.
-*)
+unfold strongly_convergent.
+split.
+unfold weakly_convergent.
+Admitted.
 
-(*
-   TODO:
-   * notion of concatenating rewriting sequences
-   * what does it mean that our sequences of length 0 have no term?
-     (e.g. we need the L predicate in the compression lemma below)
-*)
 Lemma compression :
   trs_left_linear system ->
   forall s,
@@ -244,57 +239,19 @@ assumption.
 split.
 apply Ord_le_Zero.
 split; apply term_eq_refl.
-set (s_terms' := (mmm s_length term s_terms)).
-
-(*
-set (s_terms' := (nnn s_length term (fun alpha HH => s_terms alpha (ord_lt_ord_le_succ alpha (Succ s_length) HH)))).
-*)
-set (s_steps' := (nnn s_length step s_steps)).
-assert 
-  (LC' : 
-  forall (alpha : ord) (H : alpha < s_length),
-               source (s_steps' alpha H) [=]
-               s_terms' alpha (ord_lt_ord_le alpha s_length H) /\
-               target (s_steps' alpha H) [=]
-               s_terms' (Succ alpha) (ord_lt_ord_le_succ alpha s_length H)).
-intros alpha H.
-assert (H8 := (LC alpha (ord_lt_succ_right alpha s_length H))).
-(*
-elim (LC alpha (ord_lt_succ_right alpha s_length H)); intros H1 H2.
-*)
-unfold s_steps'.
-unfold nnn.
-unfold s_terms'.
-unfold mmm.
-
-cut ( (ord_lt_ord_le alpha (Succ s_length)
-            (ord_lt_succ_right alpha s_length H)) =  (ord_le_succ_right alpha s_length (ord_lt_ord_le alpha s_length H))).
-
-
-cut ((ord_lt_ord_le_succ alpha (Succ s_length)
-            (ord_lt_succ_right alpha s_length H)) =  (ord_le_succ_right (Succ alpha) s_length
-        (ord_lt_ord_le_succ alpha s_length H))).
-intros H27 H64.
-
-rewrite <- H27.
-rewrite <- H64.
-exact H8.
-
-
-simpl.
-
-case H.
-simpl.
-unfold ord_le_pred_right.
-case H.
-simpl.
-
-
-
 
 (* length s = Succ _ *)
 (* Apply IH for first s_length segment *)
-assert (s' := IH (good_succ_elim s_length LG) (mmm s_length term s_terms) (nnn s_length step s_steps)).
+
+assert (IH' := IH
+  (good_succ_elim s_length LG)
+  (fun alpha H => (s_terms alpha (ord_le_succ_right alpha s_length H)))
+  (fun alpha H => (s_steps alpha (ord_lt_succ_right alpha s_length H)))
+  (locally_convergent_succ_elim s_length s_terms s_steps LC)
+  (strongly_convergent_succ_elim s_length LG s_terms s_steps LC SC)).
+elim IH'.
+intros.
+(* gevalsonderscheid voor length x <= omega: < omega of = omega *)
 admit.
 
 (* length s = Limit _ *)

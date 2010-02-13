@@ -1,3 +1,8 @@
+COMPILIONG
+
+coq_makefile -I . *.v -no-install > Makefile
+
+
 CODING
 
 Be consistent in use of implicit arguments, notations, import vs export
