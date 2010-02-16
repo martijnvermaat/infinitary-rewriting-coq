@@ -192,6 +192,7 @@ Proof.
 inversion_clear 1.
 destruct i as [[] |]; [| apply ord'_le_pred_right with p]; assumption.
 Qed.
+Implicit Arguments ord'_le_succ [alpha beta].
 
 (* No successor of alpha is <= alpha *)
 Lemma ord'_le_not_succ :
@@ -201,7 +202,7 @@ induction alpha as [| alpha IH | f IH]; intro H.
 apply ord'_le_not_succ_zero with Zero.
 assumption.
 apply IH.
-apply (ord'_le_succ (Succ alpha) alpha H).
+exact (ord'_le_succ H).
 inversion_clear H as [| a b i H' |].
 inversion_clear H' as [| | a b H].
 destruct i as [n i].
@@ -430,6 +431,7 @@ destruct 1 as [i H].
 apply ord'_le_pred_right with i.
 assumption.
 Qed.
+Implicit Arguments ord'_lt_ord'_le [alpha beta].
 
 (* If alpha < beta, the successor of alpha <= beta *)
 Lemma ord'_lt_ord'_le_succ :
@@ -442,6 +444,7 @@ destruct 1 as [i H].
 apply Ord'_le_Succ with i.
 assumption.
 Qed.
+Implicit Arguments ord'_lt_ord'_le_succ [alpha beta].
 
 (* TODO: move *)
 Lemma ord'_lt_pred_right :

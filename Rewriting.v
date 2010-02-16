@@ -100,7 +100,6 @@ Record sequence : Type := {
 
   (* Length of rewriting sequence *)
   length : ord;
-  length_good : good length;
 
   (* Projection from ordinals (up to and including length) to terms *)
   terms : forall alpha, alpha <= length -> term;
@@ -110,8 +109,8 @@ Record sequence : Type := {
 
   local_continuity :
     forall alpha (H : alpha < length),
-      source (steps alpha H) [=] terms alpha (ord_lt_ord_le alpha length H) /\
-      target (steps alpha H) [=] terms (Succ alpha) (ord_lt_ord_le_succ alpha length H)
+      source (steps alpha H) [=] terms alpha (ord'_lt_ord'_le H) /\
+      target (steps alpha H) [=] terms (succ alpha) (ord'_lt_ord'_le_succ H)
 
 }.
 

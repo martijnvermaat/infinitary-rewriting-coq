@@ -2,7 +2,9 @@
    Below we try to separate the good from the bad
 *)
 
-Require Import PreOrdinals.
+(* We would like to Import this, but then we need to copy a lot of
+   lemmas from ord' to ord... *)
+Require Export PreOrdinals.
 
 
 Open Scope ord'_scope.
@@ -35,14 +37,22 @@ Definition g'' := (fun alpha => good alpha).
 
 Definition zero : ord := exist g'' Zero I.
 
+(*
+(* TODO: the let bindings don't play nice with alpha conversion *)
 Definition succ (alpha : ord) : ord :=
   let (alpha', H) := alpha in
     exist g'' (Succ alpha') H.
+*)
+Definition succ (alpha : ord) : ord :=
+  exist g'' (Succ (proj1_sig alpha)) (proj2_sig alpha).
 
 Definition limit (f : nat -> ord) H : ord :=
   exist g''
     (Limit (fun n => proj1_sig (f n)))
     (fun n => conj (proj2_sig (f n)) (H n)).
+
+Definition is_limit (o : ord) : Prop :=
+  exists f, Limit f = proj1_sig o.
 
 Definition ord_le (alpha beta : ord) : Prop :=
   proj1_sig alpha <=' proj1_sig beta.
@@ -133,8 +143,19 @@ exists (existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
 apply ord'_le_refl.
 Qed.
 
-Definition is_limit (o : ord) : Prop :=
-  exists f, Limit f = proj1_sig o.
+(* If alpha < beta, the successor of alpha <= beta *)
+Lemma ord_lt_ord_le_succ :
+  forall alpha beta,
+    alpha < beta ->
+    succ alpha <= beta.
+Proof.
+intros.
+unfold succ.
+apply ord'_lt_ord'_le_succ.
+assumption.
+Qed.
+Implicit Arguments ord'_lt_ord'_le_succ [alpha beta].
+
 
 Close Scope ord_scope.
 
