@@ -19,6 +19,14 @@ Fixpoint good alpha : Prop :=
   | Limit f   => forall n, good (f n) /\ forall m, (n < m)%nat -> (f n) <' (f m)
   end.
 
+Lemma nat_good :
+  forall (n : nat), good n.
+Proof.
+induction n.
+exact I.
+assumption.
+Qed.
+
 Axiom good_pi : forall alpha (H H' : good alpha), H = H'.
 
 Definition ord : Set := { alpha : ord' | good alpha }.
@@ -103,187 +111,30 @@ apply H0.
 Qed.
 
 (* Image of naturals in ordinals *)
-Fixpoint nat_as_ord (n : nat) : ord :=
-  match n with
-  | O   => zero
-  | S n => succ (nat_as_ord n)
-  end.
+Definition nat_as_ord (n : nat) : ord :=
+  exist g'' n (nat_good n).
 
-(*Coercion nat_as_ord : nat >-> ord.*)
+Coercion nat_as_ord : nat >-> ord.
 
-Lemma nat_ord_ord' :
-  forall (n : nat),
-    proj1_sig (nat_as_ord n) = (nat_as_ord' n).
-Proof.
-induction n.
-reflexivity.
-(* TODO *)
-Admitted.
-
-(* < on nat is the same as < on ord *)
-Require Import Lt. (* For 'auto with arith' *)
-(* This proof is een zooitje, but at least it ends with Qed *)
-Lemma lt_nat_ord : forall n m, (n < m)%nat <-> nat_as_ord n < nat_as_ord m.
-Proof.
-intros n m.
-unfold ord_lt.
-rewrite (nat_ord_ord' n).
-rewrite (nat_ord_ord' m).
-revert n m.
-(* TODO: proof this for new < definition, see below for old proof *)
-Admitted.
-
-(*
-(* TODO: redo this for new < definition *)
-(* < on nat is the same as < on ord *)
-Require Import Lt. (* For 'auto with arith' *)
-(* This proof is een zooitje, but at least it ends with Qed *)
-Lemma lt_nat_ord : forall n m, (n < m)%nat <-> nat_as_ord n < nat_as_ord m.
-Proof.
-induction n; intro m; split; intro H.
-simpl.
-destruct H.
-split.
-constructor.
-simpl.
-apply ord_le_not_succ_zero.
-simpl.
-split.
-constructor.
-apply ord_le_not_succ_zero.
-destruct m.
-elimtype False.
-apply (ord_lt_irrefl (nat_as_ord 0) H).
-auto with arith.
-simpl.
-split.
-destruct H.
-simpl.
-apply Ord_le_Succ with (i := inl (pred_type (Succ (nat_as_ord n))) tt).
-apply ord_le_succ_right.
-apply ord_le_refl.
-simpl.
-apply Ord_le_Succ with (i := inl (pred_type (nat_as_ord m)) tt).
-elim (IHn m).
-intros.
-elim H0.
-intros.
-assumption.
-auto with arith.
-intro.
-destruct m.
-contradict H.
-auto with arith.
-simpl in H0.
-assert (H1 := ord_le_succ (nat_as_ord m) (nat_as_ord n) H0).
-contradict H1.
-elimtype (nat_as_ord n < nat_as_ord m).
-intros.
-assumption.
-apply (IHn m).
-auto with arith.
-destruct m.
-destruct H.
-simpl in H.
-contradict H.
-apply (ord_le_not_succ_zero (nat_as_ord n)).
-elimtype (n < m)%nat.
-auto with arith.
-intros.
-auto with arith.
-apply (IHn m).
-split; destruct H.
-apply (ord_le_succ (nat_as_ord n) (nat_as_ord m) H).
-intro.
-apply H0.
-simpl.
-apply Ord_le_Succ with (i := inl (pred_type (nat_as_ord n)) tt).
-simpl.
-assumption.
-Qed.
-*)
-
-(* TODO: I think proofs like the above would benefit from adding
-   some lemma's about ord_le as hints *)
-
-(*
-TODO: Weird, why does this not work when Setoid is not required?
-
-  Require Import Setoid.
-  Definition omega := Limit id.
-
-But the following does work:
-
-  Definition id' (n : nat) : ord := id n.
-  Definition omega := Limit id'.
-
-We have our coercion nat_as_ord, but for some reason it is not used when
-the Setoid module is required.
-*)
-Definition omega := Limit (fun o => o).
+Definition omega := limit nat_as_ord lt_nat_ord'.
 
 Lemma n_le_omega : forall (n : nat), n <= omega.
 Proof.
-induction n as [| n IH]; simpl; unfold omega.
+destruct n as [| n]; unfold ord_le; simpl.
 constructor.
-apply Ord_le_Succ with (i := existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
-apply ord_le_refl.
+apply Ord'_le_Succ with (i := existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
+apply ord'_le_refl.
 Qed.
 
 Lemma n_lt_omega : forall (n : nat), n < omega.
 Proof.
 intro n.
 exists (existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
-apply ord_le_refl.
+apply ord'_le_refl.
 Qed.
 
-Lemma lt_right : forall alpha beta, alpha <= beta /\ ~ beta <= alpha -> exists i, alpha <= (pred beta i).
-Proof.
-intros alpha beta H.
-destruct H as [H1 H2].
-
-induction beta as [| beta _ | f IH].
-(* beta might not be the right choice here... *)
-
-contradict H2.
-constructor.
-
-exists (inl (pred_type beta) tt).
-simpl.
-Admitted.
-
-Lemma lt_left : forall alpha beta, (exists i, alpha <= (pred beta i)) -> alpha <= beta /\ ~ beta <= alpha.
-split.
-
-destruct alpha.
-
-constructor.
-
-elim H.
-intros.
-apply Ord_le_Succ with x.
-apply (ord_le_succ_left alpha (pred beta x) H0).
-
-elim H.
-intros.
-constructor.
-inversion_clear H0.
-intro.
-apply (ord_le_pred_right (o n) beta x).
-apply H1.
-
-intro H1.
-elim H.
-intros.
-destruct alpha.
-
-destruct beta.
-destruct x.
-inversion_clear H1.
-
-Admitted.
-
-Definition is_limit o : Prop := exists f, Limit f = o.
+Definition is_limit (o : ord) : Prop :=
+  exists f, Limit f = proj1_sig o.
 
 Close Scope ord_scope.
 
