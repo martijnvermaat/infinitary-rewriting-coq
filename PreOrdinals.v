@@ -16,6 +16,8 @@ Definition zero z := pred_type z -> False.
 Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha).
 *)
 
+Set Implicit Arguments.
+
 Delimit Scope ord'_scope with ord'.
 
 Open Scope ord'_scope.
@@ -96,7 +98,7 @@ intros alpha H.
 inversion_clear H.
 destruct i.
 destruct u.
-apply (ord'_le_not_succ_zero alpha).
+apply (@ord'_le_not_succ_zero alpha).
 assumption.
 assumption.
 Qed.
@@ -162,7 +164,7 @@ Proof.
 induction alpha as [| alpha _ | f IH]; intros beta H.
 constructor.
 inversion_clear H.
-apply Ord'_le_Succ with (i := inr unit i).
+apply Ord'_le_Succ with (inr unit i).
 assumption.
 constructor.
 intro n.
@@ -192,7 +194,6 @@ Proof.
 inversion_clear 1.
 destruct i as [[] |]; [| apply ord'_le_pred_right with p]; assumption.
 Qed.
-Implicit Arguments ord'_le_succ [alpha beta].
 
 (* No successor of alpha is <= alpha *)
 Lemma ord'_le_not_succ :
@@ -221,7 +222,7 @@ Proof.
 induction alpha as [| alpha _ | f IH]; intros g n H.
 constructor.
 inversion_clear H.
-apply Ord'_le_Succ with (i := existT (fun n => pred_type (g n)) n i).
+apply Ord'_le_Succ with (existT (fun n => pred_type (g n)) n i).
 assumption.
 constructor.
 intro m.
@@ -247,7 +248,7 @@ Lemma ord'_le_refl :
 Proof.
 induction alpha as [| alpha IH | f IH].
 constructor.
-apply Ord'_le_Succ with (i := inl (pred_type alpha) tt).
+apply Ord'_le_Succ with (inl (pred_type alpha) tt).
 assumption.
 constructor.
 intro n.
@@ -359,7 +360,7 @@ destruct i.
 destruct u.
 apply ord'_le_not_succ with alpha.
 apply ord'_le_trans with beta; assumption.
-exact (IH beta p (ord'_le_succ_left alpha beta H1) H2).
+exact (IH beta p (ord'_le_succ_left H1) H2).
 destruct i.
 inversion_clear H1.
 exact (IH x beta p (H x) H2).
@@ -380,7 +381,7 @@ Lemma ord'_lt_irrefl :
 Proof.
 intros alpha H.
 destruct H as [i H].
-exact (ord'_le_not_pred_right alpha i H).
+exact (ord'_le_not_pred_right i H).
 Qed.
 
 (* < is asymmetric *)
@@ -392,7 +393,7 @@ Proof.
 intros alpha beta H1 H2.
 destruct H1 as [i H1].
 destruct H2 as [j H2].
-apply (ord'_le_not_pred_right_strong alpha beta j);
+apply (@ord'_le_not_pred_right_strong alpha beta j);
   [apply ord'_le_pred_right with i |]; assumption.
 Qed.
 
@@ -431,7 +432,6 @@ destruct 1 as [i H].
 apply ord'_le_pred_right with i.
 assumption.
 Qed.
-Implicit Arguments ord'_lt_ord'_le [alpha beta].
 
 (* If alpha < beta, the successor of alpha <= beta *)
 Lemma ord'_lt_ord'_le_succ :
@@ -444,7 +444,6 @@ destruct 1 as [i H].
 apply Ord'_le_Succ with i.
 assumption.
 Qed.
-Implicit Arguments ord'_lt_ord'_le_succ [alpha beta].
 
 (* TODO: move *)
 Lemma ord'_lt_pred_right :
@@ -462,7 +461,7 @@ Lemma ord'_lt_not_ord'_le :
 Proof.
 intros alpha beta H1 H2.
 destruct H1 as [i H1].
-apply (ord'_le_not_pred_right_strong beta alpha i); assumption.
+apply (@ord'_le_not_pred_right_strong beta alpha i); assumption.
 Qed.
 
 (* TODO: this needs cleanup *)
@@ -480,7 +479,7 @@ apply Ord'_le_Zero.
 destruct beta.
 destruct i.
 destruct u.
-destruct (ord'_le_not_succ_zero alpha H).
+destruct (ord'_le_not_succ_zero H).
 destruct p.
 apply Ord'_le_Succ with (inl (pred_type beta) tt).
 simpl.
@@ -522,8 +521,8 @@ Proof.
 intros.
 destruct H.
 destruct gamma.
-assert (H1 := ord'_le_zero_all beta (pred beta x) H0).
-destruct (ord'_le_not_pred_right beta x H1).
+assert (H1 := ord'_le_zero_all (pred beta x) H0).
+destruct (ord'_le_not_pred_right x H1).
 destruct H0.
 destruct x.
 exists i.
@@ -626,6 +625,9 @@ Qed.
 
 (* TODO: I think proofs like the above would benefit from adding
    some lemma's about ord_le as hints *)
+
+Axiom ord'_le_pi : forall alpha beta (H H' : alpha <=' beta), H = H'.
+Axiom ord'_lt_pi : forall alpha beta (H H' : alpha <' beta), H = H'.
 
 
 Close Scope ord'_scope.

@@ -6,6 +6,8 @@
    lemmas from ord' to ord... *)
 Require Export PreOrdinals.
 
+Set Implicit Arguments.
+
 
 Open Scope ord'_scope.
 
@@ -100,9 +102,9 @@ destruct alpha as [alpha' G].
 apply ord'_eq_ord_eq.
 unfold ord_le in H.
 simpl in H.
-induction alpha' as [| alpha' _ | f IH].
+induction alpha' as [| | f IH].
 reflexivity.
-elim (ord'_le_not_succ_zero alpha' H).
+elim (ord'_le_not_succ_zero H).
 elimtype False.
 apply ord'_lt_zero_zero.
 simpl in G.
@@ -154,7 +156,6 @@ unfold succ.
 apply ord'_lt_ord'_le_succ.
 assumption.
 Qed.
-Implicit Arguments ord'_lt_ord'_le_succ [alpha beta].
 
 
 Close Scope ord_scope.

@@ -92,11 +92,8 @@ Local Open Scope ord_scope.
    explicitely say that the rewriting steps are from and to successive terms
    in the sequence. *)
 
-Axiom ord_le_pi : forall alpha beta (H H' : alpha <= beta), H = H'.
-Axiom ord_lt_pi : forall alpha beta (H H' : alpha < beta), H = H'.
-
 (* Rewriting sequences *)
-Record sequence : Type := {
+Record sequence : Type := Sequence {
 
   (* Length of rewriting sequence *)
   length : ord;
@@ -117,29 +114,26 @@ Record sequence : Type := {
 Definition distance_decreasing (s : sequence) (lambda : ord) (Hl : lambda <= length s) : Prop :=
   forall n,
     exists alpha,
-      good alpha /\
       alpha < lambda /\
       forall beta (Hb : beta < lambda),
         alpha < beta ->
-        term_eq_up_to n (terms s beta (ord_le_trans beta lambda (length s)
-                                                    (ord_lt_ord_le beta lambda Hb) Hl))
+        term_eq_up_to n (terms s beta (ord'_le_trans (ord'_lt_ord'_le Hb) Hl))
                         (terms s lambda Hl).
 
 Definition depth_increasing (s : sequence) (lambda : ord) (Hl : lambda <= length s) : Prop :=
   forall n,
     exists alpha,
-      good alpha /\
       alpha < lambda /\
       forall beta (Hb : beta < lambda),
         alpha < beta ->
-        depth (steps s beta (ord_lt_trans_le_right beta lambda (length s) Hb Hl)) > n.
+        depth (steps s beta (ord'_lt_trans_ord'_le_right Hb Hl)) > n.
 
 (* Approaching any limit ordinal < length from below,
    for all n, eventually terms are equal to the limit term up to depth n *)
 Definition weakly_continuous (s : sequence) : Prop :=
   forall lambda (Hl : lambda < length s),
     is_limit lambda ->
-    distance_decreasing s lambda (ord_lt_ord_le lambda (length s) Hl).
+    distance_decreasing s lambda (ord'_lt_ord'_le Hl).
 
 (* Approaching any limit ordinal < length from below,
    for all n, eventually the rule applications are below depth n *)
@@ -147,7 +141,7 @@ Definition strongly_continuous (s : sequence) : Prop :=
   weakly_continuous s /\
   forall lambda (Hl : lambda < length s),
     is_limit lambda ->
-    depth_increasing s lambda (ord_lt_ord_le lambda (length s) Hl).
+    depth_increasing s lambda (ord'_lt_ord'_le Hl).
 
 (* Approaching any limit ordinal <= length from below,
    for all n, eventually terms are equal to the limit term up to depth n *)
@@ -167,46 +161,44 @@ Definition strongly_convergent (s : sequence) : Prop :=
 Lemma locally_convergent_succ_elim :
   forall
     (s_length : ord)
-    (s_terms : (forall alpha : ord, alpha <= Succ s_length -> term))
-    (s_steps : (forall alpha : ord, alpha < Succ s_length -> step))
-    (LC : (forall (alpha : ord) (H : alpha < Succ s_length),
+    (s_terms : (forall alpha : ord, alpha <= succ s_length -> term))
+    (s_steps : (forall alpha : ord, alpha < succ s_length -> step))
+    (LC : (forall (alpha : ord) (H : alpha < succ s_length),
       source (s_steps alpha H) [=]
-        s_terms alpha (ord_lt_ord_le alpha (Succ s_length) H) /\
+        s_terms alpha (ord'_lt_ord'_le H) /\
       target (s_steps alpha H) [=]
-        s_terms (Succ alpha) (ord_lt_ord_le_succ alpha (Succ s_length) H))),
+        s_terms (succ alpha) (ord'_lt_ord'_le_succ H))),
     (forall (alpha : ord) (H : alpha < s_length),
-      source (s_steps alpha (ord_lt_succ_right alpha s_length H)) [=]
-        s_terms alpha (ord_le_succ_right alpha s_length (ord_lt_ord_le alpha s_length H)) /\
-      target (s_steps alpha (ord_lt_succ_right alpha s_length H)) [=]
-        s_terms (Succ alpha)(ord_le_succ_right (Succ alpha) s_length (ord_lt_ord_le_succ alpha s_length H))).
+      source (s_steps alpha (ord'_lt_succ_right H)) [=]
+        s_terms alpha (ord'_le_succ_right (ord'_lt_ord'_le H)) /\
+      target (s_steps alpha (ord'_lt_succ_right H)) [=]
+        s_terms (succ alpha)(ord'_le_succ_right (ord'_lt_ord'_le_succ H))).
 Proof.
 intros.
 rewrite
-  (ord_le_pi alpha (Succ s_length)
-    (ord_le_succ_right alpha s_length (ord_lt_ord_le alpha s_length H))
-    (ord_lt_ord_le alpha (Succ s_length) (ord_lt_succ_right alpha s_length H))).
+  (ord'_le_pi
+    (ord'_le_succ_right (ord'_lt_ord'_le H))
+    (ord'_lt_ord'_le (ord'_lt_succ_right H))).
 rewrite
-  (ord_le_pi (Succ alpha) (Succ s_length)
-    (ord_le_succ_right (Succ alpha) s_length (ord_lt_ord_le_succ alpha s_length H))
-    (ord_lt_ord_le_succ alpha (Succ s_length) (ord_lt_succ_right alpha s_length H))).
-exact (LC alpha (ord_lt_succ_right alpha s_length H)).
+  (ord'_le_pi
+    (ord'_le_succ_right (ord'_lt_ord'_le_succ H))
+    (ord'_lt_ord'_le_succ (ord'_lt_succ_right H))).
+exact (LC alpha (ord'_lt_succ_right H)).
 Qed.
 
 Lemma strongly_convergent_succ_elim :
   forall
     (s_length : ord)
-    (s_length_good : good s_length)
-    (s_terms : (forall alpha : ord, alpha <= Succ s_length -> term))
-    (s_steps : (forall alpha : ord, alpha < Succ s_length -> step))
-    (LC : (forall alpha (H : alpha < Succ s_length),
-      source (s_steps alpha H) [=] s_terms alpha (ord_lt_ord_le alpha (Succ s_length) H) /\
-      target (s_steps alpha H) [=] s_terms (Succ alpha) (ord_lt_ord_le_succ alpha (Succ s_length) H)))
-    (SC : strongly_convergent (Build_sequence (Succ s_length) s_length_good s_terms s_steps LC)),
-    strongly_convergent (Build_sequence
+    (s_terms : (forall alpha : ord, alpha <= succ s_length -> term))
+    (s_steps : (forall alpha : ord, alpha < succ s_length -> step))
+    (LC : (forall alpha (H : alpha < succ s_length),
+      source (s_steps alpha H) [=] s_terms alpha (ord'_lt_ord'_le H) /\
+      target (s_steps alpha H) [=] s_terms (succ alpha) (ord'_lt_ord'_le_succ H)))
+    (SC : strongly_convergent (Sequence (succ s_length) s_terms s_steps LC)),
+    strongly_convergent (Sequence
       s_length
-      (good_succ_elim s_length s_length_good)
-      (fun alpha H => (s_terms alpha (ord_le_succ_right alpha s_length H)))
-      (fun alpha H => (s_steps alpha (ord_lt_succ_right alpha s_length H)))
+      (fun alpha H => (s_terms alpha (ord'_le_succ_right H)))
+      (fun alpha H => (s_steps alpha (ord'_lt_succ_right H)))
       (locally_convergent_succ_elim s_length s_terms s_steps LC)).
 Proof.
 intros.
@@ -222,17 +214,17 @@ Lemma compression :
     exists s',
       strongly_convergent s' /\
       length s' <= omega /\
-      terms s Zero (Ord_le_Zero (length s))
-        [=] terms s' Zero (Ord_le_Zero (length s')) /\
-      terms s (length s) (ord_le_refl (length s))
-        [=] terms s' (length s') (ord_le_refl (length s')).
+      terms s zero (Ord'_le_Zero (length s))
+        [=] terms s' zero (Ord'_le_Zero (length s')) /\
+      terms s (length s) (ord'_le_refl (length s))
+        [=] terms s' (length s') (ord'_le_refl (length s')).
 Proof.
 intros LL s SC.
 destruct s as [s_length LG s_terms s_steps LC].
 induction s_length as [| s_length IH | f IH].
 
 (* length s = Zero *)
-exists (Build_sequence Zero LG s_terms s_steps LC).
+exists (Sequence zero LG s_terms s_steps LC).
 split.
 assumption.
 split.
@@ -243,7 +235,6 @@ split; apply term_eq_refl.
 (* Apply IH for first s_length segment *)
 
 assert (IH' := IH
-  (good_succ_elim s_length LG)
   (fun alpha H => (s_terms alpha (ord_le_succ_right alpha s_length H)))
   (fun alpha H => (s_steps alpha (ord_lt_succ_right alpha s_length H)))
   (locally_convergent_succ_elim s_length s_terms s_steps LC)
