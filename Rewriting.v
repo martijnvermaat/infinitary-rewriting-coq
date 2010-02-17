@@ -214,7 +214,7 @@ Lemma compression :
     exists s',
       strongly_convergent s' /\
       length s' <= omega /\
-      terms s zero (Ord'_le_Zero (length s))
+      terms s zero (ord_le_zero (length s))
         [=] terms s' zero (Ord'_le_Zero (length s')) /\
       terms s (length s) (ord'_le_refl (length s))
         [=] terms s' (length s') (ord'_le_refl (length s')).

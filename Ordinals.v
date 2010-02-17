@@ -33,9 +33,41 @@ Qed.
 
 Axiom good_pi : forall alpha (H H' : good alpha), H = H'.
 
+(*
+Lemma good_pi : forall alpha (H H' : good alpha), H = H'.
+induction alpha as [|alpha' IH|f IH]; simpl; intros H H'.
+case H; case H'; reflexivity.
+apply IH.
+
+(*
+
+H : forall n, P n /\ Q n
+
+p : forall n, P n
+
+H = fun n => conj (p n) (q n)
+
+*)
+*)
+
+(*
+Lemma aa :
+  forall p q : Prop, forall H H' : p -> True, H = H'.
+intros.
+
+replace H with (fun H : p => I).
+Focus 2.
+reflexivity.
+*)
+
 Definition ord : Set := { alpha : ord' | good alpha }.
 
+
 Definition g'' := (fun alpha => good alpha).
+
+Axiom ord_pi : forall 
+  (alpha : ord') (H H' : good alpha), 
+  exist good alpha H = exist good alpha H'.
 
 Definition zero : ord := exist g'' Zero I.
 
