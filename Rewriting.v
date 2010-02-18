@@ -215,9 +215,9 @@ Lemma compression :
       strongly_convergent s' /\
       length s' <= omega /\
       terms s zero (ord_le_zero (length s))
-        [=] terms s' zero (Ord'_le_Zero (length s')) /\
-      terms s (length s) (ord'_le_refl (length s))
-        [=] terms s' (length s') (ord'_le_refl (length s')).
+        [=] terms s' zero (ord_le_zero (length s')) /\
+      terms s (length s) (ord_le_refl (length s))
+        [=] terms s' (length s') (ord_le_refl (length s')).
 Proof.
 intros LL s SC.
 destruct s as [s_length LG s_terms s_steps LC].

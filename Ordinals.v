@@ -31,7 +31,9 @@ exact I.
 assumption.
 Qed.
 
+(*
 Axiom good_pi : forall alpha (H H' : good alpha), H = H'.
+*)
 
 (*
 Lemma good_pi : forall alpha (H H' : good alpha), H = H'.
@@ -60,16 +62,13 @@ Focus 2.
 reflexivity.
 *)
 
-Definition ord : Set := { alpha : ord' | good alpha }.
+Definition ord : Set := sig good.
 
+Axiom ord_pi :
+  forall alpha (H H' : good alpha),
+    exist good alpha H = exist good alpha H'.
 
-Definition g'' := (fun alpha => good alpha).
-
-Axiom ord_pi : forall 
-  (alpha : ord') (H H' : good alpha), 
-  exist good alpha H = exist good alpha H'.
-
-Definition zero : ord := exist g'' Zero I.
+Definition zero : ord := exist good Zero I.
 
 (*
 (* TODO: the let bindings don't play nice with alpha conversion *)
@@ -78,10 +77,10 @@ Definition succ (alpha : ord) : ord :=
     exist g'' (Succ alpha') H.
 *)
 Definition succ (alpha : ord) : ord :=
-  exist g'' (Succ (proj1_sig alpha)) (proj2_sig alpha).
+  exist good (Succ (proj1_sig alpha)) (proj2_sig alpha).
 
 Definition limit (f : nat -> ord) H : ord :=
-  exist g''
+  exist good
     (Limit (fun n => proj1_sig (f n)))
     (fun n => conj (proj2_sig (f n)) (H n)).
 
@@ -113,14 +112,13 @@ Qed.
 Lemma ord'_eq_ord_eq :
   forall (alpha beta : ord') Ha Hb,
     alpha = beta ->
-    (exist g'' alpha Ha) = (exist g'' beta Hb).
+    (exist good alpha Ha) = (exist good beta Hb).
 Proof.
 intros alpha beta Ha Hb H.
 generalize Ha.
 rewrite H.
 intro Hb'.
-rewrite (good_pi beta Hb' Hb).
-reflexivity.
+apply ord_pi.
 Qed.
 
 (* For any good alpha <= zero, alpha = zero *)
@@ -156,7 +154,7 @@ Qed.
 
 (* Image of naturals in ordinals *)
 Definition nat_as_ord (n : nat) : ord :=
-  exist g'' n (nat_good n).
+  exist good n (nat_good n).
 
 Coercion nat_as_ord : nat >-> ord.
 
@@ -187,6 +185,25 @@ intros.
 unfold succ.
 apply ord'_lt_ord'_le_succ.
 assumption.
+Qed.
+
+(*
+   The following lemmas serve to make statements in Rewriting.v as short as
+   possible (no projections to ord' etc).
+*)
+
+Lemma ord_le_zero :
+  forall alpha, zero <= alpha.
+Proof.
+intro.
+apply Ord'_le_Zero.
+Qed.
+
+Lemma ord_le_refl :
+  forall alpha, alpha <= alpha.
+Proof.
+intro.
+apply ord'_le_refl.
 Qed.
 
 
