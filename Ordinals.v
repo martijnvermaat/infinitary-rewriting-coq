@@ -68,6 +68,8 @@ Axiom ord_pi :
   forall alpha (H H' : good alpha),
     exist good alpha H = exist good alpha H'.
 
+Implicit Arguments ord_pi [alpha].
+
 Definition zero : ord := exist good Zero I.
 
 (*
@@ -77,6 +79,8 @@ Definition succ (alpha : ord) : ord :=
     exist g'' (Succ alpha') H.
 *)
 Definition succ (alpha : ord) : ord :=
+(*  let (alpha', H) := alpha in
+    exist good (Succ alpha') H.*)
   exist good (Succ (proj1_sig alpha)) (proj2_sig alpha).
 
 Definition limit (f : nat -> ord) H : ord :=

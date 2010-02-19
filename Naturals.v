@@ -120,5 +120,7 @@ intros a H.
 assumption.
 Qed.
 
+(*
 Definition succ_x_x : rule := mkRule Sigma X succ_x_x_l succ_x_x_r succ_x_x_wf.
 Definition succ_x_x_trs : (trs Sigma X) := succ_x_x :: nil.
+*)

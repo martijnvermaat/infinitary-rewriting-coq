@@ -626,8 +626,10 @@ Qed.
 (* TODO: I think proofs like the above would benefit from adding
    some lemma's about ord_le as hints *)
 
+(*
 Axiom ord'_le_pi : forall alpha beta (H H' : alpha <=' beta), H = H'.
 Axiom ord'_lt_pi : forall alpha beta (H H' : alpha <' beta), H = H'.
+*)
 
 
 Close Scope ord'_scope.
