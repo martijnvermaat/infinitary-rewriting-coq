@@ -55,6 +55,115 @@ rewrite
 exact (LC alpha (ord'_lt_succ_right H)).
 Qed.
 
+Definition sequence_succ_elim
+  (s_length : ord)
+  (s_terms : (forall alpha : ord, alpha <= succ s_length -> term))
+  (s_terms_pi : (forall alpha H H', s_terms alpha H = s_terms alpha H'))
+  (s_steps : (forall alpha : ord, alpha < succ s_length -> step))
+  (s_steps_pi : (forall alpha H H', s_steps alpha H = s_steps alpha H'))
+  (LC : (forall (alpha : ord) (H : alpha < succ s_length),
+    source (s_steps alpha H) [=]
+      s_terms alpha (ord'_lt_ord'_le H) /\
+    target (s_steps alpha H) [=]
+      s_terms (succ alpha) (ord'_lt_ord'_le_succ H))) :=
+  Sequence
+    s_length
+    (fun alpha H => (s_terms alpha (ord'_le_succ_right H)))
+    (fun alpha H H' => s_terms_pi alpha (ord'_le_succ_right H) (ord'_le_succ_right H'))
+    (fun alpha H => (s_steps alpha (ord'_lt_succ_right H)))
+    (fun alpha H H' => s_steps_pi alpha (ord'_lt_succ_right H) (ord'_lt_succ_right H'))
+    (locally_convergent_succ_elim s_length s_terms s_terms_pi s_steps s_steps_pi LC).
+
+Lemma distance_decreasing_succ_elim :
+  forall
+    (s_length : ord)
+    (s_terms : (forall alpha : ord, alpha <= succ s_length -> term))
+    (s_terms_pi : (forall alpha H H', s_terms alpha H = s_terms alpha H'))
+    (s_steps : (forall alpha : ord, alpha < succ s_length -> step))
+    (s_steps_pi : (forall alpha H H', s_steps alpha H = s_steps alpha H'))
+    (LC : (forall alpha (H : alpha < succ s_length),
+      source (s_steps alpha H) [=] s_terms alpha (ord'_lt_ord'_le H) /\
+      target (s_steps alpha H) [=] s_terms (succ alpha) (ord'_lt_ord'_le_succ H)))
+    (lambda : ord)
+    (Hl : lambda <= s_length)
+    (DD : distance_decreasing (Sequence (succ s_length) s_terms s_terms_pi s_steps s_steps_pi LC) lambda (ord'_le_succ_right Hl)),
+    distance_decreasing (Sequence
+      s_length
+      (fun alpha H => (s_terms alpha (ord'_le_succ_right H)))
+      (fun alpha H H' => s_terms_pi alpha (ord'_le_succ_right H) (ord'_le_succ_right H'))
+      (fun alpha H => (s_steps alpha (ord'_lt_succ_right H)))
+      (fun alpha H H' => s_steps_pi alpha (ord'_lt_succ_right H) (ord'_lt_succ_right H'))
+      (locally_convergent_succ_elim s_length s_terms s_terms_pi s_steps s_steps_pi LC)) lambda Hl.
+Proof.
+intros.
+intro n.
+destruct (DD n).
+exists x.
+split; simpl.
+apply H.
+intros beta Hb.
+rewrite (s_terms_pi beta (ord'_le_succ_right (ord'_le_trans (ord'_lt_ord'_le Hb) Hl)) (ord'_le_trans (ord'_lt_ord'_le Hb) (ord'_le_succ_right Hl))).
+apply H.
+Qed.
+
+Lemma depth_increasing_succ_elim :
+  forall
+    (s_length : ord)
+    (s_terms : (forall alpha : ord, alpha <= succ s_length -> term))
+    (s_terms_pi : (forall alpha H H', s_terms alpha H = s_terms alpha H'))
+    (s_steps : (forall alpha : ord, alpha < succ s_length -> step))
+    (s_steps_pi : (forall alpha H H', s_steps alpha H = s_steps alpha H'))
+    (LC : (forall alpha (H : alpha < succ s_length),
+      source (s_steps alpha H) [=] s_terms alpha (ord'_lt_ord'_le H) /\
+      target (s_steps alpha H) [=] s_terms (succ alpha) (ord'_lt_ord'_le_succ H)))
+    (lambda : ord)
+    (Hl : lambda <= s_length)
+    (DD : depth_increasing (Sequence (succ s_length) s_terms s_terms_pi s_steps s_steps_pi LC) lambda (ord'_le_succ_right Hl)),
+    depth_increasing (Sequence
+      s_length
+      (fun alpha H => (s_terms alpha (ord'_le_succ_right H)))
+      (fun alpha H H' => s_terms_pi alpha (ord'_le_succ_right H) (ord'_le_succ_right H'))
+      (fun alpha H => (s_steps alpha (ord'_lt_succ_right H)))
+      (fun alpha H H' => s_steps_pi alpha (ord'_lt_succ_right H) (ord'_lt_succ_right H'))
+      (locally_convergent_succ_elim s_length s_terms s_terms_pi s_steps s_steps_pi LC)) lambda Hl.
+Proof.
+intros.
+intro n.
+destruct (DD n).
+exists x.
+split; simpl.
+apply H.
+intros beta Hb.
+rewrite (s_steps_pi beta (ord'_lt_succ_right (ord'_lt_trans_ord'_le_right Hb Hl)) (ord'_lt_trans_ord'_le_right Hb (ord'_le_succ_right Hl))).
+apply H.
+Qed.
+
+Lemma weakly_convergent_succ_elim :
+  forall
+    (s_length : ord)
+    (s_terms : (forall alpha : ord, alpha <= succ s_length -> term))
+    (s_terms_pi : (forall alpha H H', s_terms alpha H = s_terms alpha H'))
+    (s_steps : (forall alpha : ord, alpha < succ s_length -> step))
+    (s_steps_pi : (forall alpha H H', s_steps alpha H = s_steps alpha H'))
+    (LC : (forall alpha (H : alpha < succ s_length),
+      source (s_steps alpha H) [=] s_terms alpha (ord'_lt_ord'_le H) /\
+      target (s_steps alpha H) [=] s_terms (succ alpha) (ord'_lt_ord'_le_succ H)))
+    (WC : weakly_convergent (Sequence (succ s_length) s_terms s_terms_pi s_steps s_steps_pi LC)),
+    weakly_convergent (Sequence
+      s_length
+      (fun alpha H => (s_terms alpha (ord'_le_succ_right H)))
+      (fun alpha H H' => s_terms_pi alpha (ord'_le_succ_right H) (ord'_le_succ_right H'))
+      (fun alpha H => (s_steps alpha (ord'_lt_succ_right H)))
+      (fun alpha H H' => s_steps_pi alpha (ord'_lt_succ_right H) (ord'_lt_succ_right H'))
+      (locally_convergent_succ_elim s_length s_terms s_terms_pi s_steps s_steps_pi LC)).
+Proof.
+intros.
+intros lambda Hl Hlim.
+apply distance_decreasing_succ_elim.
+apply WC.
+assumption.
+Qed.
+
 Lemma strongly_convergent_succ_elim :
   forall
     (s_length : ord)
@@ -77,8 +186,13 @@ Proof.
 intros.
 unfold strongly_convergent.
 split.
-unfold weakly_convergent.
-Admitted.
+apply weakly_convergent_succ_elim.
+apply SC.
+intros.
+apply depth_increasing_succ_elim.
+apply SC.
+assumption.
+Qed.
 
 Lemma compression :
   trs_left_linear system ->
