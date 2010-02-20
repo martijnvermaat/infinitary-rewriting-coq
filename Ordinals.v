@@ -88,8 +88,17 @@ Definition limit (f : nat -> ord) H : ord :=
     (Limit (fun n => proj1_sig (f n)))
     (fun n => conj (proj2_sig (f n)) (H n)).
 
+Definition is_succ (o : ord) : Prop :=
+  match proj1_sig o with
+  | Succ _ => True
+  | _      => False
+  end.
+
 Definition is_limit (o : ord) : Prop :=
-  exists f, Limit f = proj1_sig o.
+  match proj1_sig o with
+  | Limit _ => True
+  | _       => False
+  end.
 
 Definition ord_le (alpha beta : ord) : Prop :=
   proj1_sig alpha <=' proj1_sig beta.
