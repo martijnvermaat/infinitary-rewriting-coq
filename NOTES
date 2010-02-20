@@ -1,6 +1,7 @@
-COMPILIONG
+COMPILATION
 
 coq_makefile -I . *.v -no-install > Makefile
+make
 
 
 CODING
