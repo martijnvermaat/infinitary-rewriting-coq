@@ -1,4 +1,4 @@
-Require Export Rewriting2.
+Require Export RewritingOpenProjections.
 
 
 Section Compression.
@@ -16,13 +16,15 @@ Notation step := (step system).
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ord_scope.
 
+(*
 Definition sequence_succ_intro s s_term s_step
   (H : source s_step [=] terms s (length s) /\ target s_step [=] s_term)
   :=
   Sequence (succ (length s))
-  (fun alpha => match (alpha <= (length s)) with True => (terms s alpha) | _ => s_term end)
-  (fun alpha => if (alpha < (length s)) then (steps s alpha) else s_step)
-  (fun alpha H' => if (alpha < (length s)) then (locally_continuous s alpha H') else H).
+    (fun alpha => if (alpha <= (length s)) then (terms s alpha) else s_term)
+    (fun alpha => if (alpha < (length s)) then (steps s alpha) else s_step)
+    (fun alpha H' => if (alpha < (length s)) then (locally_continuous s alpha H') else H).
+*)
 
 Definition sequence_succ_elim s_length s_terms (s_steps : ord -> step) s_lc :=
   Sequence s_length s_terms s_steps (fun alpha H => s_lc alpha (ord'_lt_succ_right H)).
@@ -133,7 +135,7 @@ intros.
 apply (le_omega_elim (length x)).
 apply H.
 intro.
-
+admit.
 admit.
 
 (* length s = Limit _ *)
