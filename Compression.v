@@ -15,6 +15,34 @@ Notation step := (step system).
 
 (* From now on, the default scope is that of our ordinals *)
 Local Open Scope ord_scope.
+(*
+Inductive ord'_le : ord' -> ord' -> Prop :=
+  | Ord'_le_Zero  : forall alpha,
+                      Zero <=' alpha
+  | Ord'_le_Succ  : forall alpha beta i,
+                      alpha <=' pred beta i ->
+                      Succ alpha <=' beta
+  | Ord'_le_Limit : forall f beta,
+                      (forall n, f n <=' beta) ->
+                      Limit f <=' beta
+where "alpha <=' beta" := (ord'_le alpha beta) : ord'_scope.
+
+Definition ord_le (alpha beta : ord) : Prop :=
+  proj1_sig alpha <=' proj1_sig beta.
+Infix " <= " := ord_le : ord_scope.
+
+*)
+
+Definition terms_succ_intro :
+  forall (t : term) (kappa : ord) (s_terms : forall alpha, alpha <= kappa -> term),
+  forall alpha, alpha <= succ kappa -> term :=
+  fun t kappa s_terms alpha H =>
+  match H with 
+  Ord'_le_Zero beta => t
+  | _ => t
+  end.
+  
+
 
 (*
 Lemma terms_pi_succ_elim :
