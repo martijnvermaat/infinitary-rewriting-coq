@@ -33,11 +33,173 @@ Infix " <= " := ord_le : ord_scope.
 
 *)
 
+Local Open Scope ord'_scope.
+
+
+Lemma le_ord_elim :
+  forall alpha beta,
+    alpha <=' beta ->
+    forall P : Prop,
+    (alpha <' beta -> P) ->
+    (alpha = beta -> P) ->
+    P.
+induction 1; intros P Hlt Heq.
+destruct alpha.
+apply Heq.
+reflexivity.
+apply Hlt.
+unfold ord'_lt.
+exists (inl (pred_type alpha) tt).
+constructor.
+apply Hlt.
+
+
+Ltac expl_case x :=
+  generalize (refl_equal x); pattern x at -1; case x; intros until 1.
+
+Lemma uu :
+  forall alpha, 
+  good alpha -> 
+  (exists i : pred_type alpha, True) \/ Zero = alpha.
+Proof.
+induction alpha as [alpha | alpha IH | f IH]; simpl; intro g.
+right; reflexivity.
+left.
+exists (inl _ tt); constructor.
+left.
+elim (IH 1 (proj1 (g 1))); intro H.
+destruct H as [i H'].
+exists (existT (fun n => pred_type (f n)) 1 i).
+constructor.
+destruct (g 0) as [H1 H2].
+assert (H3 : f 0 <' f 1).
+apply H2; auto.
+unfold ord'_lt in H3.
+elim H3; intros i _.
+rewrite <- H in i.
+elim i.
+Qed.
+
+
+Lemma xx :
+  forall alpha beta,
+  alpha <=' beta ->
+  good alpha ->
+  good beta ->
+  (exists i, alpha <=' pred beta i) \/ alpha = beta.
+Proof.
+induction 1.
+intros ga gb.
+
+elim (uu alpha gb); intro H.
+destruct H as [i _].
+left; exists i; constructor.
+right; exact H.
+intros ga gb.
+
+elim IHord'_le.
+intro.
+elim H0; intros j H1.
+left.
+exists i.
+apply (Ord'_le_Succ _ j).
+exact H1.
+intro H0.
+clear IHord'_le H.
+rewrite H0; clear H0.
+induction beta.
+elim i.
+destruct i as [[]|i']; simpl in *|-*.
+right.
+reflexivity.
+left.
+elim (IHbeta i').
+intro H1.
+elim H1; intros j H1'.
+exists (inr unit j).
+exact H1'.
+intro H1.
+exists (inl _ tt).
+rewrite H1.
+apply ord'_le_refl.
+exact gb.
+left.
+simpl in i.
+elim i; intros n i'.
+
+
+elim (H n i').
+intro Hl.
+elim Hl; intros j Hl'.
+simpl.
+exists (existT (fun n => pred_type (o n)) n j).
+exact Hl'.
+intro Hr.
+simpl.
+rewrite Hr.
+clear Hr i' H i.
+simpl in gb.
+destruct (proj2 (gb n) (S n)) as [i H].
+auto.
+exists (existT (fun n => (pred_type (o n))) (S n) i).
+exact H.
+
+
+simpl in gb.
+apply (gb n).
+exact ga.
+
+Focus 2.
+simpl.
+intros ga gb.
+left.
+
+(* ?? *)
+
+destruct beta.
+
+Focus 2.
+
+exists (inl _ tt).
+constructor.
+simpl.
+intro n.
+
+
+elim (H0 n).
+intro H1.
+
+
+
+
+destruct (H0 0 ga) as [[i H1]|H1].
+exists i.
+constructor.
+
+intro n.
+
+
+
+Lemma yy :
+  forall alpha beta,
+  alpha <=' Succ beta ->
+  alpha <=' beta \/ alpha = Succ beta.
+Proof.
+
+(*
+intros.
+inversion_clear H.
+left.
+constructor.
+destruct i as [[]|i']; simpl in *|-*.
+*)
+
+
 Definition terms_succ_intro :
   forall (t : term) (kappa : ord) (s_terms : forall alpha, alpha <= kappa -> term),
   forall alpha, alpha <= succ kappa -> term :=
   fun t kappa s_terms alpha H =>
-  match H with 
+  match H return term with 
   Ord'_le_Zero beta => t
   | _ => t
   end.
