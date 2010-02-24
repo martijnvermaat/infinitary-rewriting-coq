@@ -13,7 +13,6 @@ Variable system : trs F X.
 
 Notation step := (step system).
 
-(* From now on, the default scope is that of our ordinals *)
 Local Open Scope ord_scope.
 (*
 Inductive ord'_le : ord' -> ord' -> Prop :=
@@ -35,7 +34,7 @@ Infix " <= " := ord_le : ord_scope.
 
 Local Open Scope ord'_scope.
 
-
+(*
 Lemma le_ord_elim :
   forall alpha beta,
     alpha <=' beta ->
@@ -52,14 +51,41 @@ unfold ord'_lt.
 exists (inl (pred_type alpha) tt).
 constructor.
 apply Hlt.
-
+*)
 
 Ltac expl_case x :=
   generalize (refl_equal x); pattern x at -1; case x; intros until 1.
 
+(* This is part of ord_le_zero_good and should be separated from it (Ordinals.v) *)
+Lemma ord'_le_zero_good :
+  forall alpha,
+    good alpha ->
+    alpha <=' Zero ->
+    alpha = Zero.
+Proof.
+induction alpha as [| | f IH]; intros G H.
+reflexivity.
+elim (ord'_le_not_succ_zero H).
+elimtype False.
+apply ord'_lt_zero_zero.
+simpl in G.
+destruct (G 1) as [G1 Gnm].
+destruct (G 2) as [G2 _].
+inversion_clear H.
+pattern Zero at 1.
+rewrite <- (IH 1).
+rewrite <- (IH 2).
+apply Gnm.
+constructor.
+assumption.
+apply H0.
+assumption.
+apply H0.
+Qed.
+
 Lemma uu :
-  forall alpha, 
-  good alpha -> 
+  forall alpha,
+  good alpha ->
   (exists i : pred_type alpha, True) \/ Zero = alpha.
 Proof.
 induction alpha as [alpha | alpha IH | f IH]; simpl; intro g.
@@ -80,6 +106,36 @@ rewrite <- H in i.
 elim i.
 Qed.
 
+Lemma vv :
+  forall alpha i,
+    good alpha -> good (pred alpha i).
+Proof.
+induction alpha as [| alpha IH | f IH]; intros i g; destruct i.
+destruct u.
+assumption.
+apply IH.
+assumption.
+apply IH.
+apply g.
+Qed.
+
+(*
+Lemma ww :
+  forall f alpha,
+    (forall n, exists i, f n <=' pred alpha i) ->
+    exists i, Limit f <=' pred alpha i.
+Proof.
+intros f alpha H.
+destruct alpha.
+destruct (H 0) as [[] _].
+exists (inl _ tt).
+constructor.
+intro.
+destruct (H n) as [[[] | i] H1].
+assumption.
+apply ord'_le_pred_right with i.
+assumption.
+*)
 
 Lemma xx :
   forall alpha beta,
@@ -148,36 +204,84 @@ exact H.
 simpl in gb.
 apply (gb n).
 exact ga.
+apply vv.
+assumption.
 
-Focus 2.
 simpl.
 intros ga gb.
 left.
 
-(* ?? *)
-
+(*induction beta.*)
 destruct beta.
 
-Focus 2.
+destruct (proj2 (ga 0) 1) as [i _].
+auto.
+rewrite (ord'_le_zero_good (f 1) (proj1 (ga 1)) (H 1)) in i.
+elim i.
 
 exists (inl _ tt).
 constructor.
 simpl.
 intro n.
 
-
 elim (H0 n).
+
 intro H1.
+destruct H1.
+destruct x.
+destruct u.
+assumption.
+simpl in H1.
+apply ord'_le_pred_right with p.
+assumption.
 
+intro H1.
+destruct (proj2 (ga n) (S n)) as [i H2].
+auto.
+rewrite H1 in H2.
+assert (H3 := ord'_le_trans (H (S n)) H2).
+contradiction (ord'_le_not_pred_right i).
 
+apply ga.
+assumption.
 
+(*
+  The problem with this lemma seems to be the definitions of pred or <=.
 
-destruct (H0 0 ga) as [[i H1]|H1].
-exists i.
-constructor.
+  I think we could prove it, if either:
 
-intro n.
+  1) pred_type (Limit f) = nat
+     pred (Limit f) n = f n
 
+     instead of
+
+     pred_type (Limit f) = { n : nat & pred_type (f n)
+     pred (Limit f) i = match i with
+                        | existT n t => pred (f n) t
+                        end
+
+     So, predecessors of a limit ordinal would be just the range of its limit
+     function instead of predecessors of them.
+
+  2) (forall i, pred (Limit f) i <=' beta) -> Limit f <=' beta
+
+     instead of
+
+     (forall n, f n <=' beta) -> Limit f <=' beta
+
+  Currently, pred and <= just don't seem to fit into each other, and this
+  makes IH in this lemma useless.
+
+  Peter Hancock [1] explicitly uses our current definitions for pred and <=,
+  but for example in [2], all (f n) are predecessors of (Limit f) like in the
+  suggestion above. <= is then taken as the transitive closure of pred.
+
+  Why should the predecessor relation 'always cross a successor', as Hancock
+  puts it?
+
+  [1] http://events.cs.bham.ac.uk/mgs2008/notes/proofTheory.pdf
+  [2] http://isabelle.in.tum.de/library/HOL/Induct/Tree.html
+*)
 
 
 Lemma yy :
@@ -199,11 +303,11 @@ Definition terms_succ_intro :
   forall (t : term) (kappa : ord) (s_terms : forall alpha, alpha <= kappa -> term),
   forall alpha, alpha <= succ kappa -> term :=
   fun t kappa s_terms alpha H =>
-  match H return term with 
+  match H return term with
   Ord'_le_Zero beta => t
   | _ => t
   end.
-  
+
 
 
 (*
