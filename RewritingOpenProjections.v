@@ -1,27 +1,27 @@
-Require Import prelims.
+Require Import Prelims.
 Require Export List.
-Require Export Finite_term.
+Require Export FiniteTerm.
 Require Export Term.
 Require Import Substitution.
 Require Import Context.
-Require Export Ordinals.
-Require Export Term_equality.
+Require Export Ordinal.
+Require Export TermEquality.
 
 
 Set Implicit Arguments.
 
 
-Section Rules.
+Section Rule.
 
-Variable F : Signature.
-Variable X : Variables.
+Variable F : signature.
+Variable X : variables.
 
-Notation finite_term := (finite_term F X).
+Notation fterm := (finite_term F X).
 
 (* Rewriting rules of finite terms *)
 Record rule : Type := mkRule {
-  lhs     : finite_term;
-  rhs     : finite_term;
+  lhs     : fterm;
+  rhs     : fterm;
   rule_wf : is_var lhs = false /\ incl (vars rhs) (vars lhs)
 }.
 
@@ -39,22 +39,27 @@ Fixpoint trs_left_linear (s : trs) : Prop :=
   | r::rs => left_linear r /\ trs_left_linear rs
   end.
 
-End Rules.
+End Rule.
 
 
-Section TRSs.
+Implicit Arguments rule [F X].
 
-Variable F : Signature.
-Variable X : Variables.
+
+Section TRS.
+
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
-Notation rule := (rule F X).
+Notation context := (context F X).
+Notation substitution := (substitution F X).
+Notation trs := (trs F X).
 
-Variable system : trs F X.
+Variable system : trs.
 
 (* Rewriting step *)
 Inductive step : Type :=
-  | Step : forall r : rule, In r system -> context F X -> substitution F X -> step.
+  | Step : forall r : rule, In r system -> context -> substitution -> step.
 
 (* Source term of rewriting step *)
 Definition source (u : step) : term :=
@@ -165,4 +170,4 @@ Definition strongly_convergent (s : sequence) : Prop :=
 
 Local Close Scope ord_scope.
 
-End TRSs.
+End TRS.

@@ -15,6 +15,7 @@
    no clear (to me) way to do ordinal induction.
 *)
 
+
 Inductive Ord : Type :=
   | Ord_cons : forall (i : Type), (i -> Ord) -> Ord.
 

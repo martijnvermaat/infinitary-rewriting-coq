@@ -7,6 +7,12 @@ make
 CODING
 
 Be consistent in use of implicit arguments, notations, import vs export
+Try making more arguments implicit (term F X etc)
+
+
+NAMING
+
+Singular CamelCase names for files and sections.
 
 
 PROJECT

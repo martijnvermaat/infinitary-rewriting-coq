@@ -3,12 +3,14 @@ Require Import Variables.
 Require Import Term.
 Require Import Equality.
 
+
 Set Implicit Arguments.
 
-Section term_equality.
 
-Variable F : Signature.
-Variable X : Variables.
+Section TermEquality.
+
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
 Notation terms := (vector term).
@@ -177,7 +179,8 @@ constructor; intro i.
 apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
 Qed.
 
-End term_equality.
+End TermEquality.
+
 
 Infix " [~] " := term_bis (no associativity, at level 70).
 Infix " [=] " := term_eq (no associativity, at level 70).

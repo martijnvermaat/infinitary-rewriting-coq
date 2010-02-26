@@ -16,7 +16,9 @@ Definition zero z := pred_type z -> False.
 Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha).
 *)
 
+
 Set Implicit Arguments.
+
 
 Delimit Scope ord'_scope with ord'.
 

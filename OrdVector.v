@@ -1,8 +1,10 @@
-Require Import prelims.
-Require Import PreOrdinals.
+Require Import Prelims.
+Require Import PreOrdinal.
 Require Import Equality.
 
+
 Set Implicit Arguments.
+
 
 (*
 Definition First (n : nat) : Fin (S n) :=

@@ -3,13 +3,13 @@ Require Export RewritingOpenProjections.
 
 Section Compression.
 
-Variable F : Signature.
-Variable X : Variables.
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
-Notation rule := (rule F X).
+Notation trs := (trs F X).
 
-Variable system : trs F X.
+Variable system : trs.
 
 Notation step := (step system).
 

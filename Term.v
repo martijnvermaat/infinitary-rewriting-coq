@@ -1,14 +1,16 @@
 Require Export Vector.
 Require Export Signature.
 Require Export Variables.
-Require Import Finite_term.
+Require Import FiniteTerm.
+
 
 Set Implicit Arguments.
 
-Section Terms.
 
-Variable F : Signature.
-Variable X : Variables.
+Section Term.
+
+Variable F : signature.
+Variable X : variables.
 
 (* Infinite terms *)
 CoInductive term : Type :=
@@ -19,10 +21,10 @@ Notation terms := (vector term).
 Notation fterm := (finite_term F X).
 Notation fterms := (vector fterm).
 
-Definition root (t : term) : X + F := 
-  match t with 
-  | Var x   => inl F x
-  | Fun f v => inr X f
+Definition root (t : term) : X + F :=
+  match t with
+  | Var x   => inl _ x
+  | Fun f v => inr _ f
   end.
 
 (* Trivial image of finite_term in term *)
@@ -32,8 +34,9 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
   | FFun f args => Fun f (vmap finite_term_as_term args)
   end.
 
-End Terms.
+End Term.
 
-Coercion finite_term_as_term : finite_term >-> term.
 
 Implicit Arguments Var [F X].
+
+Coercion finite_term_as_term : finite_term >-> term.

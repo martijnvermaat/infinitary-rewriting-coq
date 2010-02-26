@@ -1,28 +1,28 @@
-Require Import prelims.
+Require Import Prelims.
 Require Export List.
-Require Export Finite_term.
+Require Export FiniteTerm.
 Require Export Term.
 Require Import Substitution.
 Require Import Context.
-Require Export Ordinals.
+Require Export Ordinal.
 Require Export OrdVector.
-Require Export Term_equality.
+Require Export TermEquality.
 
 
 Set Implicit Arguments.
 
 
-Section Rules.
+Section Rule.
 
-Variable F : Signature.
-Variable X : Variables.
+Variable F : signature.
+Variable X : variables.
 
-Notation finite_term := (finite_term F X).
+Notation fterm := (finite_term F X).
 
 (* Rewriting rules of finite terms *)
-Record rule : Type := mkRule {
-  lhs     : finite_term;
-  rhs     : finite_term;
+Record rule : Type := Rule {
+  lhs     : fterm;
+  rhs     : fterm;
   rule_wf : is_var lhs = false /\ incl (vars rhs) (vars lhs)
 }.
 
@@ -40,16 +40,18 @@ Fixpoint trs_left_linear (s : trs) : Prop :=
   | r::rs => left_linear r /\ trs_left_linear rs
   end.
 
-End Rules.
+End Rule.
 
 
-Section TRSs.
+Implicit Arguments rule [F X].
 
-Variable F : Signature.
-Variable X : Variables.
+
+Section TRS.
+
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
-Notation rule := (rule F X).
 
 Variable system : trs F X.
 
@@ -123,50 +125,7 @@ Definition distance_decreasing (s : sequence) (lambda : pred_type (length s)) : 
         alpha <' pred (length s) beta ->
         term_eq_up_to n (terms s beta) (terms s lambda).
 
-Definition depth_increasing (s : sequence) (lambda : ord) : Prop :=
-  forall n,
-    exists alpha,
-      alpha < lambda /\
-      forall beta,
-        beta < lambda ->
-        alpha < beta ->
-        depth (steps s beta) > n.
-
-(* Approaching any limit ordinal < length from below,
-   for all n, eventually terms are equal to the limit term up to depth n *)
-Definition weakly_continuous (s : sequence) : Prop :=
-  forall lambda,
-    is_limit lambda ->
-    lambda < length s ->
-    distance_decreasing s lambda.
-
-(* Approaching any limit ordinal < length from below,
-   for all n, eventually the rule applications are below depth n *)
-Definition strongly_continuous (s : sequence) : Prop :=
-  weakly_continuous s /\
-  forall lambda,
-    is_limit lambda ->
-    lambda < length s ->
-    depth_increasing s lambda.
-
-(* Approaching any limit ordinal <= length from below,
-   for all n, eventually terms are equal to the limit term up to depth n *)
-Definition weakly_convergent (s : sequence) : Prop :=
-  forall lambda,
-    is_limit lambda ->
-    lambda <= length s ->
-    distance_decreasing s lambda.
-
-(* Approaching any limit ordinal <= length from below,
-   for all n, eventually the rule applications are below depth n *)
-Definition strongly_convergent (s : sequence) : Prop :=
-  weakly_convergent s /\
-  forall lambda,
-    is_limit lambda ->
-    lambda <= length s ->
-    depth_increasing s lambda.
-
 Local Close Scope ord_scope.
 Local Close Scope ord'_scope.
 
-End TRSs.
+End TRS.

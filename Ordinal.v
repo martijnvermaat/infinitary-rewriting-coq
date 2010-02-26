@@ -4,7 +4,8 @@
 
 (* We would like to Import this, but then we need to copy a lot of
    lemmas from ord' to ord... *)
-Require Export PreOrdinals.
+Require Export PreOrdinal.
+
 
 Set Implicit Arguments.
 

@@ -1,6 +1,8 @@
 (* Try a different pred_type for Limit (suggestion 1 in LemmaTest1.v comments *)
 
+
 Set Implicit Arguments.
+
 
 Delimit Scope ord'_scope with ord'.
 

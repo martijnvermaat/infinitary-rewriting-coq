@@ -1,13 +1,15 @@
-Require Export Finite_term.
+Require Export FiniteTerm.
 Require Export Term.
-Require Import Term_equality.
+Require Import TermEquality.
+
 
 Set Implicit Arguments.
 
+
 Section Substitution.
 
-Variable F : Signature.
-Variable X : Variables.
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
 Notation fterm := (finite_term F X).

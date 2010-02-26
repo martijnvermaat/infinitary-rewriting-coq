@@ -3,12 +3,14 @@ Require Export Signature.
 Require Export Variables.
 Require Export Vector.
 
+
 Set Implicit Arguments.
 
-Section Finite_terms.
 
-Variable F : Signature.
-Variable X : Variables.
+Section FiniteTerm.
+
+Variable F : signature.
+Variable X : variables.
 
 (* Finitary term datatype *)
 Inductive finite_term : Type :=
@@ -43,4 +45,7 @@ Fixpoint vars (t : fterm) : list X :=
 Definition linear (t : fterm) : Prop :=
   NoDup (vars t).
 
-End Finite_terms.
+End FiniteTerm.
+
+
+Implicit Arguments FVar [F X].

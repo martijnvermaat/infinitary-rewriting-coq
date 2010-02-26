@@ -1,4 +1,4 @@
-Require Export Ordinals.
+Require Export Ordinal.
 
 (*
 Inductive ord'_le : ord' -> ord' -> Prop :=

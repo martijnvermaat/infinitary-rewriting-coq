@@ -2,7 +2,9 @@
 
 (* This time the predecessors of Limit f are all f n _and_ their predecessors *)
 
+
 Set Implicit Arguments.
+
 
 Delimit Scope ord'_scope with ord'.
 

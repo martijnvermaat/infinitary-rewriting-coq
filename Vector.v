@@ -1,7 +1,9 @@
-Require Import prelims.
+Require Import Prelims.
 Require Import Equality.
 
+
 Set Implicit Arguments.
+
 
 (*
   Thanks to Adam Chlipala for suggesting this representation of vector,
@@ -18,7 +20,8 @@ Lemma Fin_0_inv (A : Type) : Fin 0 -> A.
 inversion 1.
 Qed.
 
-Section vectors.
+
+Section Vector.
 
 Variable A : Type.
 
@@ -66,20 +69,23 @@ Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   | S n' => fun v w => vcons (vhead v) (vappend (vtail v) w)
   end.
 
-End vectors.
+End Vector.
+
 
 Implicit Arguments First [n].
 
-Section map.
+
+Section Map.
 
 Variables (A B : Type) (f : A -> B).
 
 Definition vmap (n : nat) : vector A n -> vector B n :=
   fun v i => f (v i).
 
-End map.
+End Map.
 
-Section fold.
+
+Section Fold.
 
 Variables (A B : Type) (b : B) (f : A -> B -> B).
 
@@ -89,9 +95,10 @@ Fixpoint vfold (n : nat) : vector A n -> B :=
   | S n => fun v => f (vhead v) (vfold (vtail v))
   end.
 
-End fold.
+End Fold.
 
-Section cast.
+
+Section Cast.
 
 Variable A : Type.
 
@@ -125,4 +132,4 @@ Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
   end.
 *)
 
-End cast.
+End Cast.

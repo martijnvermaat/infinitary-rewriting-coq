@@ -1,8 +1,9 @@
+Require Import Rewriting.
+
 (*
   The natural numbers.
 *)
 
-Require Import Rewriting.
 
 (* Signature *)
 
@@ -55,8 +56,8 @@ Qed.
 
 (* Terms *)
 
-Definition Sigma := mkSignature arity beq_symb_ok.
-Definition X := mkVariables beq_var_ok.
+Definition Sigma := Signature arity beq_symb_ok.
+Definition X := Variables beq_var_ok.
 
 (* Infinite terms *)
 Notation term := (term Sigma X).

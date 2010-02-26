@@ -1,27 +1,27 @@
-Require Import prelims.
+Require Import Prelims.
 Require Export List.
-Require Export Finite_term.
+Require Export FiniteTerm.
 Require Export Term.
 Require Import Substitution.
 Require Import Context.
-Require Export PreOrdinals.
-Require Export Term_equality.
+Require Export PreOrdinal.
+Require Export TermEquality.
 
 
 Set Implicit Arguments.
 
 
-Section Rules.
+Section Rule.
 
-Variable F : Signature.
-Variable X : Variables.
+Variable F : signature.
+Variable X : variables.
 
-Notation finite_term := (finite_term F X).
+Notation fterm := (finite_term F X).
 
 (* Rewriting rules of finite terms *)
-Record rule : Type := mkRule {
-  lhs     : finite_term;
-  rhs     : finite_term;
+Record rule : Type := Rule {
+  lhs     : fterm;
+  rhs     : fterm;
   rule_wf : is_var lhs = false /\ incl (vars rhs) (vars lhs)
 }.
 
@@ -39,18 +39,23 @@ Fixpoint trs_left_linear (s : trs) : Prop :=
   | r::rs => left_linear r /\ trs_left_linear rs
   end.
 
-End Rules.
+End Rule.
 
 
-Section TRSs.
+Implicit Arguments rule [F X].
 
-Variable F : Signature.
-Variable X : Variables.
+
+Section TRS.
+
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
-Notation rule := (rule F X).
+Notation context := (context F X).
+Notation substitution := (substitution F X).
+Notation trs := (trs F X).
 
-Variable system : trs F X.
+Variable system : trs.
 
 (*
 (* Rewriting step *)
@@ -86,21 +91,24 @@ apply fill_eq_up_to.
 Qed.
 *)
 
+(* Only needed in Coq 8.3 *)
 Generalizable All Variables.
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
 Inductive step : term -> term -> Type :=
-| Step : forall (s t : term) (r : rule), s [>] t
+  | Step : forall (r : rule) (c : context) (s : substitution),
+             In r system ->
+             fill c (substitute s (lhs r)) [>] fill c (substitute s (rhs r))
 where "s [>] t" := (step s t).
 
 Reserved Notation "s -[ l ]-> t" (no associativity, at level 40).
 
 Inductive sequence : term -> term -> ord' -> Type :=
-| Nil   : forall t, t -[Zero]-> t
-| Cons  : forall `{r : s -[l]-> t, p : t [>] u}, s -[Succ l]-> u
-| Lim   : forall (p : nat -> term) (l : nat -> ord') s (f : (forall n : nat, s -[l n]-> p n)) t,
-            (forall n, exists m, term_eq_up_to n (p m) t) -> s -[Limit l]-> t
+  | Nil   : forall t, t -[Zero]-> t
+  | Cons  : forall `{r : s -[l]-> t, p : t [>] u}, s -[Succ l]-> u
+  | Lim   : forall (p : nat -> term) (l : nat -> ord') s (f : (forall n : nat, s -[l n]-> p n)) t,
+              (forall n, exists m, term_eq_up_to n (p m) t) -> s -[Limit l]-> t
 where "s -[ l ]-> t" := (sequence s t l).
 
 (*
@@ -115,7 +123,7 @@ where "s -[ l ]-> t" := (sequence s t l).
    they are only related by the first term. What does this mean?
 *)
 
-Definition Omega := Limit id.
+Definition Omega := Limit (fun n => n).
 
 (*
 Lemma compression :
@@ -128,4 +136,4 @@ Lemma compression :
 *)
 
 
-End TRSs.
+End TRS.

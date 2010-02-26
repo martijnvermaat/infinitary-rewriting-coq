@@ -1,13 +1,15 @@
-Require Import prelims.
+Require Import Prelims.
 Require Export Term.
-Require Export Term_equality.
+Require Export TermEquality.
+
 
 Set Implicit Arguments.
 
-Section Contexts.
 
-Variable F : Signature.
-Variable X : Variables.
+Section Context.
+
+Variable F : signature.
+Variable X : variables.
 
 Notation term := (term F X).
 
@@ -91,4 +93,4 @@ Fixpoint fill (d : nat) (c : context d) (t : term) : term :=
 *)
 
 
-End Contexts.
+End Context.

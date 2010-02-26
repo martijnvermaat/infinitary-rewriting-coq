@@ -1,7 +1,9 @@
-Require Import prelims.
+Require Import Prelims.
 Require Import Equality.
 
+
 Set Implicit Arguments.
+
 
 Inductive empty : Set := .
 
@@ -17,7 +19,8 @@ Definition First (n : nat) : Fin (S n) :=
 Definition Next (n : nat) : Fin n -> Fin (S n) :=
   fun i => inr unit i.
 
-Section vector.
+
+Section Vector.
 
 Variable A : Type.
 
@@ -59,18 +62,20 @@ Proof.
 reflexivity.
 Qed.
 
-End vector.
+End Vector.
 
-Section map.
+
+Section Map.
 
 Variables (A B : Type) (f : A -> B).
 
 Definition vmap (n : nat) : vector A n -> vector B n :=
   fun v i => f (v i).
 
-End map.
+End Map.
 
-Section fold.
+
+Section Fold.
 
 Variables (A B : Type) (b : B) (f : A -> B -> B).
 
@@ -80,9 +85,10 @@ Fixpoint vfold (n : nat) : vector A n -> B :=
   | S n => fun v => f (vhead v) (vfold (vtail v))
   end.
 
-End fold.
+End Fold.
 
-Section cast.
+
+Section Cast.
 
 Variable A : Type.
 
@@ -106,4 +112,4 @@ Lemma vcast_pi :
   vcast v H = vcast v H'.
 *)
 
-End cast.
+End Cast.
