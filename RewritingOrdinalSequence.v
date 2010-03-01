@@ -98,6 +98,8 @@ Inductive sequence : term -> term -> Type :=
   | Lim   : forall s (p : nat -> term) (f : (forall n : nat, s --> p n)) t, s --> t
 where "s --> t" := (sequence s t).
 
+Implicit Arguments Cons [s t u].
+
 Fixpoint length t s (r : t --> s) : ord' :=
   match r with
   | Nil _          => Zero
@@ -115,7 +117,7 @@ Fixpoint pref_type t s (r : t --> s) : Set :=
 Notation "!" := (False_rect _).
 
 (*
-(* This does not typecheck *)
+  (* This does not typecheck *)
 Program Fixpoint pref t s (r : t --> s) :=
   match r with
   | Nil _          => !
@@ -127,6 +129,15 @@ Program Fixpoint pref t s (r : t --> s) :=
                                | existT n t => pref (f n) t
                                end
   end.
+*)
+
+(*
+  (* Another try *)
+Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
+  | PrefNil  : forall `{r : s --> t}, prefix r r
+  | PrefCons : forall `{r : s --> t, q : s --> v, p : v [>] u}, prefix r q -> prefix r (Cons q p)
+  | PrefLim  : forall `{r : s --> t, q : s --> v, p : nat -> term, f : (forall n : nat, s --> p n), u},
+                 (exists n, p n = v /\ f n = q) -> prefix r q -> prefix r (Lim p f u).
 *)
 
 Definition Omega := Limit (fun n => n).
