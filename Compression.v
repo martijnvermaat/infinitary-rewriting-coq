@@ -14,19 +14,39 @@ Variable system : trs.
 
 Notation step := (step system).
 
+Notation source := (@source F X system).
+Notation terms := (@terms F X system).
+Notation Sequence := (@Sequence F X system).
+
 Local Open Scope ord_scope.
 
+Definition ord'_le_decide alpha beta (H : alpha <= beta) : bool.
+Admitted.
+Implicit Arguments ord'_le_decide [alpha beta].
 
-(*
+Definition ord'_lt_decide alpha beta (H : alpha < beta) : bool.
+Admitted.
+Implicit Arguments ord'_lt_decide [alpha beta].
+
+
+Program Definition sequence_succ_intro s s_term s_step
+  (H : source s_step [=] terms s (length s) (ord'_le_refl (length s)) /\ target s_step [=] s_term)
+  :=
+  Sequence (exist _ (Succ (proj1_sig (length s))) (proj2_sig (length s)))
+    (fun alpha H' => if (ord'_le_decide H') then (terms s alpha (ord'_le_succ_right H')) else s_term)
+    (terms_pi s)
+    _
+    (steps_pi s)
+    _.
+
 Definition terms_succ_intro :
-  forall (t : term) (kappa : ord) (s_terms : forall alpha, alpha <= kappa -> term),
-  forall alpha, alpha <= succ kappa -> term :=
+  forall (t : term) (kappa : ord) (s_terms : forall alpha, alpha <= kappa -> term) alpha,
+    alpha <= succ kappa -> term :=
   fun t kappa s_terms alpha H =>
-  match H return term with
-  Ord'_le_Zero beta => t
-  | _ => t
-  end.
-*)
+    match H return term with
+      Ord'_le_Zero beta => t
+      | _ => t
+    end.
 
 
 (*
