@@ -1,3 +1,6 @@
+(* Inductive defintion for rewriting sequences *)
+
+
 Require Import Prelims.
 Require Export List.
 Require Export FiniteTerm.
@@ -57,40 +60,6 @@ Notation trs := (trs F X).
 
 Variable system : trs.
 
-(*
-(* Rewriting step *)
-Inductive step : Type :=
-  | Step : forall r : rule, In r system -> context F X -> substitution F X -> step.
-
-(* Source term of rewriting step *)
-Definition source (u : step) : term :=
-  match u with
-  | Step r H c s => fill c (substitute s (lhs r))
-  end.
-
-(* Target term of rewriting step *)
-Definition target (u : step) : term :=
-  match u with
-  | Step r H c s => fill c (substitute s (rhs r))
-  end.
-
-(* Depth of rule application in rewriting step *)
-Definition depth (u : step) : nat :=
-  match u with
-  | Step r H c s => hole_depth c
-  end.
-
-(* Source and target are equal up to the depth of the rewrite step *)
-Lemma eq_up_to_rewriting_depth :
-  forall s n,
-    depth s > n ->
-    term_eq_up_to n (source s) (target s).
-Proof.
-destruct s.
-apply fill_eq_up_to.
-Qed.
-*)
-
 (* Only needed in Coq 8.3 *)
 Generalizable All Variables.
 
@@ -102,25 +71,62 @@ Inductive step : term -> term -> Type :=
              fill c (substitute s (lhs r)) [>] fill c (substitute s (rhs r))
 where "s [>] t" := (step s t).
 
-Reserved Notation "s -[ l ]-> t" (no associativity, at level 40).
+(* Depth of rule application in rewriting step *)
+Definition depth s t (r : s [>] t) : nat :=
+  match r with
+  | Step _ c _ _ => hole_depth c
+  end.
 
-Inductive sequence : term -> term -> ord' -> Type :=
-  | Nil   : forall t, t -[Zero]-> t
-  | Cons  : forall `{r : s -[l]-> t, p : t [>] u}, s -[Succ l]-> u
-  | Lim   : forall (p : nat -> term) (l : nat -> ord') s (f : (forall n : nat, s -[l n]-> p n)) t,
-              (forall n, exists m, term_eq_up_to n (p m) t) -> s -[Limit l]-> t
-where "s -[ l ]-> t" := (sequence s t l).
+(* Source and target are equal up to the depth of the rewrite step *)
+Lemma eq_up_to_rewriting_depth :
+  forall `{r : s [>] t} n,
+    depth r > n ->
+    term_eq_up_to n s t.
+Proof.
+destruct r.
+apply fill_eq_up_to.
+Qed.
+
+(* Only needed in Coq 8.3 *)
+(*Generalizable All Variables.*)
+
+Reserved Notation "s --> t" (no associativity, at level 40).
+
+Inductive sequence : term -> term -> Type :=
+  | Nil   : forall t, t --> t
+  | Cons  : forall `{r : s --> t, p : t [>] u}, s --> u
+  | Lim   : forall s (p : nat -> term) (f : (forall n : nat, s --> p n)) t, s --> t
+where "s --> t" := (sequence s t).
+
+Fixpoint length t s (r : t --> s) : ord' :=
+  match r with
+  | Nil _          => Zero
+  | Cons _ _ r _ _ => Succ (length r)
+  | Lim _ _ f _    => Limit (fun n => length (f n))
+  end.
+
+Fixpoint pref_type t s (r : t --> s) : Set :=
+  match r with
+  | Nil _          => False
+  | Cons _ _ r _ _ => (unit + pref_type r) % type
+  | Lim _ _ f _    => { n : nat & pref_type (f n) }
+  end.
+
+Notation "!" := (False_rect _).
 
 (*
-   NOTES:
-
-   Or don't include length in type, define it by recursion
-
-   Does this definition include exactly weak convergence?
-
-   The limit case consists of infinitely many sequences (of which
-   we should demand that they are increasing in length), but
-   they are only related by the first term. What does this mean?
+(* This does not typecheck *)
+Program Fixpoint pref t s (r : t --> s) :=
+  match r with
+  | Nil _          => !
+  | Cons _ _ q _ _ => fun i => match i with
+                               | inl tt => q
+                               | inr t  => pref q t
+                               end
+  | Lim   _ _ f _  => fun i => match i with
+                               | existT n t => pref (f n) t
+                               end
+  end.
 *)
 
 Definition Omega := Limit (fun n => n).
@@ -128,12 +134,11 @@ Definition Omega := Limit (fun n => n).
 (*
 Lemma compression :
   trs_left_linear system ->
-  forall r : s -[l]-> t,
+  forall r : s --> t,
     strongly_convergent r ->
-    exists r' : s -[l']-> t,
+    exists r' : s --> t,
       strongly_convergent r' /\
-      l' <= Omega.
+      length r' <= Omega.
 *)
-
 
 End TRS.
