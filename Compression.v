@@ -28,7 +28,7 @@ Definition ord'_lt_decide alpha beta (H : alpha < beta) : bool.
 Admitted.
 Implicit Arguments ord'_lt_decide [alpha beta].
 
-
+(*
 Program Definition sequence_succ_intro s s_term s_step
   (H : source s_step [=] terms s (length s) (ord'_le_refl (length s)) /\ target s_step [=] s_term)
   :=
@@ -38,16 +38,7 @@ Program Definition sequence_succ_intro s s_term s_step
     _
     (steps_pi s)
     _.
-
-Definition terms_succ_intro :
-  forall (t : term) (kappa : ord) (s_terms : forall alpha, alpha <= kappa -> term) alpha,
-    alpha <= succ kappa -> term :=
-  fun t kappa s_terms alpha H =>
-    match H return term with
-      Ord'_le_Zero beta => t
-      | _ => t
-    end.
-
+*)
 
 (*
 Lemma terms_pi_succ_elim :
