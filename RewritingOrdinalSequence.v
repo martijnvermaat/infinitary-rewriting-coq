@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-Generalizable All Variables.
+(*Generalizable All Variables.*)
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -91,8 +91,8 @@ Reserved Notation "s --> t" (no associativity, at level 40).
 
 Inductive sequence : term -> term -> Type :=
   | Nil   : forall t, t --> t
-  | Cons  : forall `{r : s --> t, p : t [>] u}, s --> u
-  | Lim   : forall s (p : nat -> term) (f : (forall n : nat, s --> p n)) t, s --> t
+  | Cons  : forall `(r : s --> t, p : t [>] u), s --> u
+  | Lim   : forall s t, (nat -> { t' : term & s --> t' }) -> s --> t
 where "s --> t" := (sequence s t).
 
 Implicit Arguments Cons [s t u].
@@ -101,25 +101,25 @@ Fixpoint length t s (r : t --> s) : ord' :=
   match r with
   | Nil _          => Zero
   | Cons _ _ r _ _ => Succ (length r)
-  | Lim _ _ f _    => Limit (fun n => length (f n))
+  | Lim _ _ f      => Limit (fun n => length (projT2 (f n)))
   end.
 
 Fixpoint pref_type t s (r : t --> s) : Type :=
   match r with
   | Nil _          => False
   | Cons _ _ r _ _ => (unit + pref_type r) % type
-  | Lim _ _ f _    => { n : nat & pref_type (f n) }
+  | Lim _ _ f      => { n : nat & pref_type (projT2 (f n)) }
   end.
 
-Fixpoint pref t s (r : t --> s) : pref_type r -> {s' : term & t --> s'} :=
-  match r in t --> s return pref_type r -> {s' : term & t --> s'} with
+Fixpoint pref t s (r : t --> s) : pref_type r -> { s' : term & t --> s' } :=
+  match r in t --> s return pref_type r -> { s' : term & t --> s' } with
   | Nil _           => False_rect _
   | Cons t s' q _ _ => fun i => match i with
                                | inl tt => existT (fun u => t --> u) s' q
                                | inr t  => pref q t
                                end
-  | Lim   _ _ f _  => fun i => match i with
-                               | existT n t => pref (f n) t
+  | Lim   _ _ f    => fun i => match i with
+                               | existT n t => pref (projT2 (f n)) t
                                end
   end.
 
@@ -137,6 +137,8 @@ Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
 *)
 
 Definition Omega := Limit (fun n => n).
+
+
 
 (*
 Lemma compression :

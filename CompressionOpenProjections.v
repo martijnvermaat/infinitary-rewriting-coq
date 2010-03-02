@@ -102,6 +102,7 @@ exists (existT (fun n => pred_type n) 2 (inl (pred_type 1) tt)).
 *)
 Admitted.
 
+(*
 Lemma compression :
   trs_left_linear system ->
   forall s : sequence system,
@@ -142,6 +143,7 @@ admit.
 admit.
 
 Qed.
+*)
 
 Local Close Scope ord_scope.
 

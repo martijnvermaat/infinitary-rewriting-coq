@@ -103,7 +103,7 @@ assumption.
 apply IH.
 assumption.
 apply IH.
-apply g.
+apply (g x).
 Qed.
 
 (*
@@ -177,7 +177,7 @@ destruct i as [n i].
 destruct (IH n i) as [[j H1] | H1].
 assumption.
 assumption.
-apply gb.
+apply (gb n).
 exists (existT (fun n => pred_type (f n)) n j).
 assumption.
 rewrite H1.

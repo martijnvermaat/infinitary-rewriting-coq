@@ -272,10 +272,10 @@ destruct u.
 assumption.
 apply IH.
 assumption.
-apply g.
+apply (g n).
 destruct s as [n i].
 apply IH.
-apply g.
+apply (g n).
 Qed.
 
 (*
