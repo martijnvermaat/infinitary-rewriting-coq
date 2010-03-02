@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-Generalizable All Variables.
+(* Generalizable All Variables. *)
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -107,42 +107,40 @@ Fixpoint length t s (r : t --> s) : ord' :=
   | Lim _ _ f _    => Limit (fun n => length (f n))
   end.
 
-Fixpoint pref_type t s (r : t --> s) : Set :=
+Fixpoint pref_type t s (r : t --> s) : Type :=
   match r with
   | Nil _          => False
   | Cons _ _ r _ _ => (unit + pref_type r) % type
   | Lim _ _ f _    => { n : nat & pref_type (f n) }
   end.
 
-Notation "!" := (False_rect _).
-
-(*
-  (* This does not typecheck *)
-Program Fixpoint pref t s (r : t --> s) :=
-  match r with
-  | Nil _          => !
-  | Cons _ _ q _ _ => fun i => match i with
-                               | inl tt => q
+Fixpoint pref t s (r : t --> s) : pref_type r -> {s' : term & t --> s'} :=
+  match r in t --> s return pref_type r -> {s' : term & t --> s'} with
+  | Nil _           => False_rect _
+  | Cons t s' q _ _ => fun i => match i with
+                               | inl tt => existT (fun u => t --> u) s' q
                                | inr t  => pref q t
                                end
   | Lim   _ _ f _  => fun i => match i with
                                | existT n t => pref (f n) t
                                end
   end.
-*)
 
-(*
+Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
+  Pref : forall s t (r : s --> t) (i : pref_type r), prefix (projT2 (pref r i)) r.
+
+
   (* Another try *)
+
 Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
   | PrefNil  : forall `{r : s --> t}, prefix r r
   | PrefCons : forall `{r : s --> t, q : s --> v, p : v [>] u}, prefix r q -> prefix r (Cons q p)
   | PrefLim  : forall `{r : s --> t, q : s --> v, p : nat -> term, f : (forall n : nat, s --> p n), u},
                  (exists n, p n = v /\ f n = q) -> prefix r q -> prefix r (Lim p f u).
-*)
+
 
 Definition Omega := Limit (fun n => n).
 
-(*
 Lemma compression :
   trs_left_linear system ->
   forall r : s --> t,
@@ -150,6 +148,5 @@ Lemma compression :
     exists r' : s --> t,
       strongly_convergent r' /\
       length r' <= Omega.
-*)
 
 End TRS.

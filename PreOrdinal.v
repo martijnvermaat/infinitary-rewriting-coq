@@ -63,11 +63,24 @@ Inductive ord'_le : ord' -> ord' -> Prop :=
                       Limit f <=' beta
 where "alpha <=' beta" := (ord'_le alpha beta) : ord'_scope.
 
+
+
 (* TODO: Why not  alpha < beta  <=>  alpha <= beta /\ ~ beta <= alpha  ? *)
 (*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
 (*Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.*)
 Definition ord'_lt (alpha beta : ord') := exists i, alpha <=' (pred beta i).
 Infix " <' " := ord'_lt (no associativity, at level 75) : ord'_scope.
+
+Inductive ord'_lt2 : ord' -> ord' -> Prop :=
+  zz : forall alpha (i : pred_type alpha), ord'_lt2 (pred alpha i) alpha.
+
+Lemma ok : forall alpha beta, alpha <' beta <-> ord'_lt2 alpha beta.
+split.
+intros [i H].
+constructor.
+
+
+
 
 (* Should we use this as our ordinal equality? Then <= is trivially
    antisymmetric, while it is not for structural equality.
