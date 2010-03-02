@@ -71,6 +71,9 @@ where "alpha <=' beta" := (ord'_le alpha beta) : ord'_scope.
 Definition ord'_lt (alpha beta : ord') := exists i, alpha <=' (pred beta i).
 Infix " <' " := ord'_lt (no associativity, at level 75) : ord'_scope.
 
+
+
+(*
 Inductive ord'_lt2 : ord' -> ord' -> Prop :=
   zz : forall alpha (i : pred_type alpha), ord'_lt2 (pred alpha i) alpha.
 
@@ -78,7 +81,7 @@ Lemma ok : forall alpha beta, alpha <' beta <-> ord'_lt2 alpha beta.
 split.
 intros [i H].
 constructor.
-
+*)
 
 
 

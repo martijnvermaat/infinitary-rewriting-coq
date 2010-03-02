@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-(* Generalizable All Variables. *)
+Generalizable All Variables.
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -86,9 +86,6 @@ Proof.
 destruct r.
 apply fill_eq_up_to.
 Qed.
-
-(* Only needed in Coq 8.3 *)
-(*Generalizable All Variables.*)
 
 Reserved Notation "s --> t" (no associativity, at level 40).
 
@@ -130,17 +127,18 @@ Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
   Pref : forall s t (r : s --> t) (i : pref_type r), prefix (projT2 (pref r i)) r.
 
 
-  (* Another try *)
-
+(* Another try *)
+(*
 Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
   | PrefNil  : forall `{r : s --> t}, prefix r r
   | PrefCons : forall `{r : s --> t, q : s --> v, p : v [>] u}, prefix r q -> prefix r (Cons q p)
   | PrefLim  : forall `{r : s --> t, q : s --> v, p : nat -> term, f : (forall n : nat, s --> p n), u},
                  (exists n, p n = v /\ f n = q) -> prefix r q -> prefix r (Lim p f u).
-
+*)
 
 Definition Omega := Limit (fun n => n).
 
+(*
 Lemma compression :
   trs_left_linear system ->
   forall r : s --> t,
@@ -148,5 +146,6 @@ Lemma compression :
     exists r' : s --> t,
       strongly_convergent r' /\
       length r' <= Omega.
+*)
 
 End TRS.
