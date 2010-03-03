@@ -79,7 +79,7 @@ Definition depth s t (r : s [>] t) : nat :=
 
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth :
-  forall `{r : s [>] t} n,
+  forall `(r : s [>] t) n,
     depth r > n ->
     term_eq_up_to n s t.
 Proof.
@@ -124,7 +124,7 @@ Fixpoint pref t s (r : t --> s) : pref_type r -> { s' : term & t --> s' } :=
   end.
 
 Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
-  Pref : forall s t (r : s --> t) (i : pref_type r), prefix (projT2 (pref r i)) r.
+  Pref : forall `(r : s --> t) i, prefix (projT2 (pref r i)) r.
 
 
 (* Another try *)

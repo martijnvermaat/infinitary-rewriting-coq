@@ -72,17 +72,57 @@ Definition ord'_lt (alpha beta : ord') := exists i, alpha <=' (pred beta i).
 Infix " <' " := ord'_lt (no associativity, at level 75) : ord'_scope.
 
 
+Lemma mm :
+  forall alpha beta,
+    alpha <' beta ->
+    exists i, alpha = pred beta i.
+Proof.
+intros alpha beta H.
+destruct H as [j H].
+induction H as [alpha | alpha beta' k H IH |].
+
+induction beta as [| beta IH' | f IH'].
+elim j.
+destruct IH' as [k H].
+admit. (**)
+exists (inr _ k).
+assumption.
+destruct (IH' 0) as [k H].
+admit. (**)
+exists (existT _ 0 k).
+assumption.
+
+induction beta as [| beta IH' | f IH'].
+elim j.
+destruct IH' as [i H1].
+admit. (**)
+destruct IH as [[i | i] H1].
+simpl in H1.
+admit. (* this proof is faulty *)
+exists i.
+assumption.
+exists (inr _ i).
+assumption.
+destruct IH as [[n l] H1].
+destruct (IH' n) as [h H2].
+admit. (**)
+exists l.
+assumption.
+exists (existT _ n h).
+assumption.
+
+Admitted.
+
 
 (*
 Inductive ord'_lt2 : ord' -> ord' -> Prop :=
-  zz : forall alpha (i : pred_type alpha), ord'_lt2 (pred alpha i) alpha.
+  zz : forall alpha i, ord'_lt2 (pred alpha i) alpha.
 
 Lemma ok : forall alpha beta, alpha <' beta <-> ord'_lt2 alpha beta.
 split.
-intros [i H].
-constructor.
+induction beta as [| beta _ | f _]; intro H; destruct H as [i H].
+elim i.
 *)
-
 
 
 (* Should we use this as our ordinal equality? Then <= is trivially
