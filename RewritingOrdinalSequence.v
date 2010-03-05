@@ -97,6 +97,15 @@ where "s --> t" := (sequence s t).
 
 Implicit Arguments Cons [s t u].
 
+(*
+   TODO: the induction principle for sequence misses the IH for
+   the Lim case. This happened after introducing the sigma type.
+
+   See also
+   http://logical.saclay.inria.fr/coq-puma/messages/82e859ccb67f9ab9
+   http://pauillac.inria.fr/cdrom_a_graver/www/coq/mailing-lists/coqclub/0402.html
+*)
+
 Fixpoint length t s (r : t --> s) : ord' :=
   match r with
   | Nil _          => Zero
@@ -115,17 +124,74 @@ Fixpoint pref t s (r : t --> s) : pref_type r -> { s' : term & t --> s' } :=
   match r in t --> s return pref_type r -> { s' : term & t --> s' } with
   | Nil _           => False_rect _
   | Cons t s' q _ _ => fun i => match i with
-                               | inl tt => existT (fun u => t --> u) s' q
-                               | inr t  => pref q t
-                               end
-  | Lim   _ _ f    => fun i => match i with
-                               | existT n t => pref (projT2 (f n)) t
-                               end
+                                | inl tt => existT (fun u => t --> u) s' q
+                                | inr t  => pref q t
+                                end
+  | Lim _ _ f       => fun i => match i with
+                                | existT n t => pref (projT2 (f n)) t
+                                end
   end.
 
-Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
+(* Strict prefix relation *)
+Inductive prefix : forall `(r : s --> t, q : s --> u), Prop :=
   Pref : forall `(r : s --> t) i, prefix (projT2 (pref r i)) r.
 
+(*
+   'Good' sequences have limit functions f where:
+
+     1) n < m implies that (f n) is a prefix of (f m)
+     2) for any n, the limit term is equal up to depth n to the end term of some (f m)
+
+   This would be weak convergence.
+
+   => Actually, part 2) does not seem strong enough, it should say that for increasing
+      n, m is also increasing...
+*)
+Fixpoint good s t (r : s --> t) : Prop :=
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => good q
+  | Lim _ t f      => forall n,
+                        good (projT2 (f n)) /\
+                        (forall m, (n < m)%nat -> prefix (projT2 (f n)) (projT2 (f m))) /\
+                        exists m, term_eq_up_to n (projT1 (f m)) t
+  end.
+
+(* Length <=, should be equivalent to ord_le *)
+Inductive length_le : forall `(r : s --> t, q : u --> v), Prop :=
+  | Prefix_Nil  : forall s `(q : u --> v),
+                    Nil s <= q
+  | Prefix_Cons : forall `(r : s --> t, q : u --> v, p : t [>] w) i,
+                    r <= projT2 (pref q i) ->
+                    Cons r p <= q
+  | Prefix_Lim  : forall `(f : (nat -> { t' : term & s --> t' }), q : u --> v) t,
+                    (forall n, projT2 (f n) <= q) ->
+                    Lim t f <= q
+where "r <= q" := (length_le r q).
+
+(* TODO: can we strengthen this lemma to a < instead of <= ? *)
+Lemma prefix_length_le :
+  forall `(r : s --> t, q : s --> u),
+    prefix r q ->
+    r <= q.
+Proof.
+intros.
+destruct H as [s t r i].
+induction r as [s | s t r IH u p | s t f].
+elim i.
+assert (H : projT2 (pref (Cons r p) i) <= r).
+destruct i as [[] | i].
+simpl.
+admit. (* by reflexivity of <= *)
+apply IH.
+admit. (* by ord_le_succ_right equivalent of <= *)
+assert (IH : forall (n : nat) (i : pref_type (projT2 (f n))), projT2 (pref (projT2 (f n)) i) <= projT2 (f n)).
+admit. (* missing IH! *)
+destruct i as [n i].
+assert (H : projT2 (pref (projT2 (f n)) i) <= projT2 (f n)).
+apply IH.
+admit. (* by ord_le_limit_right equivalent of <= *)
+Qed.
 
 (* Another try *)
 (*
@@ -137,8 +203,6 @@ Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
 *)
 
 Definition Omega := Limit (fun n => n).
-
-
 
 (*
 Lemma compression :

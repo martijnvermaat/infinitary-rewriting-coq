@@ -72,6 +72,7 @@ Definition ord'_lt (alpha beta : ord') := exists i, alpha <=' (pred beta i).
 Infix " <' " := ord'_lt (no associativity, at level 75) : ord'_scope.
 
 
+(*
 Lemma mm :
   forall alpha beta,
     alpha <' beta ->
@@ -122,6 +123,7 @@ Lemma ok : forall alpha beta, alpha <' beta <-> ord'_lt2 alpha beta.
 split.
 induction beta as [| beta _ | f _]; intro H; destruct H as [i H].
 elim i.
+*)
 *)
 
 
@@ -244,13 +246,24 @@ assumption.
 Qed.
 
 (* If the successor of alpha <= the successor of beta, alpha <= beta *)
-Lemma ord'_le_succ :
+Lemma ord'_le_succ_elim :
   forall alpha beta,
     Succ alpha <=' Succ beta ->
     alpha <=' beta.
 Proof.
 inversion_clear 1.
 destruct i as [[] |]; [| apply ord'_le_pred_right with p]; assumption.
+Qed.
+
+(* If the alpha <= beta, the successor of alpha <= the successor of beta *)
+Lemma ord'_le_succ_intro :
+  forall alpha beta,
+    alpha <=' beta ->
+    Succ alpha <=' Succ beta.
+Proof.
+intros.
+apply Ord'_le_Succ with (inl (pred_type beta) tt).
+assumption.
 Qed.
 
 (* No successor of alpha is <= alpha *)
@@ -261,7 +274,7 @@ induction alpha as [| alpha IH | f IH]; intro H.
 apply ord'_le_not_succ_zero with Zero.
 assumption.
 apply IH.
-exact (ord'_le_succ H).
+exact (ord'_le_succ_elim H).
 inversion_clear H as [| a b i H' |].
 inversion_clear H' as [| | a b H].
 destruct i as [n i].
@@ -544,7 +557,7 @@ simpl.
 simpl in H.
 destruct i.
 destruct u.
-apply ord'_le_succ.
+apply ord'_le_succ_elim.
 assumption.
 destruct p.
 apply ord'_le_succ_left.
