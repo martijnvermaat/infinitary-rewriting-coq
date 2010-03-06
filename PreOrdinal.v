@@ -17,6 +17,9 @@ Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha)
 *)
 
 
+Require Import Prelims.
+
+
 Set Implicit Arguments.
 
 
@@ -35,8 +38,6 @@ Fixpoint pred_type (alpha : ord') : Set :=
   | Succ alpha => (unit + pred_type alpha) % type
   | Limit f    => { n : nat & pred_type (f n) }
   end.
-
-Notation "!" := (False_rect _).
 
 Fixpoint pred (alpha : ord') : pred_type alpha -> ord' :=
   match alpha with
