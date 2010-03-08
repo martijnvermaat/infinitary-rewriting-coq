@@ -279,11 +279,31 @@ exists i.
 apply length_le_refl.
 Qed.
 
+Lemma prefix_trans :
+  forall `(r : s --> t, q : s --> u, o : s --> v),
+    prefix r q ->
+    prefix q o ->
+    prefix r o.
+Proof.
+(*destruct 1 as [s u q i].
+destruct 1 as [s v o j].*)
+(*intros s t r u q v p H1 H2.*)
+induction o; intros; destruct H; dependent destruction H0.
+elim i0.
+destruct i0 as [[] | i0]; simpl in i, IHo |- *.
+change (prefix (projT2 (pref (Cons o p) (inr _ i))) (Cons o p)).
+constructor.
+assert (H : prefix (projT2 (pref (projT2 (pref o i0)) i)) o).
+apply IHo with (projT2 (pref o i0)); constructor.
+dependent destruction H.
+(*change (prefix (projT2 (pref (Cons r p) (inr _ i1))) (Cons r p)).*)
+Admitted.
+
 (*
    'Good' sequences have limit functions f where n < m implies
    that (f n) is a prefix of (f m).
 *)
-Fixpoint good s t (r : s --> t) : Prop :=
+Fixpoint good `(r : s --> t) : Prop :=
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => good q
@@ -297,7 +317,8 @@ Fixpoint good s t (r : s --> t) : Prop :=
    any depth d, from some n, end terms of (f m) with m > n are
    equal up to depth d to the limit term.
 *)
-Fixpoint weakly_convergent s t (r : s --> t) : Prop :=
+(*
+Fixpoint weakly_convergent `(r : s --> t) : Prop :=
   good r /\
   match r with
   | Nil _          => True
@@ -306,8 +327,48 @@ Fixpoint weakly_convergent s t (r : s --> t) : Prop :=
     (forall n, weakly_convergent (projT2 (f n))) /\
     forall d, exists n, forall m, (n < m)%nat -> term_eq_up_to d (projT1 (f m)) t
   end.
+*)
+(*
+   The commented-out definition for weak convergence above is not strong
+   enough: (f m) and (f m+1) might differ more than one step, so we are
+   not done by just checking the end terms for all (f m).
 
-(* Another try *)
+   In the alternative definition below, it is stated that the end terms
+   of all prefixes of such an (f m) having at leas length (f n) should be
+   equal to t up to depth d.
+*)
+Fixpoint weakly_convergent `(r : s --> t) : Prop :=
+  good r /\
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => weakly_convergent q
+  | Lim _ t f      =>
+    (forall n, weakly_convergent (projT2 (f n))) /\
+    forall d, exists n, forall m, (n < m)%nat -> forall i,
+      projT2 (f n) <= projT2 (pref (projT2 (f m)) i) ->
+      term_eq_up_to d (projT1 (pref (projT2 (f m)) i)) t
+  end.
+
+Definition last_step_below d `(r : s --> t) : Prop :=
+  match r with
+  | Cons _ _ _ _ p => (depth p > d)%nat
+  | _              => True
+  end.
+
+(* TODO: is this strong convergence? *)
+Fixpoint strongly_convergent `(r : s --> t) : Prop :=
+  good r /\
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => strongly_convergent q
+  | Lim _ t f      =>
+    (forall n, strongly_convergent (projT2 (f n))) /\
+    forall d, exists n, forall m, (n < m)%nat -> forall i,
+      projT2 (f n) <= projT2 (pref (projT2 (f m)) i) ->
+      last_step_below d (projT2 (pref (projT2 (f m)) i))
+  end.
+
+(* Another try at prefixes *)
 (*
 Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
   | PrefNil  : forall `{r : s --> t}, prefix r r
