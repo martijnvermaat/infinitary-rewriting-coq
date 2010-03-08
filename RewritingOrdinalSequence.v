@@ -225,7 +225,7 @@ Open Scope ord'_scope.
 Require Import Equality.
 
 Lemma length_le_is_ord_le :
-  forall `(r : s --> t, q : s --> u),
+  forall `(r : s --> t, q : u --> v),
     r <= q <-> length r <=' length q.
 Proof.
 induction r; simpl; split; intro H.
@@ -241,14 +241,14 @@ apply Length_le_Cons with (pred_type_as_pref_type i).
 apply IHr.
 rewrite <- pred_type_as_pref_type_ok in H0.
 assumption.
-assert (IH : forall (n : nat) (u : term) (q : s --> u), projT2 (s0 n) <= q <-> length (projT2 (s0 n)) <=' length q).
+assert (IH : forall (n : nat) (v : term) (q : u --> v), projT2 (s0 n) <= q <-> length (projT2 (s0 n)) <=' length q).
 admit. (* missing IH! *)
 dependent destruction H.
 constructor.
 intro n.
 apply IH.
 apply H.
-assert (IH : forall (n : nat) (u : term) (q : s --> u), projT2 (s0 n) <= q <-> length (projT2 (s0 n)) <=' length q).
+assert (IH : forall (n : nat) (v : term) (q : u --> v), projT2 (s0 n) <= q <-> length (projT2 (s0 n)) <=' length q).
 admit. (* missing IH! *)
 inversion_clear H.
 constructor.
@@ -257,31 +257,26 @@ apply IH.
 apply H0.
 Qed.
 
+Lemma length_le_refl :
+  forall `(r : s --> t), r <= r.
+Proof.
+intros.
+apply length_le_is_ord_le.
+apply ord'_le_refl.
+Qed.
+
 (* Strict prefix relation *)
 Inductive prefix : forall `(r : s --> t, q : s --> u), Prop :=
   Pref : forall `(r : s --> t) i, prefix (projT2 (pref r i)) r.
 
-(* TODO: can we strengthen this lemma to a < instead of <= ? *)
-Lemma prefix_length_le :
+Lemma prefix_length_lt :
   forall `(r : s --> t, q : s --> u),
     prefix r q ->
-    r <= q.
+    exists i, r <= projT2 (pref q i).
 Proof.
-intros.
-destruct H as [s t r i].
-induction r as [s | s t r IH u p | s t f].
-elim i.
-assert (H : projT2 (pref (Cons r p) i) <= r).
-destruct i as [[] | i]; simpl.
-admit. (* by reflexivity of <= *)
-apply IH.
-admit. (* by ord_le_succ_right equivalent of <= *)
-assert (IH : forall (n : nat) (i : pref_type (projT2 (f n))), projT2 (pref (projT2 (f n)) i) <= projT2 (f n)).
-admit. (* missing IH! *)
-destruct i as [n i].
-assert (H : projT2 (pref (projT2 (f n)) i) <= projT2 (f n)).
-apply IH.
-admit. (* by ord_le_limit_right equivalent of <= *)
+destruct 1 as [s t r i].
+exists i.
+apply length_le_refl.
 Qed.
 
 (*
@@ -323,14 +318,55 @@ Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
 
 Definition Omega := Limit (fun n => n).
 
-(*
+(* TODO: for things like this, I think we need another equality on ordinals *)
+Lemma ord'_le_omega_elim :
+  forall alpha,
+    alpha <=' Omega ->
+    alpha <' Omega \/ alpha = Omega.
+Proof.
+intros alpha H. unfold ord'_lt.
+induction alpha as [| alpha IH | f IH].
+left.
+exists (existT (fun (n:nat) => pred_type n) 1 (inl _ tt)).
+constructor.
+left.
+destruct IH as [[[n j] H1] | H1].
+apply (ord'_le_succ_left H).
+simpl in H1.
+assert (sj : pred_type (S n)). admit.
+exists (existT (fun (n:nat) => pred_type n) (S n) sj).
+destruct sj as [[] | sj].
+simpl.
+Admitted.
+
+(* TODO: we really need strong convergence instead of weak convergence *)
 Lemma compression :
   trs_left_linear system ->
-  forall r : s --> t,
-    strongly_convergent r ->
+  forall `(r : s --> t),
+    weakly_convergent r ->
     exists r' : s --> t,
-      strongly_convergent r' /\
-      length r' <= Omega.
-*)
+      weakly_convergent r' /\
+      length r' <=' Omega.
+Proof.
+intros LL s t r WC.
+induction r as [t| s t r IH u p | s t f].
+
+exists (Nil t).
+split.
+trivial.
+apply Ord'_le_Zero.
+
+destruct IH as [r' [WCr' Cr']].
+apply WC.
+destruct (ord'_le_omega_elim Cr') as [[i H] | H]; clear Cr'.
+exists (Cons r' p).
+split.
+admit. (* apply WCr'. *)
+apply Ord'_le_Succ with i.
+assumption.
+admit.
+
+admit.
+Qed.
 
 End TRS.
