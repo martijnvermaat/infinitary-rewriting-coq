@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-Generalizable All Variables.
+(*Generalizable All Variables.*)
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -228,6 +228,8 @@ Lemma length_le_is_ord_le :
   forall `(r : s --> t, q : u --> v),
     r <= q <-> length r <=' length q.
 Proof.
+Admitted.
+(*
 induction r; simpl; split; intro H.
 constructor.
 constructor.
@@ -256,12 +258,13 @@ intro n.
 apply IH.
 apply H0.
 Qed.
+*)
 
 Lemma length_le_refl :
   forall `(r : s --> t), r <= r.
 Proof.
 intros.
-apply length_le_is_ord_le.
+apply (length_le_is_ord_le r r).
 apply ord'_le_refl.
 Qed.
 
@@ -279,6 +282,7 @@ exists i.
 apply length_le_refl.
 Qed.
 
+(*
 Lemma prefix_trans :
   forall `(r : s --> t, q : s --> u, o : s --> v),
     prefix r q ->
@@ -298,6 +302,7 @@ apply IHo with (projT2 (pref o i0)); constructor.
 dependent destruction H.
 (*change (prefix (projT2 (pref (Cons r p) (inr _ i1))) (Cons r p)).*)
 Admitted.
+*)
 
 (*
    'Good' sequences have limit functions f where n < m implies
