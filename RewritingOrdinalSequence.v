@@ -94,6 +94,29 @@ Inductive sequence : term -> term -> Type :=
   | Cons  : forall `(r : s --> t, p : t [>] u), s --> u
   | Lim   : forall s t, (nat -> { t' : term & s --> t' }) -> s --> t
 where "s --> t" := (sequence s t).
+Print sequence_ind.
+
+
+Reset sequence_rect.
+
+Notation "s --> t" := (sequence s t).
+
+Definition sequence_rect := 
+fun (P : forall t t0 : term, t --> t0 -> Type)
+  (f : forall t : term, P t t (Nil t))
+  (f0 : forall (s t : term) (r : s --> t),
+        P s t r -> forall (u : term) (p : t[>]u), P s u (Cons r p))
+  (f1 : forall (s t : term) (s0 : nat -> {t' : term &  s --> t'}),
+        (forall n, P s (projT1 (s0 n)) (projT2 (s0 n))) ->
+        P s t (Lim t s0)) =>
+fix F (t t0 : term) (s : t --> t0) {struct s} : P t t0 s :=
+  match s as s0 in (t1 --> t2) return (P t1 t2 s0) with
+  | Nil t1 => f t1
+  | Cons s0 t1 r u p => f0 s0 t1 r (F s0 t1 r) u p
+  | Lim s0 t1 s1 => f1 s0 t1 s1 (fun n => F s0 (projT1 (s1 n)) (projT2 (s1 n)))
+  end.
+
+Definition sequence_ind := fun P : forall t t0 : term, t --> t0 -> Prop => sequence_rect P.
 
 Implicit Arguments Cons [s t u].
 
@@ -152,13 +175,11 @@ Lemma pref_type_as_pred_type_ok :
     length (projT2 (pref r i)) = pred (length r) (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
-induction r as [t| s t r IH u p | s t f].
+induction r as [t| s t r IH u p | s t f IH ].
 elim i.
 destruct i as [[] | i].
 reflexivity.
 apply IH.
-assert (IH : forall (n : nat) (i : pref_type (projT2 (f n))), length (projT2 (pref (projT2 (f n)) i)) = pred (length (projT2 (f n))) (pref_type_as_pred_type i)).
-admit. (* missing IH! *)
 destruct i as [n i].
 apply IH.
 Qed.
@@ -182,13 +203,11 @@ Lemma pred_type_as_pref_type_ok :
     length (projT2 (pref r (pred_type_as_pref_type i))) = pred (length r) i.
 Proof.
 intros s t r i.
-induction r as [t| s t r IH u p | s t f].
+induction r as [t| s t r IH u p | s t f IH].
 elim i.
 destruct i as [[] | i]; simpl.
 reflexivity.
 apply IH.
-assert (IH : forall (n : nat) (i : pred_type (length (projT2 (f n)))), length (projT2 (pref (projT2 (f n)) (pred_type_as_pref_type i))) = pred (length (projT2 (f n))) i).
-admit. (* missing IH! *)
 destruct i as [n i]; simpl.
 apply IH.
 Qed.
@@ -198,11 +217,9 @@ Lemma pred_type_pref_type_inv :
     i = pred_type_as_pref_type (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
-induction r as [t| s t r IH u p | s t f].
+induction r as [t| s t r IH u p | s t f IH].
 elim i.
 destruct i as [[] | i]; simpl; [| rewrite <- (IH i)]; reflexivity.
-assert (IH : forall (n : nat) (i : pref_type (projT2 (f n))), i = pred_type_as_pref_type (pref_type_as_pred_type i)).
-admit. (* missing IH! *)
 destruct i as [n i]; simpl.
 rewrite <- (IH n i).
 reflexivity.
@@ -362,7 +379,7 @@ Definition last_step_below d `(r : s --> t) : Prop :=
 
 (* TODO: is this strong convergence? *)
 Fixpoint strongly_convergent `(r : s --> t) : Prop :=
-  good r /\
+  weakly_convergent r /\
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => strongly_convergent q
@@ -415,7 +432,7 @@ Lemma compression :
       length r' <=' Omega.
 Proof.
 intros LL s t r WC.
-induction r as [t| s t r IH u p | s t f].
+induction r as [t| s t r IH u p | s t f IH].
 
 exists (Nil t).
 split.
@@ -431,6 +448,9 @@ admit. (* apply WCr'. *)
 apply Ord'_le_Succ with i.
 assumption.
 admit.
+
+simpl in WC.
+simpl.
 
 admit.
 Qed.
