@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-(*Generalizable All Variables.*)
+Generalizable All Variables.
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -87,6 +87,9 @@ destruct r.
 apply fill_eq_up_to.
 Qed.
 
+Notation "| s |" := (projT2 s) (no associativity, at level 75).
+Notation "$ s $" := (projT1 s) (no associativity, at level 75).
+
 Reserved Notation "s --> t" (no associativity, at level 40).
 
 Inductive sequence : term -> term -> Type :=
@@ -94,53 +97,57 @@ Inductive sequence : term -> term -> Type :=
   | Cons  : forall `(r : s --> t, p : t [>] u), s --> u
   | Lim   : forall s t, (nat -> { t' : term & s --> t' }) -> s --> t
 where "s --> t" := (sequence s t).
-Print sequence_ind.
 
-
+(*
+   Coq ignores the recursive call in the Lim constructor and therefore
+   the induction principle is missing a hypothesis. We reset the
+   generated induction principle and create a new one below.
+*)
 Reset sequence_rect.
 
 Notation "s --> t" := (sequence s t).
-
-Definition sequence_rect := 
-fun (P : forall t t0 : term, t --> t0 -> Type)
-  (f : forall t : term, P t t (Nil t))
-  (f0 : forall (s t : term) (r : s --> t),
-        P s t r -> forall (u : term) (p : t[>]u), P s u (Cons r p))
-  (f1 : forall (s t : term) (s0 : nat -> {t' : term &  s --> t'}),
-        (forall n, P s (projT1 (s0 n)) (projT2 (s0 n))) ->
-        P s t (Lim t s0)) =>
-fix F (t t0 : term) (s : t --> t0) {struct s} : P t t0 s :=
-  match s as s0 in (t1 --> t2) return (P t1 t2 s0) with
-  | Nil t1 => f t1
-  | Cons s0 t1 r u p => f0 s0 t1 r (F s0 t1 r) u p
-  | Lim s0 t1 s1 => f1 s0 t1 s1 (fun n => F s0 (projT1 (s1 n)) (projT2 (s1 n)))
-  end.
-
-Definition sequence_ind := fun P : forall t t0 : term, t --> t0 -> Prop => sequence_rect P.
-
 Implicit Arguments Cons [s t u].
 
-(*
-   TODO: the induction principle for sequence misses the IH for
-   the Lim case. This happened after introducing the sigma type.
+Section InductionPrinciple.
 
-   See also
-   http://logical.saclay.inria.fr/coq-puma/messages/82e859ccb67f9ab9
-   http://pauillac.inria.fr/cdrom_a_graver/www/coq/mailing-lists/coqclub/0402.html
-*)
+Variable P : forall `(r : s --> t), Type.
+
+Hypothesis H1 : forall t, P (Nil t).
+
+Hypothesis H2 :
+  forall `(r : s --> t, p : t [>] u),
+    P r ->
+    P (Cons r p).
+
+Hypothesis H3 :
+  forall s t (f : nat -> {t' : term &  s --> t'}),
+    (forall n, P (|f n|) ) ->
+    P (Lim t f).
+
+Fixpoint sequence_rect `(r : s --> t) : P r :=
+  match r with
+  | Nil t          => H1 t
+  | Cons s t r u p => H2 p (sequence_rect r)
+  | Lim s t f      => H3 t f (fun n => sequence_rect (|f n|))
+  end.
+
+End InductionPrinciple.
+
+Definition sequence_ind (P : `(s --> t -> Prop)) :=
+  sequence_rect P.
 
 Fixpoint length `(r : s --> t) : ord' :=
   match r with
   | Nil _          => Zero
   | Cons _ _ r _ _ => Succ (length r)
-  | Lim _ _ f      => Limit (fun n => length (projT2 (f n)))
+  | Lim _ _ f      => Limit (fun n => length (|f n|))
   end.
 
 Fixpoint pref_type `(r : s --> t) : Type :=
   match r with
   | Nil _          => False
   | Cons _ _ r _ _ => (unit + pref_type r) % type
-  | Lim _ _ f      => { n : nat & pref_type (projT2 (f n)) }
+  | Lim _ _ f      => { n : nat & pref_type (|f n|) }
   end.
 
 Fixpoint pref `(r : s --> t) : pref_type r -> { t' : term & s --> t' } :=
@@ -151,7 +158,7 @@ Fixpoint pref `(r : s --> t) : pref_type r -> { t' : term & s --> t' } :=
                                 | inr j  => pref q j
                                 end
   | Lim _ _ f       => fun i => match i with
-                                | existT n j => pref (projT2 (f n)) j
+                                | existT n j => pref (|f n|) j
                                 end
   end.
 
@@ -164,7 +171,7 @@ Fixpoint pref_type_as_pred_type `(r : s --> t) : pref_type r -> pred_type (lengt
                                | inr j  => inr _ (pref_type_as_pred_type q j)
                                end
   | Lim _ _ f      => fun i => match i with
-                               | existT n j => existT _ n (pref_type_as_pred_type (projT2 (f n)) j)
+                               | existT n j => existT _ n (pref_type_as_pred_type (|f n|) j)
                                end
   end.
 
@@ -172,10 +179,10 @@ Implicit Arguments pref_type_as_pred_type [s t r].
 
 Lemma pref_type_as_pred_type_ok :
   forall `(r : s --> t, i : pref_type r),
-    length (projT2 (pref r i)) = pred (length r) (pref_type_as_pred_type i).
+    length (|pref r i|) = pred (length r) (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
-induction r as [t| s t r IH u p | s t f IH ].
+induction r as [t| s t r u p IH | s t f IH ].
 elim i.
 destruct i as [[] | i].
 reflexivity.
@@ -192,7 +199,7 @@ Fixpoint pred_type_as_pref_type `(r : s --> t) : pred_type (length r) -> pref_ty
                                | inr j  => inr _ (pred_type_as_pref_type q j)
                                end
   | Lim _ _ f      => fun i => match i with
-                               | existT n j => existT _ n (pred_type_as_pref_type (projT2 (f n)) j)
+                               | existT n j => existT _ n (pred_type_as_pref_type (|f n|) j)
                                end
   end.
 
@@ -200,10 +207,10 @@ Implicit Arguments pred_type_as_pref_type [s t r].
 
 Lemma pred_type_as_pref_type_ok :
   forall `(r : s --> t, i : pred_type (length r)),
-    length (projT2 (pref r (pred_type_as_pref_type i))) = pred (length r) i.
+    length (|pref r (pred_type_as_pref_type i)|) = pred (length r) i.
 Proof.
 intros s t r i.
-induction r as [t| s t r IH u p | s t f IH].
+induction r as [t| s t r u p IH | s t f IH].
 elim i.
 destruct i as [[] | i]; simpl.
 reflexivity.
@@ -217,7 +224,7 @@ Lemma pred_type_pref_type_inv :
     i = pred_type_as_pref_type (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
-induction r as [t| s t r IH u p | s t f IH].
+induction r as [t| s t r u p IH | s t f IH].
 elim i.
 destruct i as [[] | i]; simpl; [| rewrite <- (IH i)]; reflexivity.
 destruct i as [n i]; simpl.
@@ -230,10 +237,10 @@ Inductive length_le : forall `(r : s --> t, q : u --> v), Prop :=
   | Length_le_Nil  : forall s `(q : u --> v),
                        Nil s <= q
   | Length_le_Cons : forall `(r : s --> t, q : u --> v, p : t [>] w) i,
-                       r <= projT2 (pref q i) ->
+                       r <= (|pref q i|) ->
                        Cons r p <= q
   | Length_le_Lim  : forall `(f : (nat -> { t' : term & s --> t' }), q : u --> v) t,
-                       (forall n, projT2 (f n) <= q) ->
+                       (forall n, (|f n|) <= q) ->
                        Lim t f <= q
 where "r <= q" := (length_le r q).
 
@@ -245,37 +252,30 @@ Lemma length_le_is_ord_le :
   forall `(r : s --> t, q : u --> v),
     r <= q <-> length r <=' length q.
 Proof.
-Admitted.
-(*
-induction r; simpl; split; intro H.
+induction r as [t| s t r u p IH | s t f IH]; simpl; split; intro H.
 constructor.
 constructor.
 dependent destruction H.
 apply Ord'_le_Succ with (pref_type_as_pred_type i).
 rewrite <- pref_type_as_pred_type_ok.
-apply IHr.
+apply IH.
 assumption.
 inversion_clear H.
 apply Length_le_Cons with (pred_type_as_pref_type i).
-apply IHr.
+apply IH.
 rewrite <- pred_type_as_pref_type_ok in H0.
 assumption.
-assert (IH : forall (n : nat) (v : term) (q : u --> v), projT2 (s0 n) <= q <-> length (projT2 (s0 n)) <=' length q).
-admit. (* missing IH! *)
 dependent destruction H.
 constructor.
 intro n.
 apply IH.
 apply H.
-assert (IH : forall (n : nat) (v : term) (q : u --> v), projT2 (s0 n) <= q <-> length (projT2 (s0 n)) <=' length q).
-admit. (* missing IH! *)
 inversion_clear H.
 constructor.
 intro n.
 apply IH.
 apply H0.
 Qed.
-*)
 
 Lemma length_le_refl :
   forall `(r : s --> t), r <= r.
@@ -287,12 +287,12 @@ Qed.
 
 (* Strict prefix relation *)
 Inductive prefix : forall `(r : s --> t, q : s --> u), Prop :=
-  Pref : forall `(r : s --> t) i, prefix (projT2 (pref r i)) r.
+  Pref : forall `(r : s --> t) i, prefix (|pref r i|) r.
 
 Lemma prefix_length_lt :
   forall `(r : s --> t, q : s --> u),
     prefix r q ->
-    exists i, r <= projT2 (pref q i).
+    exists i, r <= (|pref q i|).
 Proof.
 destruct 1 as [s t r i].
 exists i.
@@ -330,8 +330,8 @@ Fixpoint good `(r : s --> t) : Prop :=
   | Nil _          => True
   | Cons _ _ q _ _ => good q
   | Lim _ t f      =>
-    (forall n, good (projT2 (f n))) /\
-    forall n m, (n < m)%nat -> prefix (projT2 (f n)) (projT2 (f m))
+    (forall n, good (|f n|)) /\
+    forall n m, (n < m)%nat -> prefix (|f n|) (|f m|)
   end.
 
 (*
@@ -346,8 +346,8 @@ Fixpoint weakly_convergent `(r : s --> t) : Prop :=
   | Nil _          => True
   | Cons _ _ q _ _ => weakly_convergent q
   | Lim _ t f      =>
-    (forall n, weakly_convergent (projT2 (f n))) /\
-    forall d, exists n, forall m, (n < m)%nat -> term_eq_up_to d (projT1 (f m)) t
+    (forall n, weakly_convergent (|f n|)) /\
+    forall d, exists n, forall m, (n < m)%nat -> term_eq_up_to d ($ f m $) t
   end.
 *)
 (*
@@ -365,10 +365,10 @@ Fixpoint weakly_convergent `(r : s --> t) : Prop :=
   | Nil _          => True
   | Cons _ _ q _ _ => weakly_convergent q
   | Lim _ t f      =>
-    (forall n, weakly_convergent (projT2 (f n))) /\
+    (forall n, weakly_convergent (|f n|)) /\
     forall d, exists n, forall m, (n < m)%nat -> forall i,
-      projT2 (f n) <= projT2 (pref (projT2 (f m)) i) ->
-      term_eq_up_to d (projT1 (pref (projT2 (f m)) i)) t
+      (|f n|) <= (|pref (|f m|) i|) ->
+      term_eq_up_to d ($ pref (|f m|) i $) t
   end.
 
 Definition last_step_below d `(r : s --> t) : Prop :=
@@ -384,10 +384,10 @@ Fixpoint strongly_convergent `(r : s --> t) : Prop :=
   | Nil _          => True
   | Cons _ _ q _ _ => strongly_convergent q
   | Lim _ t f      =>
-    (forall n, strongly_convergent (projT2 (f n))) /\
+    (forall n, strongly_convergent (|f n|)) /\
     forall d, exists n, forall m, (n < m)%nat -> forall i,
-      projT2 (f n) <= projT2 (pref (projT2 (f m)) i) ->
-      last_step_below d (projT2 (pref (projT2 (f m)) i))
+      (|f n|) <= (|pref (|f m|) i|) ->
+      last_step_below d (|pref (|f m|) i|)
   end.
 
 (* Another try at prefixes *)
@@ -432,7 +432,7 @@ Lemma compression :
       length r' <=' Omega.
 Proof.
 intros LL s t r WC.
-induction r as [t| s t r IH u p | s t f IH].
+induction r as [t| s t r u p IH | s t f IH].
 
 exists (Nil t).
 split.
