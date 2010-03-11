@@ -87,6 +87,7 @@ destruct r.
 apply fill_eq_up_to.
 Qed.
 
+(* TODO: we could use these more generally and move them to Prelims *)
 Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 
@@ -390,14 +391,24 @@ Fixpoint strongly_convergent `(r : s --> t) : Prop :=
       last_step_below d (|pref (|f m|) i|)
   end.
 
-(* Another try at prefixes *)
-(*
-Inductive prefix : forall s t u, (s --> t) -> (s --> u) -> Prop :=
-  | PrefNil  : forall `{r : s --> t}, prefix r r
-  | PrefCons : forall `{r : s --> t, q : s --> v, p : v [>] u}, prefix r q -> prefix r (Cons q p)
-  | PrefLim  : forall `{r : s --> t, q : s --> v, p : nat -> term, f : (forall n : nat, s --> p n), u},
-                 (exists n, p n = v /\ f n = q) -> prefix r q -> prefix r (Lim p f u).
-*)
+(* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
+Program Fixpoint append `(r : s --> t, q : t --> u) : s --> u :=
+  match q with
+  | Nil t0         => r
+  | Cons _ _ q _ p => Cons (append r q) p
+  | Lim _ u f      => Lim u (fun o => existT (fun u => s --> u) ($ f o $) (append r (|f o|)))
+  end.
+
+Lemma append_length :
+  forall `(r : s --> t, q : t --> u),
+    length (append r q) = add (length r) (length q).
+Proof.
+induction q as [u| t u q v p IH | t u f IH]; simpl.
+reflexivity.
+congruence.
+apply f_equal.
+(* I guess we cannot prove this *)
+Admitted.
 
 Definition Omega := Limit (fun n => n).
 
@@ -416,10 +427,18 @@ left.
 destruct IH as [[[n j] H1] | H1].
 apply (ord'_le_succ_left H).
 simpl in H1.
-assert (sj : pred_type (S n)). admit.
-exists (existT (fun (n:nat) => pred_type n) (S n) sj).
-destruct sj as [[] | sj].
-simpl.
+exists (existT (fun (n:nat) => pred_type n) (S n) (inl _ tt)); simpl.
+destruct n as [| n].
+elim j.
+destruct j as [[] | j]; simpl in H1; apply ord'_le_succ_intro.
+assumption.
+apply ord'_le_pred_right with j.
+assumption.
+rewrite H1 in H.
+contradiction ord'_le_not_succ with Omega.
+right.
+apply f_equal.
+(* We cannot prove this *)
 Admitted.
 
 (* TODO: we really need strong convergence instead of weak convergence *)
@@ -434,11 +453,13 @@ Proof.
 intros LL s t r WC.
 induction r as [t| s t r u p IH | s t f IH].
 
+(* Case (Nil t) *)
 exists (Nil t).
 split.
 trivial.
 apply Ord'_le_Zero.
 
+(* Case (Cons r p) *)
 destruct IH as [r' [WCr' Cr']].
 apply WC.
 destruct (ord'_le_omega_elim Cr') as [[i H] | H]; clear Cr'.
@@ -449,9 +470,7 @@ apply Ord'_le_Succ with i.
 assumption.
 admit.
 
-simpl in WC.
-simpl.
-
+(* Case (Lim t f) *)
 admit.
 Qed.
 

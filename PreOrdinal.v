@@ -606,6 +606,27 @@ assumption.
 (* TODO: we need this *)
 Admitted.
 
+Fixpoint add (alpha beta : ord') : ord' :=
+  match beta with
+  | Zero      => alpha
+  | Succ beta => Succ (add alpha beta)
+  | Limit f   => Limit (fun o => add alpha (f o))
+  end.
+
+Fixpoint mul (alpha beta : ord') : ord' :=
+  match beta with
+  | Zero      => Zero
+  | Succ beta => add (mul alpha beta) alpha
+  | Limit f   => Limit (fun o => mul alpha (f o))
+  end.
+
+Fixpoint exp (alpha beta : ord') : ord' :=
+  match beta with
+  | Zero      => Succ Zero
+  | Succ beta => mul (exp alpha beta) alpha
+  | Limit f   => Limit (fun o => exp alpha (f o))
+  end.
+
 (* Image of naturals in pre-ordinals *)
 Fixpoint nat_as_ord' (n : nat) : ord' :=
   match n with
