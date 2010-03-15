@@ -719,6 +719,37 @@ Qed.
 (* TODO: I think proofs like the above would benefit from adding
    some lemma's about ord_le as hints *)
 
+Lemma aaaa :
+  Limit (fun n => S n) ==' Limit (fun n => n).
+Proof.
+split; constructor; intro n.
+apply Ord'_le_Succ with (existT (fun n:nat => pred_type n) (S n) (inl _ tt)).
+apply ord'_le_refl.
+destruct n as [| n].
+constructor.
+apply Ord'_le_Succ with (existT (fun n:nat => pred_type (S n)) n (inl _ tt)).
+apply ord'_le_refl.
+Qed.
+
+Lemma bbbb :
+  Limit (fun n => n * 2) ==' Limit (fun n => n).
+Proof.
+split; constructor; intro n.
+destruct n as [| n]; simpl.
+constructor.
+apply Ord'_le_Succ with (existT (fun n:nat => pred_type n) (S (S (n * 2))) (inl _ tt)).
+apply ord'_le_refl.
+destruct n as [| n].
+constructor.
+apply Ord'_le_Succ with (existT (fun n:nat => pred_type (n * 2)) (S n) (inl _ tt)).
+simpl.
+induction n as [| n IH]; simpl.
+constructor.
+apply ord'_le_succ_right.
+apply ord'_le_succ_intro.
+exact IH.
+Qed.
+
 (*
 Axiom ord'_le_pi : forall alpha beta (H H' : alpha <=' beta), H = H'.
 Axiom ord'_lt_pi : forall alpha beta (H H' : alpha <' beta), H = H'.

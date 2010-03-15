@@ -300,27 +300,73 @@ exists i.
 apply length_le_refl.
 Qed.
 
-(*
+Lemma pred_trans :
+  forall alpha i j,
+    exists k, pred alpha k = pred (pred alpha i) j.
+Proof.
+induction alpha as [| alpha IH | f IH]; intros.
+elim i.
+destruct i as [[] | i]; simpl in j |- *.
+exists (inr _ j).
+reflexivity.
+destruct (IH i j) as [k H].
+exists (inr _ k).
+assumption.
+destruct i as [n i]; simpl in j |- *.
+destruct (IH n i j) as [k H].
+exists (existT (fun n => pred_type (f n)) n k).
+assumption.
+Qed.
+
+Lemma pref_trans :
+  forall `(r : s --> t, i : pref_type r, j : pref_type (projT2 (pref r i))),
+    exists k : pref_type r, (projT2 (pref r k)) ~= projT2 (pref (projT2 (pref r i)) j).
+Proof.
+induction r; intros.
+elim i.
+destruct i as [[] | i]; simpl in j |- *.
+exists (inr _ j).
+reflexivity.
+destruct (IHr i j) as [k H].
+exists (inr _ k).
+assumption.
+destruct i as [n i]; simpl in j |- *.
+destruct (H n i j) as [k H1].
+exists (existT (fun n => pref_type (|f n|)) n k).
+assumption.
+Qed.
+
+Implicit Arguments pref_trans [s t r].
+
 Lemma prefix_trans :
   forall `(r : s --> t, q : s --> u, o : s --> v),
     prefix r q ->
     prefix q o ->
     prefix r o.
 Proof.
-(*destruct 1 as [s u q i].
-destruct 1 as [s v o j].*)
-(*intros s t r u q v p H1 H2.*)
-induction o; intros; destruct H; dependent destruction H0.
+intros.
+destruct H.
+destruct H0.
+destruct (pref_trans i0 i).
+(*rewrite <- H.*)
+(*assert (JMeq_eq H).*)
+
+(*
+intros.
+destruct H.
+destruct H0.
+induction r.
 elim i0.
-destruct i0 as [[] | i0]; simpl in i, IHo |- *.
-change (prefix (projT2 (pref (Cons o p) (inr _ i))) (Cons o p)).
+destruct i0 as [[] | i0]; simpl in i |- *.
+change (prefix (projT2 (pref (Cons r p) (inr _ i))) (Cons r p)).
 constructor.
-assert (H : prefix (projT2 (pref (projT2 (pref o i0)) i)) o).
-apply IHo with (projT2 (pref o i0)); constructor.
+assert (H : prefix (projT2 (pref (projT2 (pref r i0)) i)) r).
+apply IHr.
+change (prefix (|pref (|pref (Cons r p) (inr _ i0) |) i |) (Cons r p)).
 dependent destruction H.
-(*change (prefix (projT2 (pref (Cons r p) (inr _ i1))) (Cons r p)).*)
-Admitted.
+(*rewrite <- x.*)
 *)
+Admitted.
 
 (*
    'Good' sequences have limit functions f where n < m implies
@@ -441,16 +487,15 @@ apply f_equal.
 (* We cannot prove this *)
 Admitted.
 
-(* TODO: we really need strong convergence instead of weak convergence *)
 Lemma compression :
   trs_left_linear system ->
   forall `(r : s --> t),
-    weakly_convergent r ->
+    strongly_convergent r ->
     exists r' : s --> t,
-      weakly_convergent r' /\
+      strongly_convergent r' /\
       length r' <=' Omega.
 Proof.
-intros LL s t r WC.
+intros LL s t r SC.
 induction r as [t| s t r u p IH | s t f IH].
 
 (* Case (Nil t) *)
@@ -460,12 +505,12 @@ trivial.
 apply Ord'_le_Zero.
 
 (* Case (Cons r p) *)
-destruct IH as [r' [WCr' Cr']].
-apply WC.
+destruct IH as [r' [SCr' Cr']].
+apply SC.
 destruct (ord'_le_omega_elim Cr') as [[i H] | H]; clear Cr'.
 exists (Cons r' p).
 split.
-admit. (* apply WCr'. *)
+admit. (* apply SCr'. *)
 apply Ord'_le_Succ with i.
 assumption.
 admit.
