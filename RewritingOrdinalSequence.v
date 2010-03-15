@@ -456,10 +456,40 @@ apply f_equal.
 (* I guess we cannot prove this *)
 Admitted.
 
-Definition Omega := Limit (fun n => n).
+Definition Omega := Limit id.
+
+Lemma ord'_le_omega_elim :
+  forall alpha,
+    alpha <=' Omega ->
+    alpha <' Omega \/ alpha ==' Omega.
+Proof.
+intros alpha H. unfold ord'_lt.
+induction alpha as [| alpha IH | f IH].
+left.
+exists (existT (fun (n:nat) => pred_type n) 1 (inl _ tt)).
+constructor.
+left.
+destruct IH as [[[n j] H1] | H1].
+apply (ord'_le_succ_left H).
+simpl in H1.
+exists (existT (fun (n:nat) => pred_type n) (S n) (inl _ tt)); simpl.
+destruct n as [| n].
+elim j.
+destruct j as [[] | j]; simpl in H1; apply ord'_le_succ_intro.
+assumption.
+apply ord'_le_pred_right with j.
+assumption.
+contradiction ord'_le_not_pred_right_strong with (Succ alpha) Omega (inl (pred_type alpha) tt).
+apply H1.
+right.
+split.
+assumption.
+constructor.
+(* i guess we use monotonicity of f here, otherwise we loose... *)
+Admitted.
 
 (* TODO: for things like this, I think we need another equality on ordinals *)
-Lemma ord'_le_omega_elim :
+Lemma ord'_le_omega_elim' :
   forall alpha,
     alpha <=' Omega ->
     alpha <' Omega \/ alpha = Omega.
@@ -505,10 +535,10 @@ trivial.
 apply Ord'_le_Zero.
 
 (* Case (Cons r p) *)
-destruct IH as [r' [SCr' Cr']].
-apply SC.
-destruct (ord'_le_omega_elim Cr') as [[i H] | H]; clear Cr'.
-exists (Cons r' p).
+assert (IH' := (IH (proj2 SC))); clear r SC IH.
+destruct IH' as [r [SC IH]].
+destruct (ord'_le_omega_elim IH) as [[i H] | H]; clear IH.
+exists (Cons r p).
 split.
 admit. (* apply SCr'. *)
 apply Ord'_le_Succ with i.
