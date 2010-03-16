@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-(*Generalizable All Variables.*)
+Generalizable All Variables.
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -318,67 +318,25 @@ exists (existT (fun n => pred_type (f n)) n k).
 assumption.
 Qed.
 
+(*
 Fixpoint pref_trans `(r : s --> t)  : forall i : pref_type r, pref_type (|pref r i|) -> pref_type r :=
   match r in s --> t return forall i : pref_type r, pref_type (|pref r i|) -> pref_type r with
-  | Nil _ => fun i j => i 
-  | Cons _ _ r' _ p => fun i => 
-    match i as k return k = i -> pref_type (|pref (Cons r' p) k|) -> pref_type (Cons r' p) with 
+  | Nil _ => fun i j => i
+  | Cons _ _ r' _ p => fun i =>
+    match i as k return k = i -> pref_type (|pref (Cons r' p) k|) -> pref_type (Cons r' p) with
     | inl tt => fun H j => inr unit j
     | inr i' => fun H j => inr _ (pref_trans r' i' j)
-    end (refl_equal i)
+    end refl_equal
   | Lim _ _ f => fun i =>
-    match i with 
+    match i with
     | existT n i' => fun j => existT _ n (pref_trans (|f n|) i' j)
     end
   end.
-
-Require Import Eqdep.
-
-Lemma lemma : 
-   forall `(r : s --> t , i : pref_type r, j : pref_type (|pref r i|) ),
-   JMeq (|pref r (pref_trans r i j)|) (|pref (|pref r i|) j|).
-Admitted.
-
-Lemma lemma2 : 
-   forall `(r : s --> t , i : pref_type r, j : pref_type (|pref r i|) ),
-   prefix (|pref r (pref_trans r i j)|) r ->
-   prefix (|pref (|pref r i|) j|) r.
-Proof.
-intros s t r i j H.
-assert (H0 := lemma r i j).
-dependent destruction H0.
-rewrite H0 in H1.
-
-
-
-exact H.
-induction r.
-intros [].
-intros [[]|i']; simpl.
-intros j H.
-exact H.
-change (pref_type r) in i'.
-intros j H.
-
-assert (Z := IHr i' j).
-
-dependent destruction H.
-simpl in i.
-destruct i.
-destruct u.
-
-change (prefix (|pref (|pref (Cons r p) (inr _ i') |) j |) (Cons r p)).
-
-destruct (IHr i' j).
-constructor.
 *)
 
-
-
-(*
 Lemma pref_trans :
   forall `(r : s --> t, i : pref_type r, j : pref_type (|pref r i|)),
-    exists k : pref_type r, JMeq (|pref r k|) (|pref (|pref r i|) j|).
+    exists k : pref_type r, pref r k = pref (|pref r i|) j.
 Proof.
 induction r; intros.
 elim i.
@@ -393,7 +351,6 @@ destruct (H n i j) as [k H1].
 exists (existT (fun n => pref_type (|f n|)) n k).
 assumption.
 Qed.
-*)
 
 Implicit Arguments pref_trans [s t r].
 
@@ -406,46 +363,10 @@ Proof.
 intros.
 destruct H.
 destruct H0.
-apply lemma.
-constructor.
 destruct (pref_trans i0 i).
-inversion H.
-
-Print Pref.
-
-dependent destruction H.
-
-
-generalize H0.
-clear H0.
-
-dependent rewrite H.
-
-
-
-
-apply (Pref r x).
-
-assert (G := JMeq_eq H).
-(*rewrite <- H.*)
-(*assert (JMeq_eq H).*)
-
-(*
-intros.
-destruct H.
-destruct H0.
-induction r.
-elim i0.
-destruct i0 as [[] | i0]; simpl in i |- *.
-change (prefix (projT2 (pref (Cons r p) (inr _ i))) (Cons r p)).
+rewrite <- H.
 constructor.
-assert (H : prefix (projT2 (pref (projT2 (pref r i0)) i)) r).
-apply IHr.
-change (prefix (|pref (|pref (Cons r p) (inr _ i0) |) i |) (Cons r p)).
-dependent destruction H.
-(*rewrite <- x.*)
-*)
-Admitted.
+Qed.
 
 (*
    'Good' sequences have limit functions f where n < m implies
@@ -517,18 +438,16 @@ Fixpoint strongly_convergent `(r : s --> t) : Prop :=
   end.
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
-
+(*
 Program Fixpoint program_append `(r : s --> t, q : t --> u) : s --> u :=
   match q with
   | Nil t0         => r
   | Cons _ _ q _ p => Cons (program_append r q) p
   | Lim _ u f      => Lim u (fun o => existT (fun u => s --> u) ($ f o $) (program_append r (|f o|)))
   end.
-
-Print program_append.
+*)
 
 (* yes we can *)
-
 Fixpoint append_rec (s t u : term) (q : t --> u) : s --> t -> s --> u :=
   match q in t --> u return s --> t -> s --> u with
   | Nil t0         => fun r => r
