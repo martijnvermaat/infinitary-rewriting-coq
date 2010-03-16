@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-Generalizable All Variables.
+(*Generalizable All Variables.*)
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -126,7 +126,7 @@ Hypothesis H3 :
     P (Lim t f).
 
 Fixpoint sequence_rect `(r : s --> t) : P r :=
-  match r with
+  match r return P r with
   | Nil t          => H1 t
   | Cons s t r u p => H2 p (sequence_rect r)
   | Lim s t f      => H3 t f (fun n => sequence_rect (|f n|))
@@ -259,22 +259,22 @@ constructor.
 dependent destruction H.
 apply Ord'_le_Succ with (pref_type_as_pred_type i).
 rewrite <- pref_type_as_pred_type_ok.
-apply IH.
+apply (IH u ($ pref q i $) (| pref q i |)). (* apply IH. *)
 assumption.
 inversion_clear H.
 apply Length_le_Cons with (pred_type_as_pref_type i).
-apply IH.
+apply (IH u0 ($ pref q (pred_type_as_pref_type i) $) (| pref q (pred_type_as_pref_type i) |)). (* apply IH. *)
 rewrite <- pred_type_as_pref_type_ok in H0.
 assumption.
 dependent destruction H.
 constructor.
 intro n.
-apply IH.
+apply (IH n u v q). (* apply IH. *)
 apply H.
 inversion_clear H.
 constructor.
 intro n.
-apply IH.
+apply (IH n u v q). (* apply IH. *)
 apply H0.
 Qed.
 
@@ -319,8 +319,8 @@ assumption.
 Qed.
 
 Lemma pref_trans :
-  forall `(r : s --> t, i : pref_type r, j : pref_type (projT2 (pref r i))),
-    exists k : pref_type r, (projT2 (pref r k)) ~= projT2 (pref (projT2 (pref r i)) j).
+  forall `(r : s --> t, i : pref_type r, j : pref_type (|pref r i|)),
+    exists k : pref_type r, JMeq (|pref r k|) (|pref (|pref r i|) j|).
 Proof.
 induction r; intros.
 elim i.
@@ -447,16 +447,19 @@ Program Fixpoint append `(r : s --> t, q : t --> u) : s --> u :=
 
 Lemma append_length :
   forall `(r : s --> t, q : t --> u),
-    length (append r q) = add (length r) (length q).
+    length (append r q) ==' add (length r) (length q).
 Proof.
 induction q as [u| t u q v p IH | t u f IH]; simpl.
-reflexivity.
-congruence.
-apply f_equal.
-(* I guess we cannot prove this *)
-Admitted.
+apply ord'_eq_refl.
+split.
+apply Ord'_le_Succ with (inl (pred_type (add (length r) (length q))) tt).
+apply (IH r).
+apply Ord'_le_Succ with (inl (pred_type (length (append r q))) tt).
+apply (IH r).
+split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
+Qed.
 
-Definition Omega := Limit id.
+Definition Omega := Limit (fun n => n).
 
 Lemma ord'_le_omega_elim :
   forall alpha,
