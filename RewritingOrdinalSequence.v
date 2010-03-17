@@ -500,37 +500,32 @@ right.
 split.
 assumption.
 constructor.
-(* i guess we use monotonicity of f here, otherwise we loose... *)
-Admitted.
-
-(* TODO: for things like this, I think we need another equality on ordinals *)
-Lemma ord'_le_omega_elim' :
-  forall alpha,
-    alpha <=' Omega ->
-    alpha <' Omega \/ alpha = Omega.
-Proof.
-intros alpha H. unfold ord'_lt.
-induction alpha as [| alpha IH | f IH].
-left.
-exists (existT (fun (n:nat) => pred_type n) 1 (inl _ tt)).
+(* TODO: monotonicity of f assumed *)
+assert (G : forall n m, (n < m)%nat -> f n <' f m).
+admit.
+(* TODO: cleanup, below is a mess *)
+induction n as [| n IHn]; simpl.
 constructor.
-left.
-destruct IH as [[[n j] H1] | H1].
-apply (ord'_le_succ_left H).
-simpl in H1.
-exists (existT (fun (n:nat) => pred_type n) (S n) (inl _ tt)); simpl.
-destruct n as [| n].
-elim j.
-destruct j as [[] | j]; simpl in H1; apply ord'_le_succ_intro.
+assert (J := G n (S n)).
+destruct J as [i J].
+auto.
+apply Ord'_le_Succ with (existT (fun (n:nat) => pred_type (f n)) (S n) i).
+simpl.
+apply ord'_le_trans with (f n).
+induction n as [| n IHnn]; simpl.
+constructor.
+assert (K := G n (S n)).
+destruct K as [k K].
+auto.
+apply Ord'_le_Succ with k.
+apply ord'_le_trans with (f n).
+apply IHnn with k.
+apply ord'_le_succ_left.
 assumption.
-apply ord'_le_pred_right with j.
 assumption.
-rewrite H1 in H.
-contradiction ord'_le_not_succ with Omega.
-right.
-apply f_equal.
-(* We cannot prove this *)
-Admitted.
+assumption.
+assumption.
+Qed.
 
 Lemma compression :
   trs_left_linear system ->
