@@ -536,7 +536,7 @@ Lemma compression :
       length r' <=' Omega.
 Proof.
 intros LL s t r SC.
-induction r as [t| s t r u p IH | s t f IH].
+induction r as [t | s t r u p IH | s t f IH].
 
 (* Case (Nil t) *)
 exists (Nil t).
