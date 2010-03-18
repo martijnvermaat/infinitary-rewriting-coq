@@ -5,8 +5,8 @@ Require Import Prelims.
 Require Export List.
 Require Export FiniteTerm.
 Require Export Term.
-Require Import Substitution.
-Require Import Context.
+Require Export Substitution.
+Require Export Context.
 Require Export PreOrdinal.
 Require Export TermEquality.
 
