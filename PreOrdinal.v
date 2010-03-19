@@ -755,5 +755,29 @@ Axiom ord'_le_pi : forall alpha beta (H H' : alpha <=' beta), H = H'.
 Axiom ord'_lt_pi : forall alpha beta (H H' : alpha <' beta), H = H'.
 *)
 
+Require Export Setoid.
+Require Export Relation_Definitions.
+
+Add Relation ord' ord'_eq
+  reflexivity proved by ord'_eq_refl
+  symmetry proved by ord'_eq_symm
+  transitivity proved by ord'_eq_trans
+as ord'_eq_rel.
+
+Lemma add_compat :
+  forall alpha alpha',
+    alpha ==' alpha' ->
+    forall beta beta',
+      beta ==' beta' ->
+      add alpha beta ==' add alpha' beta'.
+Proof.
+Admitted.
+
+Add Morphism add with
+  signature ord'_eq ==> ord'_eq ==> ord'_eq as add_mor.
+Proof.
+exact add_compat.
+Qed.
+
 
 Close Scope ord'_scope.

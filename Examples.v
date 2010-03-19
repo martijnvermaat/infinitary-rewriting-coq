@@ -131,7 +131,7 @@ Notation Step := (Step ABA_trs).
 Notation Nil := (Nil ABA_trs).
 
 Notation "s [>] t" := (step ABA_trs s t) (at level 40).
-Notation "s --> t" := (sequence ABA_trs s t) (at level 40).
+Notation "s ->> t" := (sequence ABA_trs s t) (at level 40).
 
 Lemma ABA_in :
   In ABA ABA_trs.
@@ -140,7 +140,7 @@ left. reflexivity.
 Qed.
 
 (* Zero-step reduction A ->> A *)
-Definition s_A : (A!) --> (A!) := Nil (A!).
+Definition s_A : (A!) ->> (A!) := Nil (A!).
 
 Require Import Equality.
 
@@ -197,7 +197,7 @@ dependent destruction i.
 Defined.
 
 (* Single-step reduction A ->> B(A) *)
-Definition s_A_BA : (A!) --> (B @ A!) := Cons s_A p_A_BA.
+Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
 
 (* Step B(A) -> B(B(A)) *)
 Program Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step ABA (B @@@ Hole) id_sub ABA_in.
@@ -230,7 +230,7 @@ dependent destruction i.
 Defined.
 
 (* Two-step reduction A ->> B(B(A)) *)
-Definition s_A_BBA : (A!) --> (B @ B @ A!) := Cons s_A_BA p_BA_BBA.
+Definition s_A_BBA : (A!) ->> (B @ B @ A!) := Cons s_A_BA p_BA_BBA.
 
 (* B(B(...(A)...)) with n applications of B *)
 Fixpoint nB_A (n : nat) : term :=
@@ -290,18 +290,18 @@ Defined.
 *)
 
 (* n-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... -n-> B(B(B(...(A)...))) with n applications of B at right side *)
-Fixpoint s_A_nBA (n : nat) : (A!) --> (nB_A n) :=
-  match n as m in nat return (A!) --> (nB_A m) with
+Fixpoint s_A_nBA (n : nat) : (A!) ->> (nB_A n) :=
+  match n as m in nat return (A!) ->> (nB_A m) with
   | 0   => Nil (A!)
   | S n => Cons (s_A_nBA n) (p_nBA_nBBA n)
   end.
 
 (* s_A_nBA but with Sigma return type including right-most term *)
-Definition limit_s_A_nBA (n : nat) : {t : term & (A!) --> t} :=
-  existT (fun (t : term) => (A!) --> t) (nB_A n) (s_A_nBA n).
+Definition limit_s_A_nBA (n : nat) : {t : term & (A!) ->> t} :=
+  existT (fun (t : term) => (A!) ->> t) (nB_A n) (s_A_nBA n).
 
 (* Omega-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... B(B(B(...))) *)
-Definition s_A_repeat_B : (A!) --> repeat_B :=
+Definition s_A_repeat_B : (A!) ->> repeat_B :=
   Lim repeat_B limit_s_A_nBA.
 
 (* Ugly notation *)
@@ -402,7 +402,7 @@ assumption.
 Qed.
 
 (* Just because both directions are so similar *)
-Lemma length_s_A_repeat_B_eq_omega'' :
+Lemma length_s_A_repeat_B_eq_omega :
   length s_A_repeat_B ==' Omega.
 Proof.
 split; simpl;

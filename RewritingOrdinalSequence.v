@@ -61,7 +61,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-Generalizable All Variables.
+(*Generalizable All Variables.*)
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -91,13 +91,17 @@ Qed.
 Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 
-Reserved Notation "s --> t" (no associativity, at level 40).
+Reserved Notation "s ->> t" (no associativity, at level 40).
 
+(*
+   TODO: shouldn't Cons actually ask for bisimilarity?
+   | Cons  : forall `(r : s ->> t, p : u [>] v), t [=] u -> s ->> v
+*)
 Inductive sequence : term -> term -> Type :=
-  | Nil   : forall t, t --> t
-  | Cons  : forall `(r : s --> t, p : t [>] u), s --> u
-  | Lim   : forall s t, (nat -> { t' : term & s --> t' }) -> s --> t
-where "s --> t" := (sequence s t).
+  | Nil   : forall t, t ->> t
+  | Cons  : forall `(r : s ->> t, p : t [>] u), s ->> u
+  | Lim   : forall s t, (nat -> { t' : term & s ->> t' }) -> s ->> t
+where "s ->> t" := (sequence s t).
 
 (*
    Coq ignores the recursive call in the Lim constructor and therefore
@@ -106,26 +110,26 @@ where "s --> t" := (sequence s t).
 *)
 Reset sequence_rect.
 
-Notation "s --> t" := (sequence s t).
+Notation "s ->> t" := (sequence s t).
 Implicit Arguments Cons [s t u].
 
 Section InductionPrinciple.
 
-Variable P : forall `(r : s --> t), Type.
+Variable P : forall `(r : s ->> t), Type.
 
 Hypothesis H1 : forall t, P (Nil t).
 
 Hypothesis H2 :
-  forall `(r : s --> t, p : t [>] u),
+  forall `(r : s ->> t, p : t [>] u),
     P r ->
     P (Cons r p).
 
 Hypothesis H3 :
-  forall s t (f : nat -> {t' : term &  s --> t'}),
+  forall s t (f : nat -> {t' : term &  s ->> t'}),
     (forall n, P (|f n|) ) ->
     P (Lim t f).
 
-Fixpoint sequence_rect `(r : s --> t) : P r :=
+Fixpoint sequence_rect `(r : s ->> t) : P r :=
   match r return P r with
   | Nil t          => H1 t
   | Cons s t r u p => H2 p (sequence_rect r)
@@ -134,28 +138,28 @@ Fixpoint sequence_rect `(r : s --> t) : P r :=
 
 End InductionPrinciple.
 
-Definition sequence_ind (P : `(s --> t -> Prop)) :=
+Definition sequence_ind (P : `(s ->> t -> Prop)) :=
   sequence_rect P.
 
-Fixpoint length `(r : s --> t) : ord' :=
+Fixpoint length `(r : s ->> t) : ord' :=
   match r with
   | Nil _          => Zero
   | Cons _ _ r _ _ => Succ (length r)
   | Lim _ _ f      => Limit (fun n => length (|f n|))
   end.
 
-Fixpoint pref_type `(r : s --> t) : Type :=
+Fixpoint pref_type `(r : s ->> t) : Type :=
   match r with
   | Nil _          => False
   | Cons _ _ r _ _ => (unit + pref_type r) % type
   | Lim _ _ f      => { n : nat & pref_type (|f n|) }
   end.
 
-Fixpoint pref `(r : s --> t) : pref_type r -> { t' : term & s --> t' } :=
-  match r in s --> t return pref_type r -> { t' : term & s --> t' } with
+Fixpoint pref `(r : s ->> t) : pref_type r -> { t' : term & s ->> t' } :=
+  match r in s ->> t return pref_type r -> { t' : term & s ->> t' } with
   | Nil _           => !
   | Cons s t' q _ _ => fun i => match i with
-                                | inl tt => existT (fun u => s --> u) t' q
+                                | inl tt => existT (fun u => s ->> u) t' q
                                 | inr j  => pref q j
                                 end
   | Lim _ _ f       => fun i => match i with
@@ -164,8 +168,8 @@ Fixpoint pref `(r : s --> t) : pref_type r -> { t' : term & s --> t' } :=
   end.
 
 (* maybe this could be a coercion *)
-Fixpoint pref_type_as_pred_type `(r : s --> t) : pref_type r -> pred_type (length r) :=
-  match r in s --> t return pref_type r -> pred_type (length r) with
+Fixpoint pref_type_as_pred_type `(r : s ->> t) : pref_type r -> pred_type (length r) :=
+  match r in s ->> t return pref_type r -> pred_type (length r) with
   | Nil _          => !
   | Cons _ _ q _ _ => fun i => match i with
                                | inl tt => inl _ tt
@@ -179,7 +183,7 @@ Fixpoint pref_type_as_pred_type `(r : s --> t) : pref_type r -> pred_type (lengt
 Implicit Arguments pref_type_as_pred_type [s t r].
 
 Lemma pref_type_as_pred_type_ok :
-  forall `(r : s --> t, i : pref_type r),
+  forall `(r : s ->> t, i : pref_type r),
     length (|pref r i|) = pred (length r) (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
@@ -192,8 +196,8 @@ destruct i as [n i].
 apply IH.
 Qed.
 
-Fixpoint pred_type_as_pref_type `(r : s --> t) : pred_type (length r) -> pref_type r :=
-  match r in s --> t return pred_type (length r) -> pref_type r with
+Fixpoint pred_type_as_pref_type `(r : s ->> t) : pred_type (length r) -> pref_type r :=
+  match r in s ->> t return pred_type (length r) -> pref_type r with
   | Nil _          => !
   | Cons _ _ q _ _ => fun i => match i with
                                | inl tt => inl _ tt
@@ -207,7 +211,7 @@ Fixpoint pred_type_as_pref_type `(r : s --> t) : pred_type (length r) -> pref_ty
 Implicit Arguments pred_type_as_pref_type [s t r].
 
 Lemma pred_type_as_pref_type_ok :
-  forall `(r : s --> t, i : pred_type (length r)),
+  forall `(r : s ->> t, i : pred_type (length r)),
     length (|pref r (pred_type_as_pref_type i)|) = pred (length r) i.
 Proof.
 intros s t r i.
@@ -221,7 +225,7 @@ apply IH.
 Qed.
 
 Lemma pred_type_pref_type_inv :
-  forall `(r : s --> t, i : pref_type r),
+  forall `(r : s ->> t, i : pref_type r),
     i = pred_type_as_pref_type (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
@@ -234,13 +238,13 @@ reflexivity.
 Qed.
 
 (* Length <=, should be equivalent to ord_le *)
-Inductive length_le : forall `(r : s --> t, q : u --> v), Prop :=
-  | Length_le_Nil  : forall s `(q : u --> v),
+Inductive length_le : forall `(r : s ->> t, q : u ->> v), Prop :=
+  | Length_le_Nil  : forall s `(q : u ->> v),
                        Nil s <= q
-  | Length_le_Cons : forall `(r : s --> t, q : u --> v, p : t [>] w) i,
+  | Length_le_Cons : forall `(r : s ->> t, q : u ->> v, p : t [>] w) i,
                        r <= (|pref q i|) ->
                        Cons r p <= q
-  | Length_le_Lim  : forall `(f : (nat -> { t' : term & s --> t' }), q : u --> v) t,
+  | Length_le_Lim  : forall `(f : (nat -> { t' : term & s ->> t' }), q : u ->> v) t,
                        (forall n, (|f n|) <= q) ->
                        Lim t f <= q
 where "r <= q" := (length_le r q).
@@ -250,7 +254,7 @@ Open Scope ord'_scope.
 Require Import Equality.
 
 Lemma length_le_is_ord_le :
-  forall `(r : s --> t, q : u --> v),
+  forall `(r : s ->> t, q : u ->> v),
     r <= q <-> length r <=' length q.
 Proof.
 induction r as [t| s t r u p IH | s t f IH]; simpl; split; intro H.
@@ -279,7 +283,7 @@ apply H0.
 Qed.
 
 Lemma length_le_refl :
-  forall `(r : s --> t), r <= r.
+  forall `(r : s ->> t), r <= r.
 Proof.
 intros.
 apply (length_le_is_ord_le r r).
@@ -287,11 +291,11 @@ apply ord'_le_refl.
 Qed.
 
 (* Strict prefix relation *)
-Inductive prefix : forall `(r : s --> t, q : s --> u), Prop :=
-  Pref : forall `(r : s --> t) i, prefix (|pref r i|) r.
+Inductive prefix : forall `(r : s ->> t, q : s ->> u), Prop :=
+  Pref : forall `(r : s ->> t) i, prefix (|pref r i|) r.
 
 Lemma prefix_length_lt :
-  forall `(r : s --> t, q : s --> u),
+  forall `(r : s ->> t, q : s ->> u),
     prefix r q ->
     exists i, r <= (|pref q i|).
 Proof.
@@ -319,8 +323,8 @@ assumption.
 Qed.
 
 (*
-Fixpoint pref_trans `(r : s --> t)  : forall i : pref_type r, pref_type (|pref r i|) -> pref_type r :=
-  match r in s --> t return forall i : pref_type r, pref_type (|pref r i|) -> pref_type r with
+Fixpoint pref_trans `(r : s ->> t)  : forall i : pref_type r, pref_type (|pref r i|) -> pref_type r :=
+  match r in s ->> t return forall i : pref_type r, pref_type (|pref r i|) -> pref_type r with
   | Nil _ => fun i j => i
   | Cons _ _ r' _ p => fun i =>
     match i as k return k = i -> pref_type (|pref (Cons r' p) k|) -> pref_type (Cons r' p) with
@@ -335,7 +339,7 @@ Fixpoint pref_trans `(r : s --> t)  : forall i : pref_type r, pref_type (|pref r
 *)
 
 Lemma pref_trans :
-  forall `(r : s --> t, i : pref_type r, j : pref_type (|pref r i|)),
+  forall `(r : s ->> t, i : pref_type r, j : pref_type (|pref r i|)),
     exists k : pref_type r, pref r k = pref (|pref r i|) j.
 Proof.
 induction r; intros.
@@ -355,7 +359,7 @@ Qed.
 Implicit Arguments pref_trans [s t r].
 
 Lemma prefix_trans :
-  forall `(r : s --> t, q : s --> u, o : s --> v),
+  forall `(r : s ->> t, q : s ->> u, o : s ->> v),
     prefix r q ->
     prefix q o ->
     prefix r o.
@@ -372,7 +376,7 @@ Qed.
    'Good' sequences have limit functions f where n < m implies
    that (f n) is a prefix of (f m).
 *)
-Fixpoint good `(r : s --> t) : Prop :=
+Fixpoint good `(r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => good q
@@ -387,7 +391,7 @@ Fixpoint good `(r : s --> t) : Prop :=
    equal up to depth d to the limit term.
 *)
 (*
-Fixpoint weakly_convergent `(r : s --> t) : Prop :=
+Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   good r /\
   match r with
   | Nil _          => True
@@ -406,7 +410,7 @@ Fixpoint weakly_convergent `(r : s --> t) : Prop :=
    of all prefixes of such an (f m) having at leas length (f n) should be
    equal to t up to depth d.
 *)
-Fixpoint weakly_convergent `(r : s --> t) : Prop :=
+Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   good r /\
   match r with
   | Nil _          => True
@@ -418,14 +422,14 @@ Fixpoint weakly_convergent `(r : s --> t) : Prop :=
       term_eq_up_to d ($ pref (|f m|) i $) t
   end.
 
-Definition last_step_below d `(r : s --> t) : Prop :=
+Definition last_step_below d `(r : s ->> t) : Prop :=
   match r with
   | Cons _ _ _ _ p => (depth p > d)%nat
   | _              => True
   end.
 
 (* TODO: is this strong convergence? *)
-Fixpoint strongly_convergent `(r : s --> t) : Prop :=
+Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   weakly_convergent r /\
   match r with
   | Nil _          => True
@@ -439,26 +443,26 @@ Fixpoint strongly_convergent `(r : s --> t) : Prop :=
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
 (*
-Program Fixpoint program_append `(r : s --> t, q : t --> u) : s --> u :=
+Program Fixpoint program_append `(r : s ->> t, q : t ->> u) : s ->> u :=
   match q with
   | Nil t0         => r
   | Cons _ _ q _ p => Cons (program_append r q) p
-  | Lim _ u f      => Lim u (fun o => existT (fun u => s --> u) ($ f o $) (program_append r (|f o|)))
+  | Lim _ u f      => Lim u (fun o => existT (fun u => s ->> u) ($ f o $) (program_append r (|f o|)))
   end.
 *)
 
 (* yes we can *)
-Fixpoint append_rec (s t u : term) (q : t --> u) : s --> t -> s --> u :=
-  match q in t --> u return s --> t -> s --> u with
+Fixpoint append_rec (s t u : term) (q : t ->> u) : s ->> t -> s ->> u :=
+  match q in t ->> u return s ->> t -> s ->> u with
   | Nil t0         => fun r => r
   | Cons _ _ q _ p => fun r => Cons (append_rec q r) p
-  | Lim _ u f      => fun r => Lim u (fun o => existT (fun u => s --> u) ($ f o $) (append_rec (|f o|) r))
+  | Lim _ u f      => fun r => Lim u (fun o => existT (fun u => s ->> u) ($ f o $) (append_rec (|f o|) r))
   end.
 
-Definition append `(r : s --> t, q : t --> u) : s --> u := append_rec q r.
+Definition append `(r : s ->> t, q : t ->> u) : s ->> u := append_rec q r.
 
 Lemma append_length :
-  forall `(r : s --> t, q : t --> u),
+  forall `(r : s ->> t, q : t ->> u),
     length (append r q) ==' add (length r) (length q).
 Proof.
 induction q as [u| t u q v p IH | t u f IH]; simpl.
@@ -529,9 +533,9 @@ Qed.
 
 Lemma compression :
   trs_left_linear system ->
-  forall `(r : s --> t),
+  forall `(r : s ->> t),
     strongly_convergent r ->
-    exists r' : s --> t,
+    exists r' : s ->> t,
       strongly_convergent r' /\
       length r' <=' Omega.
 Proof.
