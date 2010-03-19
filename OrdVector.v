@@ -30,6 +30,12 @@ Definition vcons : A -> forall alpha, ovector alpha -> ovector (Succ alpha) :=
   | inr i' => v i'
   end.
 
+Definition vlim : forall (f : nat -> { alpha : ord' & ovector alpha }), ovector (Limit (fun n:nat => projT1 (f n))) :=
+  fun f i =>
+  match i with
+  | existT n t => (projT2 (f n)) t
+  end.
+
 Definition vhead (alpha : ord') (v : ovector (Succ alpha)) : A :=
   v (inl (pred_type alpha) tt).
 
