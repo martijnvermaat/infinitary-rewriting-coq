@@ -473,7 +473,6 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
       last_step_below d (|pref r j|)
   end.
 
-(*
 Lemma aaa :
   forall s t f c l sigma,
     strongly_convergent (Lim t f : s ->> t) ->
@@ -483,9 +482,22 @@ Lemma aaa :
         ($ pref (Lim t f) i $) [=] fill c (substitute tau l).
 Proof.
 intros s t f c l sigma sc H.
-destruct sc as [_ [_ sc]].
-destruct (sc ((hole_depth c) + (pattern_depth l))) as [n Hn].
-*)
+destruct sc as [[_ [_ wc]] [_ _]].
+destruct (wc (hole_depth c + pattern_depth l)) as [i Hi].
+exists i.
+assert (H1 : term_eq_up_to (hole_depth c + pattern_depth l) ($ pref (Lim t f) i $) t).
+apply Hi.
+admit.
+Admitted.
+
+(* I have a problem understanding the proof in the RTA '10 paper, because
+   the following clearly shouldn't hold, should it? *)
+Lemma bbb :
+  forall c (l : finite_term F X) sigma s,
+    term_eq_up_to (hole_depth c + pattern_depth l) s (fill c (substitute sigma l)) ->
+    exists tau,
+      s [=] fill c (substitute tau l).
+Admitted.
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
 (*

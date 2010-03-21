@@ -340,9 +340,10 @@ exact good_s_A_repeat_B.
 split; simpl.
 admit. (* by induction on n *)
 intro d.
-exists d.
-intros m H1 i H2.
-induction H1.
+exists (existT (fun n:nat => pref_type (s_A_nBA n)) (S d) (inl _ tt)).
+intros j H.
+(*
+induction H.
 induction d.
 apply teut_0.
 assert (A1 : repeat_B = (B @ repeat_B)).
@@ -360,6 +361,8 @@ apply IHd.
 admit. (* This should somehow follow from what j is *)
 dependent destruction i0.
 admit. (* Maybe induction H1; induction d was not the right choice *)
+*)
+admit.
 Qed.
 
 (* This reduction is weakly convergent *)
