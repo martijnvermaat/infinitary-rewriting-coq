@@ -1,3 +1,4 @@
+Require Import Max. (* TODO: deprecated in Coq 8.3? Max.v -> Peano.v *)
 Require Import List.
 Require Export Signature.
 Require Export Variables.
@@ -32,6 +33,12 @@ Fixpoint size (t : fterm) : nat :=
   | FVar _      => 1
   | FFun _ args => 1 + vfold 0 plus (vmap size args)
                     (* vfold 0 (plus * size) args *)
+  end.
+
+Fixpoint pattern_depth (t : fterm) : nat :=
+  match t with
+  | FVar _      => 0
+  | FFun _ args => 1 + vfold 0 max (vmap pattern_depth args)
   end.
 
 (* List of variable occurrences in a finite term *)

@@ -82,7 +82,7 @@ Definition depth (u : step) : nat :=
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth :
   forall s n,
-    depth s > n ->
+    n <= depth s ->
     term_eq_up_to n (source s) (target s).
 Proof.
 destruct s.

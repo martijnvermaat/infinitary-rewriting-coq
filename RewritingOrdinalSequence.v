@@ -80,7 +80,7 @@ Definition depth s t (r : s [>] t) : nat :=
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth :
   forall `(r : s [>] t) n,
-    depth r > n ->
+    n <= depth r ->
     term_eq_up_to n s t.
 Proof.
 destruct r.
@@ -291,6 +291,35 @@ apply ord'_le_refl.
 Qed.
 
 (* Strict prefix relation *)
+(*
+   Problem with this definition follows.
+
+   Consider a TRS with rule
+
+     ABA : A -> B(A)
+
+   i.e. the one in Examples.v, and omega-step reduction
+
+     A ->> B(B(B(...)))
+
+   This reduction can be defined by
+
+     Lim f : A ->> B(B(B(...)))
+
+   where
+
+     f 0  = A
+     f Sn = B(B( f n ))
+
+   Now, take any prefix of this reduction of odd length. It is not
+   a prefix of Lim f by the definition below.
+
+   This is also Hancock's reason not to use pred directly as an
+   order relation.
+
+   I still think it would be best to define some order analoguous
+   to ord_le, but I don't see an obvious way to do this.
+*)
 Inductive prefix : forall `(r : s ->> t, q : s ->> u), Prop :=
   Pref : forall `(r : s ->> t) i, prefix (|pref r i|) r.
 
@@ -410,6 +439,11 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
    of all prefixes of such an (f m) having at leas length (f n) should be
    equal to t up to depth d.
 *)
+(*
+   TODO: this definition is still not good enough. The prefixes noted
+   above could still not cover everything. I think we really need a better
+   prefix relation, also explained with the 'prefix' definition.
+*)
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   good r /\
   match r with
@@ -440,6 +474,20 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
       (|f n|) <= (|pref (|f m|) i|) ->
       last_step_below d (|pref (|f m|) i|)
   end.
+
+(*
+Lemma aaa :
+  forall s t f c l sigma,
+    strongly_convergent (Lim t f : s ->> t) ->
+    t [=] fill c (substitute sigma l) ->
+    exists i : pref_type (Lim t f),
+      exists tau,
+        ($ pref (Lim t f) i $) [=] fill c (substitute tau l).
+Proof.
+intros s t f c l sigma sc H.
+destruct sc as [_ [_ sc]].
+destruct (sc ((hole_depth c) + (pattern_depth l))) as [n Hn].
+*)
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
 (*

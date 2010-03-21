@@ -39,7 +39,7 @@ Fixpoint fill (c : context) (t : term) : term :=
 (* Filling a context gives terms equal up to the hole depth *)
 Lemma fill_eq_up_to :
   forall (c : context) t u n,
-  hole_depth c > n -> term_eq_up_to n (fill c t) (fill c u).
+  n <= hole_depth c -> term_eq_up_to n (fill c t) (fill c u).
 Proof.
 intros c t u n.
 revert c.
