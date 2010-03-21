@@ -292,8 +292,11 @@ Qed.
 
 (* Strict prefix relation *)
 (*
-   Problem with this definition follows.
-
+   NOTE: the problem described below is not valid, because
+   prefixes of (Lim f) are not (f n), but prefixes of (f n).
+   I.e., pref_type (Lim f) = { n : nat & pref_type (|f n|) }.
+*)
+(*
    Consider a TRS with rule
 
      ABA : A -> B(A)
@@ -439,11 +442,6 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
    of all prefixes of such an (f m) having at leas length (f n) should be
    equal to t up to depth d.
 *)
-(*
-   TODO: this definition is still not good enough. The prefixes noted
-   above could still not cover everything. I think we really need a better
-   prefix relation, also explained with the 'prefix' definition.
-*)
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   good r /\
   match r with
@@ -451,9 +449,9 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   | Cons _ _ q _ _ => weakly_convergent q
   | Lim _ t f      =>
     (forall n, weakly_convergent (|f n|)) /\
-    forall d, exists n, forall m, (n < m)%nat -> forall i,
-      (|f n|) <= (|pref (|f m|) i|) ->
-      term_eq_up_to d ($ pref (|f m|) i $) t
+    forall d, exists i, forall j,
+      (|pref r i|) <= (|pref r j|) ->
+      term_eq_up_to d ($ pref r j $) t
   end.
 
 Definition last_step_below d `(r : s ->> t) : Prop :=
@@ -470,9 +468,9 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   | Cons _ _ q _ _ => strongly_convergent q
   | Lim _ t f      =>
     (forall n, strongly_convergent (|f n|)) /\
-    forall d, exists n, forall m, (n < m)%nat -> forall i,
-      (|f n|) <= (|pref (|f m|) i|) ->
-      last_step_below d (|pref (|f m|) i|)
+    forall d, exists i, forall j,
+      (|pref r i|) <= (|pref r j|) ->
+      last_step_below d (|pref r j|)
   end.
 
 (*
