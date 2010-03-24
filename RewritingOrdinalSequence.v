@@ -66,25 +66,32 @@ Variable system : trs.
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
 Inductive step : term -> term -> Type :=
-  | Step : forall (r : rule) (c : context) (s : substitution),
+  | Step : forall (s t : term) (r : rule) (c : context) (u : substitution),
              In r system ->
-             fill c (substitute s (lhs r)) [>] fill c (substitute s (rhs r))
+             fill c (substitute u (lhs r)) [=] s ->
+             fill c (substitute u (rhs r)) [=] t ->
+             s [>] t
 where "s [>] t" := (step s t).
 
 (* Depth of rule application in rewriting step *)
-Definition depth s t (r : s [>] t) : nat :=
-  match r with
-  | Step _ c _ _ => hole_depth c
+Definition depth s t (p : s [>] t) : nat :=
+  match p with
+  | Step _ _ _ c _ _ _ _ => hole_depth c
   end.
 
 (* Source and target are equal up to the depth of the rewrite step *)
 Lemma eq_up_to_rewriting_depth :
-  forall `(r : s [>] t) n,
-    n <= depth r ->
+  forall `(p : s [>] t) n,
+    n <= depth p ->
     term_eq_up_to n s t.
 Proof.
-destruct r.
-apply fill_eq_up_to.
+destruct p as [s t r c u Hr Hs Ht].
+intros n H.
+exact (term_eq_up_to_trans
+  (term_eq_up_to_symm (Hs n))
+  (term_eq_up_to_trans
+    (fill_eq_up_to c (substitute u (lhs r)) (substitute u (rhs r)) H)
+    (Ht n))).
 Qed.
 
 (* TODO: we could use these more generally and move them to Prelims *)
@@ -140,6 +147,12 @@ End InductionPrinciple.
 
 Definition sequence_ind (P : `(s ->> t -> Prop)) :=
   sequence_rect P.
+
+Definition cons_term_eq `(r : s ->> t, p : u [>] v) : u [=] t -> s ->> v :=
+  match p in u [>] v return u [=] t -> s ->> v with
+  | Step u v rul c sub Hr Hs Ht =>
+      fun H => Cons r (Step rul c sub Hr (term_eq_trans Hs H) Ht)
+  end.
 
 Fixpoint length `(r : s ->> t) : ord' :=
   match r with

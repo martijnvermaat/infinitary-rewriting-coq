@@ -68,7 +68,7 @@ Notation term := (term F X).
 Notation fterm := (finite_term F X).
 
 (* Function application with no arguments *)
-Notation "f !" := (@Fun F X f (vnil term)) (at level 70).
+Notation "f !" := (@Fun F X f (vnil fterm)) (at level 70).
 Notation "f !!" := (@FFun F X f (vnil fterm)) (at level 70).
 
 (* Function application with one argument *)
@@ -142,92 +142,60 @@ Qed.
 (* Zero-step reduction A ->> A *)
 Definition s_A : (A!) ->> (A!) := Nil (A!).
 
-Require Import Equality.
-
-(* Step A -> B(A) *)
-Program Definition p_A_BA : (A!) [>] (B @ A!) := Step ABA Hole id_sub ABA_in.
-(*
-   The problem here is that things like
-     vmap f vnil = vnil
-   cannot be proved.
-
-   To prove this, we need some extensional function equality, as tried
-   below.
-*)
-Axiom vector_eq :
-  forall (A : Type) (n : nat) (v w : vector A n),
-    (forall i, v i = w i) ->
-    v = w.
-
-(*
-Lemma vmap_vnil :
-  forall (A : Type) (f : A -> A),
-    vmap f (vnil A) = vnil A.
+Lemma fact_term_eq_A :
+  @Fun F X A (vmap (substitute id_sub) (vnil fterm)) [=] (A !).
 Proof.
-intros.
-apply vector_eq.
+intro n.
+destruct n; constructor.
 intro.
 contradiction (vnil False).
 Qed.
-*)
 
-Lemma vnil_eq :
-  forall (A : Type) (v w : vector A 0),
-    v = w.
+Require Import Equality.
+
+Lemma fact_term_eq_BA :
+  @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm))) [=] (B @ A !).
 Proof.
-intros.
-apply vector_eq.
+intro n.
+destruct n; constructor.
 intro i.
+dependent destruction i.
+apply fact_term_eq_A.
 contradiction (vnil False).
 Qed.
 
-Next Obligation.
-f_equal.
-apply vnil_eq.
-Defined.
-Next Obligation.
-f_equal.
-apply vector_eq.
-intro i.
-dependent destruction i.
-unfold vmap; simpl.
-rewrite (vnil_eq (vmap (substitute id_sub) (vnil fterm)) (vnil term)).
-reflexivity.
-dependent destruction i.
-Defined.
+(* Step A -> B(A) *)
+Definition p_A_BA : (A!) [>] (B @ A!) := Step _ _ ABA Hole id_sub ABA_in fact_term_eq_A fact_term_eq_BA.
 
 (* Single-step reduction A ->> B(A) *)
 Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
 
+Lemma fact_term_eq_BA' :
+  (B @ @Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
+  (B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
+Proof.
+intro n.
+destruct n; constructor.
+intro i.
+dependent destruction i.
+apply fact_term_eq_A.
+contradiction (vnil False).
+Qed.
+
+Lemma fact_term_eq_BBA :
+  (B @ @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
+  (B @ B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
+Proof.
+intro n.
+destruct n; constructor.
+intro i.
+dependent destruction i.
+apply fact_term_eq_BA.
+contradiction (vnil False).
+Qed.
+
 (* Step B(A) -> B(B(A)) *)
-Program Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step ABA (B @@@ Hole) id_sub ABA_in.
-(* These proofs could be generalized *)
-Next Obligation.
-f_equal.
-apply vector_eq.
-intro i.
-dependent destruction i.
-unfold vmap; simpl.
-rewrite (vnil_eq (fun i:Fin 0 => substitute id_sub (vnil fterm i)) (vnil term)).
-reflexivity.
-dependent destruction i.
-Defined.
-Next Obligation.
-f_equal.
-apply vector_eq.
-intro i.
-dependent destruction i.
-unfold vmap; simpl.
-f_equal.
-apply vector_eq.
-dependent destruction i.
-unfold vmap; simpl.
-f_equal.
-rewrite (vnil_eq (vmap (substitute id_sub) (vnil fterm)) (vnil term)).
-reflexivity.
-dependent destruction i.
-dependent destruction i.
-Defined.
+Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step _ _ ABA (B @@@ Hole) id_sub ABA_in fact_term_eq_BA' fact_term_eq_BBA.
 
 (* Two-step reduction A ->> B(B(A)) *)
 Definition s_A_BBA : (A!) ->> (B @ B @ A!) := Cons s_A_BA p_BA_BBA.
@@ -246,48 +214,34 @@ Fixpoint nB_Hole (n : nat) : context :=
   | S n => B @@@ (nB_Hole n)
   end.
 
-(* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)
-Definition p_nBA_nBBA : forall (n : nat), (nB_A n) [>] (B @ (nB_A n)).
-intro n.
-assert (H1 : nB_A n = fill (nB_Hole n) (substitute id_sub (lhs ABA))).
-induction n; simpl.
-rewrite (vnil_eq ((vmap (substitute id_sub) (vnil fterm))) (vnil term)).
-reflexivity.
-rewrite IHn.
-f_equal.
-assert (H2 : (B @ nB_A n) = fill (nB_Hole n) (substitute id_sub (rhs ABA))).
-induction n; simpl.
-f_equal.
-apply vector_eq.
+Lemma fact_term_eq_nBA :
+  forall n,
+    fill (nB_Hole n) (@Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
+    nB_A n.
+Proof.
+induction n as [| n IH]; simpl; intro m; destruct m; constructor; intro i.
+contradiction (vnil False).
+dependent destruction i.
+apply IH.
+contradiction (vnil False).
+Qed.
+
+Lemma fact_term_eq_BnBA :
+  forall n,
+    fill (nB_Hole n) (@Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
+    (B @ nB_A n).
+Proof.
+induction n as [| n IH]; simpl; intro m.
+apply fact_term_eq_BA.
+destruct m; constructor.
 intro i.
 dependent destruction i.
-unfold vmap; simpl.
-rewrite (vnil_eq (vmap (substitute id_sub) (vnil fterm)) (vnil term)).
-reflexivity.
-dependent destruction i.
-rewrite IHn.
-reflexivity.
-admit. (* why does injection H1 not work here?? *)
-rewrite H2, H1.
-exact (Step ABA (nB_Hole n) id_sub ABA_in).
-Defined.
+apply IH.
+contradiction (vnil False).
+Qed.
 
-(* Something really weird is going on in this definition... *)
-(*
-Program Definition p_nBA_nBBA' (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step ABA (nB_Hole n) id_sub ABA_in.
-Next Obligation.
-induction n; simpl.
-admit.
-rewrite IHn.
-reflexivity.
-Defined.
-Next Obligation.
-induction n; simpl.
-admit.
-rewrite IHn.
-reflexivity.
-Defined.
-*)
+(* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)
+Definition p_nBA_nBBA (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step _ _ ABA (nB_Hole n) id_sub ABA_in (fact_term_eq_nBA n) (fact_term_eq_BnBA n).
 
 (* n-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... -n-> B(B(B(...(A)...))) with n applications of B at right side *)
 Fixpoint s_A_nBA (n : nat) : (A!) ->> (nB_A n) :=

@@ -115,6 +115,19 @@ Qed.
 
 (* TODO: define term_eq_refl and term_eq_symm using the
    term_eq_up_to_* equivalents, just like the *_trans case. *)
+Lemma term_eq_up_to_refl :
+  forall n t,
+    term_eq_up_to n t t.
+Proof.
+Admitted.
+
+Lemma term_eq_up_to_symm :
+  forall n t u,
+    term_eq_up_to n t u ->
+    term_eq_up_to n u t.
+Proof.
+Admitted.
+
 Lemma term_eq_refl : forall t, term_eq t t.
 Proof.
 intros t n.
