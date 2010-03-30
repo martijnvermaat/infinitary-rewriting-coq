@@ -292,10 +292,29 @@ Proof.
 split.
 exact good_s_A_repeat_B.
 split; simpl.
+induction n.
+simpl; split; constructor.
+split.
+simpl.
+admit. (* by IHn *)
+assumption.
+
+intro d.
+exists (existT (fun n:nat => pref_type (s_A_nBA n)) (S d) (inl _ tt)); simpl.
+intros [n i] H.
+induction d.
+constructor.
+assert (IH := IHd (length_le_cons_left H)); clear IHd.
+
+(*
+split.
+exact good_s_A_repeat_B.
+split; simpl.
 admit. (* by induction on n *)
 intro d.
 exists (existT (fun n:nat => pref_type (s_A_nBA n)) (S d) (inl _ tt)).
 intros j H.
+*)
 (*
 induction H.
 induction d.
@@ -316,8 +335,7 @@ admit. (* This should somehow follow from what j is *)
 dependent destruction i0.
 admit. (* Maybe induction H1; induction d was not the right choice *)
 *)
-admit.
-Qed.
+Admitted.
 
 (* This reduction is weakly convergent *)
 Lemma strongly_convergent_s_A_repeat_B :

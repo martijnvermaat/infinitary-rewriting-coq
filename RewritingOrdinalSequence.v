@@ -303,6 +303,17 @@ apply (length_le_is_ord_le r r).
 apply ord'_le_refl.
 Qed.
 
+Lemma length_le_cons_left :
+  forall `(r : s ->> t, q : v ->> w, p : t [>] u),
+    Cons r p <= q ->
+    r <= q.
+Proof.
+intros.
+apply (length_le_is_ord_le r q).
+apply ord'_le_succ_left.
+exact (proj1 (length_le_is_ord_le (Cons r p) q) H).
+Qed.
+
 (* Strict prefix relation *)
 (*
    NOTE: the problem described below is not valid, because
@@ -324,8 +335,10 @@ Qed.
 
    where
 
-     f 0  = A
-     f Sn = B(B( f n ))
+     f 0  = Nil
+     f Sn = Cons (Cons (f n) [ABA]) [ABA]
+
+   i.e. f Sn has two more steps than f n.
 
    Now, take any prefix of this reduction of odd length. It is not
    a prefix of Lim f by the definition below.
@@ -463,11 +476,11 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   | Lim _ t f      =>
     (forall n, weakly_convergent (|f n|)) /\
     forall d, exists i, forall j,
-      (|pref r i|) <= (|pref r j|) ->
+      (|pref r i|) <= (|pref r j|) ->   (* prefix (|pref r i|) (|pref r j|) -> *)
       term_eq_up_to d ($ pref r j $) t
   end.
 
-Definition last_step_below d `(r : s ->> t) : Prop :=
+Definition step_below d `(r : s ->> t) : Prop :=
   match r with
   | Cons _ _ _ _ p => (depth p > d)%nat
   | _              => True
@@ -483,7 +496,7 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
     (forall n, strongly_convergent (|f n|)) /\
     forall d, exists i, forall j,
       (|pref r i|) <= (|pref r j|) ->
-      last_step_below d (|pref r j|)
+      step_below d (|pref r j|)
   end.
 
 Lemma aaa :
