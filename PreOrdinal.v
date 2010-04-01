@@ -627,6 +627,23 @@ Fixpoint exp (alpha beta : ord') : ord' :=
   | Limit f   => Limit (fun o => exp alpha (f o))
   end.
 
+Definition alt_ord'_le (alpha beta : ord') : Prop :=
+  exists gamma, add alpha gamma = beta.
+
+Lemma OO :
+  forall alpha beta, 
+  ord'_le alpha beta
+  <->
+  alt_ord'_le alpha beta.
+Proof.
+split.
+induction 1 as [beta|alpha beta i H IH|d].
+exists beta.
+admit.
+elim IH; intros gamma H0.
+unfold alt_ord'_le.
+Admitted.
+
 (* Image of naturals in pre-ordinals *)
 Fixpoint nat_as_ord' (n : nat) : ord' :=
   match n with
@@ -749,6 +766,17 @@ apply ord'_le_succ_right.
 apply ord'_le_succ_intro.
 exact IH.
 Qed.
+
+
+Definition Omega := Limit (fun n => n).
+
+Lemma dsdfsd :
+  forall alpha,
+    alpha ==' Omega ->
+    exists f : nat -> nat, alpha = Limit f.
+
+
+
 
 (*
 Axiom ord'_le_pi : forall alpha beta (H H' : alpha <=' beta), H = H'.
