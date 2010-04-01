@@ -3,6 +3,9 @@ COMPILATION
 coq_makefile -I . *.v -no-install > Makefile
 make
 
+coq_makefile -f INCLUDE *.v -o Makefile
+make
+
 
 CODING
 

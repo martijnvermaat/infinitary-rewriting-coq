@@ -1,0 +1,22 @@
+-R . Cantor
+./rpo/rpo.v
+./rpo/term.v
+./misc/G4.v
+./prelude/more_list.v
+./prelude/not_decreasing.v
+./prelude/AccP.v
+./prelude/list_permut.v
+./prelude/closure.v
+./prelude/dickson.v
+./prelude/PartialFix.v
+./prelude/More_nat.v
+./prelude/list_set.v
+./prelude/Tools.v
+./prelude/decidable_set.v
+./epsilon0/MSE0.v
+./epsilon0/EPSILON0.v
+./epsilon0/Goodstein.v
+./epsilon0/Hydra.v
+./gamma0/Gamma0.v
+./gamma0/Gamma0_length.v
+./gamma0/Gamma0_prelude.v
