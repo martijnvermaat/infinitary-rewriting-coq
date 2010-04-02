@@ -161,6 +161,17 @@ Fixpoint length `(r : s ->> t) : ord' :=
   | Lim _ _ f      => Limit (fun n => length (|f n|))
   end.
 
+Lemma length_limit_discriminate :
+  forall `(r : s ->> t) f,
+    length r = Limit f ->
+    exists g, r = Lim t g.
+Proof.
+intros s t [| | u v g] f H.
+discriminate H.
+discriminate H.
+exists g; reflexivity.
+Qed.
+
 Fixpoint pref_type `(r : s ->> t) : Type :=
   match r with
   | Nil _          => False
@@ -557,62 +568,6 @@ apply (IH r).
 apply Ord'_le_Succ with (inl (pred_type (length (append r q))) tt).
 apply (IH r).
 split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
-Qed.
-
-Definition Omega := Limit (fun n => n).
-
-Lemma ord'_le_omega_elim :
-  forall alpha,
-    alpha <=' Omega ->
-    alpha <' Omega \/ alpha ==' Omega.
-Proof.
-intros alpha H. unfold ord'_lt.
-induction alpha as [| alpha IH | f IH].
-left.
-exists (existT (fun (n:nat) => pred_type n) 1 (inl _ tt)).
-constructor.
-left.
-destruct IH as [[[n j] H1] | H1].
-apply (ord'_le_succ_left H).
-simpl in H1.
-exists (existT (fun (n:nat) => pred_type n) (S n) (inl _ tt)); simpl.
-destruct n as [| n].
-elim j.
-destruct j as [[] | j]; simpl in H1; apply ord'_le_succ_intro.
-assumption.
-apply ord'_le_pred_right with j.
-assumption.
-contradiction ord'_le_not_pred_right_strong with (Succ alpha) Omega (inl (pred_type alpha) tt).
-apply H1.
-right.
-split.
-assumption.
-constructor.
-(* TODO: monotonicity of f assumed *)
-assert (G : forall n m, (n < m)%nat -> f n <' f m).
-admit.
-(* TODO: cleanup, below is a mess *)
-induction n as [| n IHn]; simpl.
-constructor.
-assert (J := G n (S n)).
-destruct J as [i J].
-auto.
-apply Ord'_le_Succ with (existT (fun (n:nat) => pred_type (f n)) (S n) i).
-simpl.
-apply ord'_le_trans with (f n).
-induction n as [| n IHnn]; simpl.
-constructor.
-assert (K := G n (S n)).
-destruct K as [k K].
-auto.
-apply Ord'_le_Succ with k.
-apply ord'_le_trans with (f n).
-apply IHnn with k.
-apply ord'_le_succ_left.
-assumption.
-assumption.
-assumption.
-assumption.
 Qed.
 
 Lemma compression :

@@ -631,7 +631,7 @@ Definition alt_ord'_le (alpha beta : ord') : Prop :=
   exists gamma, add alpha gamma = beta.
 
 Lemma OO :
-  forall alpha beta, 
+  forall alpha beta,
   ord'_le alpha beta
   <->
   alt_ord'_le alpha beta.
@@ -652,6 +652,8 @@ Fixpoint nat_as_ord' (n : nat) : ord' :=
   end.
 
 Coercion nat_as_ord' : nat >-> ord'.
+
+Definition Omega := Limit (fun n => n).
 
 Lemma lt_nat_ord' : forall n m, (n < m)%nat -> n <' m.
 Proof.
@@ -767,16 +769,76 @@ apply ord'_le_succ_intro.
 exact IH.
 Qed.
 
+Lemma ord'_le_omega_elim :
+  forall alpha,
+    alpha <=' Omega ->
+    alpha <' Omega \/ alpha ==' Omega.
+Proof.
+intros alpha H. unfold ord'_lt.
+induction alpha as [| alpha IH | f IH].
+left.
+exists (existT (fun (n:nat) => pred_type n) 1 (inl _ tt)).
+constructor.
+left.
+destruct IH as [[[n j] H1] | H1].
+apply (ord'_le_succ_left H).
+simpl in H1.
+exists (existT (fun (n:nat) => pred_type n) (S n) (inl _ tt)); simpl.
+destruct n as [| n].
+elim j.
+destruct j as [[] | j]; simpl in H1; apply ord'_le_succ_intro.
+assumption.
+apply ord'_le_pred_right with j.
+assumption.
+contradiction ord'_le_not_pred_right_strong with (Succ alpha) Omega (inl (pred_type alpha) tt).
+apply H1.
+right.
+split.
+assumption.
+constructor.
+(* TODO: monotonicity of f assumed *)
+assert (G : forall n m, (n < m)%nat -> f n <' f m).
+admit.
+(* TODO: cleanup, below is a mess *)
+induction n as [| n IHn]; simpl.
+constructor.
+assert (J := G n (S n)).
+destruct J as [i J].
+auto.
+apply Ord'_le_Succ with (existT (fun (n:nat) => pred_type (f n)) (S n) i).
+simpl.
+apply ord'_le_trans with (f n).
+induction n as [| n IHnn]; simpl.
+constructor.
+assert (K := G n (S n)).
+destruct K as [k K].
+auto.
+apply Ord'_le_Succ with k.
+apply ord'_le_trans with (f n).
+apply IHnn with k.
+apply ord'_le_succ_left.
+assumption.
+assumption.
+assumption.
+assumption.
+Qed.
 
-Definition Omega := Limit (fun n => n).
-
-Lemma dsdfsd :
+(* TODO: can we strengthen this, say, to f:nat->nat ? *)
+Lemma ord'_eq_omega_discriminate :
   forall alpha,
     alpha ==' Omega ->
-    exists f : nat -> nat, alpha = Limit f.
-
-
-
+    exists f, alpha = Limit f.
+Proof.
+intros [| alpha | f] [H1 H2].
+inversion_clear H2.
+contradict (ord'_le_not_succ_zero (H 1)).
+inversion_clear H1.
+inversion_clear H2.
+destruct i as [n i].
+contradict (ord'_le_not_pred_right_strong
+  i (ord'_le_succ_elim (H0 (S n))) H).
+exists f; reflexivity.
+Qed.
 
 (*
 Axiom ord'_le_pi : forall alpha beta (H H' : alpha <=' beta), H = H'.
