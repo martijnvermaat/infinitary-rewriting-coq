@@ -34,6 +34,14 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
   | FFun f args => Fun f (vmap finite_term_as_term args)
   end.
 
+(*
+   TODO: I don't think this is a usefull definition, we probably can never
+   prove a term to be infinite?
+   I guess we could use bisimilarity instead of Coq convertibility.
+*)
+Definition finite (t : term) : Prop :=
+  exists t' : fterm, finite_term_as_term t' = t.
+
 End Term.
 
 

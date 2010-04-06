@@ -94,6 +94,11 @@ exact (term_eq_up_to_trans
     (Ht n))).
 Qed.
 
+(* Normal form if no left-hand side matches *)
+Definition normal_form t :=
+  ~ exists c:context, exists r, exists u,
+    In r system /\ fill c (substitute u (lhs r)) [=] t.
+
 (* TODO: we could use these more generally and move them to Prelims *)
 Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
@@ -603,3 +608,6 @@ admit.
 Qed.
 
 End TRS.
+
+
+Implicit Arguments normal_form [F X system].

@@ -5,7 +5,7 @@ Set Implicit Arguments.
 (*
   We construct the TRS with one rule
 
-    ABA : rule A -> B(A)
+    ABA : A -> B(A)
 
   and a convergent reduction of length Omega
 
