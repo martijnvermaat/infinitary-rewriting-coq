@@ -93,7 +93,7 @@ CoFixpoint repeat_B : term :=
 
 Notation context := (context F X).
 
-Notation Hole := (Hole F X).
+(* Function application with one argument *)
 Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity B)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
 Notation id_sub := (empty_substitution F X).

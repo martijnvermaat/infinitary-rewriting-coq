@@ -89,7 +89,7 @@ CoFixpoint repeat_DU : term :=
 
 Notation context := (context F X).
 
-Notation Hole := (Hole F X).
+(* Function application with one argument *)
 Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
 Notation id_sub := (empty_substitution F X).
@@ -229,3 +229,5 @@ Fixpoint fsum (t : fterm) : Z :=
   | FFun U args => vfold (1)%Z  Zplus (vmap fsum args)
   end.
 *)
+
+(* I have no idea how to implement the norm functions *)

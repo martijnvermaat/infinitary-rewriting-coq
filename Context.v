@@ -94,3 +94,6 @@ Fixpoint fill (d : nat) (c : context d) (t : term) : term :=
 
 
 End Context.
+
+
+Implicit Arguments Hole [F X].
