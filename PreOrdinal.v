@@ -3,6 +3,8 @@
 
     Peter Hancock, "Ordinal theoretic proof theory"
 
+  http://personal.cis.strath.ac.uk/~ph/
+
   See also the formalisation in Isabelle by Michael Compton:
   http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html
 *)
@@ -626,23 +628,6 @@ Fixpoint exp (alpha beta : ord') : ord' :=
   | Succ beta => mul (exp alpha beta) alpha
   | Limit f   => Limit (fun o => exp alpha (f o))
   end.
-
-Definition alt_ord'_le (alpha beta : ord') : Prop :=
-  exists gamma, add alpha gamma = beta.
-
-Lemma OO :
-  forall alpha beta,
-  ord'_le alpha beta
-  <->
-  alt_ord'_le alpha beta.
-Proof.
-split.
-induction 1 as [beta|alpha beta i H IH|d].
-exists beta.
-admit.
-elim IH; intros gamma H0.
-unfold alt_ord'_le.
-Admitted.
 
 (* Image of naturals in pre-ordinals *)
 Fixpoint nat_as_ord' (n : nat) : ord' :=
