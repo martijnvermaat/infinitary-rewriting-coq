@@ -117,6 +117,11 @@ apply term_eq_refl.
 admit.
 Qed.
 
+(* By the way, CoLoR states the previous lemma like this: *)
+Lemma subterm_elim : forall p t s, subterm t p = Some s ->
+  {c | dig s p = Some c /\ s [=] fill c s}.
+Admitted.
+
 
 (*
 (* TODO: waarom eigenlijk niet de diepte van een context in het type? als volgt: *)
