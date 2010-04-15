@@ -12,22 +12,38 @@ Variable F : signature.
 Variable X : variables.
 
 Notation term := (term F X).
+Notation terms := (vector term).
 
 (* One-hole contexts where a hole can occur at any finite depth *)
 (* TODO: Alternatively define this as term over variables extended with a hole (option variable) *)
 Inductive context : Type :=
   | Hole : context
   | CFun : forall (f : F) (i j : nat),
-           i + S j = arity f -> vector term i -> context -> vector term j -> context.
+           i + S j = arity f -> terms i -> context -> terms j -> context.
 
 Implicit Arguments CFun [i j].
 
 (* Depth of hole *)
-Fixpoint hole_depth c :=
+Fixpoint hole_depth c : nat :=
   match c with
   | Hole                => 0
   | CFun _ _ _ _ _ c' _ => 1 + hole_depth c'
   end.
+
+(* Position of hole *)
+Fixpoint hole_position c : position :=
+  match c with
+  | Hole                => nil
+  | CFun _ i _ _ _ c' _ => i :: (hole_position c')
+  end.
+
+(* Depth of a hole is length of its position *)
+Lemma hole_depth_position :
+  forall c,
+    hole_depth c = length (hole_position c).
+Proof.
+induction c; simpl; try (rewrite IHc); reflexivity.
+Qed.
 
 (* Fill a hole in a context with a term *)
 Fixpoint fill (c : context) (t : term) : term :=
@@ -60,6 +76,45 @@ intros v e k.
 destruct k; repeat (rewrite vcast_vcons).
 apply term_eq_refl.
 apply IHi.
+Qed.
+
+Lemma hulp : forall n m, n + S (m - S n) = m.
+Admitted.
+
+Require Import Lt.
+Require Import Bool_nat.
+
+(* Create a context from a term by making a hole *)
+Fixpoint dig (t : term) (p : position) {struct p} : option context :=
+  match p with
+  | nil    => Some Hole
+  | n :: p => match t with
+              | Var _      => None
+              | Fun f args => match lt_ge_dec n (arity f) with
+                              | left h  => match dig (vnth h args) p with
+                                           | None   => None
+                                           | Some c => Some (CFun f (hulp n (arity f))
+                                                                  (vtake (lt_le_weak n (arity f) h) args)
+                                                                  c
+                                                                  (vdrop h args))
+                                           end
+                              | right _ => None
+                              end
+              end
+  end.
+
+(* Digging a hole and filling it with the same gets you nothing new *)
+Lemma dig_fill :
+  forall t p,
+    match dig t p, subterm t p with
+    | Some c, Some s => fill c s [=] t
+    | _,      _      => True
+    end.
+Proof.
+intros t p.
+induction p as [| n p H]; simpl.
+apply term_eq_refl.
+admit.
 Qed.
 
 

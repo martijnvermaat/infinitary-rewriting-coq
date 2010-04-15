@@ -54,6 +54,7 @@ Variable F : signature.
 Variable X : variables.
 
 Notation term := (term F X).
+Notation fterm := (finite_term F X).
 Notation context := (context F X).
 Notation substitution := (substitution F X).
 Notation trs := (trs F X).
@@ -93,6 +94,17 @@ exact (term_eq_up_to_trans
     (fill_eq_up_to c (substitute u (lhs r)) (substitute u (rhs r)) H)
     (Ht n))).
 Qed.
+
+(* TODO: c' has hole at same position as c *)
+Lemma project_match :
+  forall (t : term) (c : context) (u : substitution) (f : fterm),
+    term_eq_up_to (hole_depth c + pattern_depth f) t (fill c (substitute u f)) ->
+    exists c' : context, exists u' : substitution,
+      t [=] fill c' (substitute u' f).
+Proof.
+intros t c u f H.
+(* exists (dig t (hole_position c)). *)
+Admitted.
 
 (* Normal form if no left-hand side matches *)
 Definition normal_form t :=

@@ -63,11 +63,52 @@ Proof.
 reflexivity.
 Qed.
 
+Lemma sfs : forall n m, S n <= m -> n <= m.
+Proof.
+induction 1; auto.
+Qed.
+
+(* We cannot eliminate H' here... *)
+(*
+Fixpoint dfs n m (i : Fin n) : (n <= m) -> Fin m :=
+  match i in Fin n return (n <= m) -> Fin m with
+  | First n'  => fun H => match H with
+                 | le_n       => First n'
+                 | le_S m' H' => First m'
+                 end
+  | Next n' i => fun H => match H with
+                 | le_n       => Next (dfs i (le_n n'))
+                 | le_S m' H' => Next (dfs i (sfs H'))
+                 end
+  end.
+*)
+
+(* TODO: why is this so hard? *)
+Definition dfs n m (i : Fin n) : (n <= m) -> Fin m.
+Admitted.
+
+Definition vtake (n m : nat) (H : m <= n) (v : vector n) : vector m :=
+  fun i : Fin m => v (dfs i H).
+
+(* TODO *)
+Definition vdrop (n m : nat) (H : m <= n) (v : vector n) : vector (n - m).
+Admitted.
+
+(* TODO *)
+Definition vnth (n m : nat) (H : m < n) (v : vector n) : A.
+Admitted.
+
 Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   match n return vector n -> vector m -> vector (n + m) with
   | O    => fun _ w => w
   | S n' => fun v w => vcons (vhead v) (vappend (vtail v) w)
   end.
+
+(*
+Lemma vtake_vdrop_vappend :
+  forall n m (H : m <= n) (v : vector n),
+    vappend (vtake H v) (vdrop H v) = v.
+*)
 
 End Vector.
 

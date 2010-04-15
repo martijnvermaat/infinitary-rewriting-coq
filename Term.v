@@ -1,3 +1,4 @@
+Require Export List.
 Require Export Vector.
 Require Export Signature.
 Require Export Variables.
@@ -5,6 +6,9 @@ Require Import FiniteTerm.
 
 
 Set Implicit Arguments.
+
+
+Notation position := (list nat).
 
 
 Section Term.
@@ -25,6 +29,21 @@ Definition root (t : term) : X + F :=
   match t with
   | Var x   => inl _ x
   | Fun f v => inr _ f
+  end.
+
+Require Import Bool_nat.
+
+(* Subterm at position *)
+Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
+  match p with
+  | nil    => Some t
+  | n :: p => match t with
+              | Var _      => None
+              | Fun f args => match lt_ge_dec n (arity f) with
+                              | left h  => subterm (vnth h args) p
+                              | right _ => None
+                              end
+              end
   end.
 
 (* Trivial image of finite_term in term *)
