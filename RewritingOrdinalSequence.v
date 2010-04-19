@@ -196,16 +196,52 @@ Fixpoint pref_type `(r : s ->> t) : Type :=
   | Lim _ _ f      => { n : nat & pref_type (|f n|) }
   end.
 
-Fixpoint pref `(r : s ->> t) : pref_type r -> { t' : term & s ->> t' } :=
-  match r in s ->> t return pref_type r -> { t' : term & s ->> t' } with
-  | Nil _           => !
-  | Cons s t' q _ _ => fun i => match i with
-                                | inl tt => existT (fun u => s ->> u) t' q
-                                | inr j  => pref q j
-                                end
-  | Lim _ _ f       => fun i => match i with
-                                | existT n j => pref (|f n|) j
-                                end
+Fixpoint pref_term `(r : s ->> u) : pref_type r -> term :=
+  match r in s ->> u return pref_type r -> term with
+  | Nil _          => !
+  | Cons s t q _ _ => fun i => match i with
+                               | inl tt => t
+                               | inr j  => pref_term q j
+                               end
+  | Lim _ _ f      => fun i => match i with
+                               | existT n j => pref_term (|f n|) j
+                               end
+  end.
+
+Fixpoint pref_term_next `(r : s ->> u) : pref_type r -> term :=
+  match r in s ->> u return pref_type r -> term with
+  | Nil _          => !
+  | Cons s t q _ _ => fun i => match i with
+                               | inl tt => u
+                               | inr j  => pref_term_next q j
+                               end
+  | Lim _ _ f      => fun i => match i with
+                               | existT n j => pref_term_next (|f n|) j
+                               end
+  end.
+
+Fixpoint pref `(r : s ->> u) : forall i : pref_type r, s ->> pref_term r i :=
+  match r in s ->> u return forall i : pref_type r, s ->> pref_term r i with
+  | Nil _          => fun i => ! i
+  | Cons s t q _ _ => fun i => match i with
+                               | inl tt => q
+                               | inr j  => pref q j
+                               end
+  | Lim _ _ f      => fun i => match i with
+                               | existT n j => pref (|f n|) j
+                               end
+  end.
+
+Fixpoint pref_step `(r : s ->> u) : forall i : pref_type r, pref_term r i [>] pref_term_next r i :=
+  match r in s ->> u return forall i : pref_type r, pref_term r i [>] pref_term_next r i with
+  | Nil _          => fun i => ! i
+  | Cons s t q _ p => fun i => match i with
+                               | inl tt => p
+                               | inr j  => pref_step q j
+                               end
+  | Lim _ _ f      => fun i => match i with
+                               | existT n j => pref_step (|f n|) j
+                               end
   end.
 
 (* maybe this could be a coercion *)
@@ -225,7 +261,7 @@ Implicit Arguments pref_type_as_pred_type [s t r].
 
 Lemma pref_type_as_pred_type_ok :
   forall `(r : s ->> t, i : pref_type r),
-    length (|pref r i|) = pred (length r) (pref_type_as_pred_type i).
+    length (pref r i) = pred (length r) (pref_type_as_pred_type i).
 Proof.
 intros s t r i.
 induction r as [t| s t r u p IH | s t f IH ].
@@ -253,7 +289,7 @@ Implicit Arguments pred_type_as_pref_type [s t r].
 
 Lemma pred_type_as_pref_type_ok :
   forall `(r : s ->> t, i : pred_type (length r)),
-    length (|pref r (pred_type_as_pref_type i)|) = pred (length r) i.
+    length (pref r (pred_type_as_pref_type i)) = pred (length r) i.
 Proof.
 intros s t r i.
 induction r as [t| s t r u p IH | s t f IH].
@@ -278,68 +314,83 @@ rewrite <- (IH n i).
 reflexivity.
 Qed.
 
-(* Length <=, should be equivalent to ord_le *)
-Inductive length_le : forall `(r : s ->> t, q : u ->> v), Prop :=
-  | Length_le_Nil  : forall s `(q : u ->> v),
-                       Nil s <= q
-  | Length_le_Cons : forall `(r : s ->> t, q : u ->> v, p : t [>] w) i,
-                       r <= (|pref q i|) ->
-                       Cons r p <= q
-  | Length_le_Lim  : forall `(f : (nat -> { t' : term & s ->> t' }), q : u ->> v) t,
-                       (forall n, (|f n|) <= q) ->
-                       Lim t f <= q
-where "r <= q" := (length_le r q).
+(* Embeddings of reductions
+   Idea by Vincent, this is all still a very rough try *)
+Inductive embed : forall `(r : s ->> t, q : u ->> v), Prop :=
+  | Embed_Nil  : forall s `(q : u ->> v),
+                   Nil s <= q
+  | Embed_Cons : forall `(q : u ->> v, r : s ->> pref_term q i),
+                   r <= (pref q i) ->
+                   Cons r (pref_step q i) <= q
+  | Embed_Lim  : forall `(f : (nat -> { t' : term & s ->> t' }), q : u ->> v) t,
+                   (forall n, (|f n|) <= q) ->
+                   Lim t f <= q
+where "r <= q" := (embed r q).
+
+Definition embed_strict `(r : s ->> t, q : u ->> v) := exists i, r <= pref q i.
+Infix " < " := embed_strict (no associativity, at level 70).
 
 Open Scope ord'_scope.
 
+(* TODO: figure out what to import exactly (Equality imports PI axiom) *)
 Require Import Equality.
 
-Lemma length_le_is_ord_le :
+Lemma embed_length :
   forall `(r : s ->> t, q : u ->> v),
-    r <= q <-> length r <=' length q.
+    r <= q -> length r <=' length q.
 Proof.
-induction r as [t| s t r u p IH | s t f IH]; simpl; split; intro H.
-constructor.
+induction r as [t | s t r w p IH | s t f IH]; simpl; intros u v q H.
 constructor.
 dependent destruction H.
 apply Ord'_le_Succ with (pref_type_as_pred_type i).
 rewrite <- pref_type_as_pred_type_ok.
-apply (IH u ($ pref q i $) (| pref q i |)). (* apply IH. *)
-assumption.
-inversion_clear H.
-apply Length_le_Cons with (pred_type_as_pref_type i).
-apply (IH u0 ($ pref q (pred_type_as_pref_type i) $) (| pref q (pred_type_as_pref_type i) |)). (* apply IH. *)
-rewrite <- pred_type_as_pref_type_ok in H0.
+apply (IH u (pref_term q i) (pref q i)).
 assumption.
 dependent destruction H.
 constructor.
 intro n.
-apply (IH n u v q). (* apply IH. *)
+apply (IH n u v q).
 apply H.
-inversion_clear H.
-constructor.
-intro n.
-apply (IH n u v q). (* apply IH. *)
-apply H0.
 Qed.
 
-Lemma length_le_refl :
+Lemma embed_lim_right :
+  forall `(r : s ->> t, f : (nat -> { v' : term & u ->> v' })) v n,
+    r <= (|f n|) ->
+    r <= Lim v f.
+Proof.
+induction r as [t | s t r w p _ | s t f IH]; intros u g v n H.
+constructor.
+dependent destruction H.
+(*apply Embed_Cons with (q := Lim v g) (i := existT (fun n => pref_type (|g n|)) n i).*)
+apply (@Embed_Cons u v (Lim v g) s (existT (fun n => pref_type (|g n|)) n i) r).
+assumption.
+constructor.
+intro m.
+apply (IH m u g v n).
+dependent destruction H.
+trivial.
+Qed.
+
+Lemma embed_refl :
   forall `(r : s ->> t), r <= r.
 Proof.
-intros.
-apply (length_le_is_ord_le r r).
-apply ord'_le_refl.
+induction r as [t | s t r u p IH | s t f IH].
+constructor.
+apply Embed_Cons with (q := Cons r p) (i := inl (pref_type r) tt).
+assumption.
+constructor.
+intro n.
+apply embed_lim_right with n.
+apply IH.
 Qed.
 
-Lemma length_le_cons_left :
+Lemma embed_cons_left :
   forall `(r : s ->> t, q : v ->> w, p : t [>] u),
     Cons r p <= q ->
     r <= q.
 Proof.
 intros.
-apply (length_le_is_ord_le r q).
-apply ord'_le_succ_left.
-exact (proj1 (length_le_is_ord_le (Cons r p) q) H).
+admit.
 Qed.
 
 (* Strict prefix relation *)
@@ -378,16 +429,16 @@ Qed.
    to ord_le, but I don't see an obvious way to do this.
 *)
 Inductive prefix : forall `(r : s ->> t, q : s ->> u), Prop :=
-  Pref : forall `(r : s ->> t) i, prefix (|pref r i|) r.
+  Pref : forall `(r : s ->> t) i, prefix (pref r i) r.
 
 Lemma prefix_length_lt :
   forall `(r : s ->> t, q : s ->> u),
     prefix r q ->
-    exists i, r <= (|pref q i|).
+    exists i, r <= (pref q i).
 Proof.
 destruct 1 as [s t r i].
 exists i.
-apply length_le_refl.
+apply embed_refl.
 Qed.
 
 Lemma pred_trans :
@@ -424,9 +475,11 @@ Fixpoint pref_trans `(r : s ->> t)  : forall i : pref_type r, pref_type (|pref r
   end.
 *)
 
+(* TODO: since the change of pref to not return a sigma type, we must use
+   JMeq here, if we revert that we can again use coq equality *)
 Lemma pref_trans :
-  forall `(r : s ->> t, i : pref_type r, j : pref_type (|pref r i|)),
-    exists k : pref_type r, pref r k = pref (|pref r i|) j.
+  forall `(r : s ->> t, i : pref_type r, j : pref_type (pref r i)),
+    exists k : pref_type r, JMeq (pref r k) (pref (pref r i) j).
 Proof.
 induction r; intros.
 elim i.
@@ -454,13 +507,16 @@ intros.
 destruct H.
 destruct H0.
 destruct (pref_trans i0 i).
+(*
 rewrite <- H.
 constructor.
+*)
+admit.
 Qed.
 
 (*
    'Good' sequences have limit functions f where n < m implies
-   that (f n) is a prefix of (f m).
+   that (f n) is strictly embedded in (f m).
 *)
 Fixpoint good `(r : s ->> t) : Prop :=
   match r with
@@ -468,7 +524,31 @@ Fixpoint good `(r : s ->> t) : Prop :=
   | Cons _ _ q _ _ => good q
   | Lim _ t f      =>
     (forall n, good (|f n|)) /\
-    forall n m, (n < m)%nat -> prefix (|f n|) (|f m|)
+    forall n m, (n < m)%nat -> (|f n|) < (|f m|)
+  end.
+
+Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
+  good r /\
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => weakly_convergent q
+  | Lim _ t f      =>
+    (forall n, weakly_convergent (|f n|)) /\
+    forall d, exists i, forall j,
+      pref r i <= pref r j ->   (* prefix (|pref r i|) (|pref r j|) -> *)
+      term_eq_up_to d (pref_term r j) t
+  end.
+
+Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
+  weakly_convergent r /\
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => strongly_convergent q
+  | Lim _ t f      =>
+    (forall n, strongly_convergent (|f n|)) /\
+    forall d, exists i, forall j,
+      pref r i <= pref r j ->
+      (depth (pref_step r j) > d)%nat
   end.
 
 (*
@@ -496,6 +576,7 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
    of all prefixes of such an (f m) having at leas length (f n) should be
    equal to t up to depth d.
 *)
+(*
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   good r /\
   match r with
@@ -526,6 +607,7 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
       (|pref r i|) <= (|pref r j|) ->
       step_below d (|pref r j|)
   end.
+*)
 
 Lemma aaa :
   forall s t f c l sigma,
@@ -533,24 +615,22 @@ Lemma aaa :
     t [=] fill c (substitute sigma l) ->
     exists i : pref_type (Lim t f),
       exists tau,
-        ($ pref (Lim t f) i $) [=] fill c (substitute tau l).
+        (pref_term (Lim t f) i) [=] fill c (substitute tau l).
 Proof.
 intros s t f c l sigma sc H.
 destruct sc as [[_ [_ wc]] [_ _]].
 destruct (wc (hole_depth c + pattern_depth l)) as [i Hi].
 exists i.
-assert (H1 : term_eq_up_to (hole_depth c + pattern_depth l) ($ pref (Lim t f) i $) t).
+assert (H1 : term_eq_up_to (hole_depth c + pattern_depth l) (pref_term (Lim t f) i) t).
 apply Hi.
 admit.
 Admitted.
 
-(* I have a problem understanding the proof in the RTA '10 paper, because
-   the following clearly shouldn't hold, should it? *)
 Lemma bbb :
   forall c (l : finite_term F X) sigma s,
     term_eq_up_to (hole_depth c + pattern_depth l) s (fill c (substitute sigma l)) ->
-    exists tau,
-      s [=] fill c (substitute tau l).
+    exists d, exists tau,
+      s [=] fill d (substitute tau l).
 Admitted.
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
