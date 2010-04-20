@@ -270,12 +270,11 @@ split.
 induction n; simpl; trivial.
 intros n m H.
 induction H; simpl.
-change (prefix (|pref (Cons (s_A_nBA n) (p_nBA_nBBA n)) (inl _ tt)|) (Cons (s_A_nBA n) (p_nBA_nBBA n))).
-constructor.
-apply prefix_trans with _ (s_A_nBA m).
+exists (inl _ tt).
+apply embed_refl.
+destruct IHle as [i IH].
+exists (inr _ i).
 assumption.
-change (prefix (|pref (Cons (s_A_nBA m) (p_nBA_nBBA m)) (inl _ tt)|) (Cons (s_A_nBA m) (p_nBA_nBBA m))).
-constructor.
 Qed.
 
 (*
@@ -301,10 +300,13 @@ assumption.
 
 intro d.
 exists (existT (fun n:nat => pref_type (s_A_nBA n)) (S d) (inl _ tt)); simpl.
-intros [n i] H.
+
 induction d.
 constructor.
-assert (IH := IHd (length_le_cons_left H)); clear IHd.
+intros [n i] H.
+(* we have to look one step further back than i here *)
+assert (IH := IHd (existT (fun n:nat => pref_type (s_A_nBA n)) n i) (embed_cons_left H)); clear IHd.
+admit.
 
 (*
 split.
