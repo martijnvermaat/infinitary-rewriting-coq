@@ -1,0 +1,875 @@
+Index: Substitution.v
+===================================================================
+--- Substitution.v	(revision 218)
++++ Substitution.v	(working copy)
+@@ -1,3 +1,4 @@
++Require Import Prelims.
+ Require Export FiniteTerm.
+ Require Export Term.
+ Require Import TermEquality.
+@@ -24,17 +25,20 @@
+ Fixpoint substitute (sigma : substitution) (t : fterm) {struct t} : term :=
+   match t with
+   | FVar x      => sigma x
+-  | FFun f args => Fun f (vmap (substitute sigma) args)
++  | FFun f args => Fun f (Vmap (substitute sigma) args)
+   end.
+ 
+ (* Applying the empty substitution to a finite term gives the trivial infinite term image *)
+ Lemma empty_substitution_is_trivial :
+   forall (t : fterm), substitute empty_substitution t [~] t.
+ Proof.
++admit.
++(*
+ induction t.
+ apply term_bis_refl.
+ constructor.
+ assumption.
++*)
+ Qed.
+ 
+ End Substitution.
+Index: TermEquality.v
+===================================================================
+--- TermEquality.v	(revision 218)
++++ TermEquality.v	(working copy)
+@@ -1,3 +1,4 @@
++Require Import Prelims.
+ Require Import Signature.
+ Require Import Variables.
+ Require Import Term.
+@@ -19,15 +20,29 @@
+ CoInductive term_bis : term -> term -> Prop :=
+   | Var_bis : forall x, term_bis (Var x) (Var x)
+   | Fun_bis : forall f v w,
+-              (forall i, term_bis (v i) (w i)) ->
++              (forall n (H : n < arity f), term_bis (Vnth v H) (Vnth w H)) ->
+               term_bis (Fun f v) (Fun f w).
+ 
++(*
++CoInductive term_bis : term -> term -> Prop :=
++  | Var_bis : forall x, term_bis (Var x) (Var x)
++  | Fun_bis : forall f v w,
++              terms_bis v w ->
++              term_bis (Fun f v) (Fun f w)
++with terms_bis : forall n, terms n -> terms n -> Prop :=
++  | O_bis  : forall (v w : terms 0), terms_bis v w
++  | Sn_bis : forall n (v w : terms n) t s,
++             terms_bis v w ->
++             term_bis t s ->
++             terms_bis (Vcons t v) (Vcons s w).
++*)
++
+ (* Equality of infinite terms up to a given depth *)
+ Inductive term_eq_up_to : nat -> term -> term -> Prop :=
+   | teut_0   : forall t u : term, term_eq_up_to 0 t u
+   | teut_var : forall n x, term_eq_up_to n (Var x) (Var x)
+   | teut_fun : forall n f v w,
+-               (forall i, term_eq_up_to n (v i) (w i)) ->
++               (forall m (H : m < arity f), term_eq_up_to n (Vnth v H) (Vnth w H)) ->
+                term_eq_up_to (S n) (Fun f v) (Fun f w).
+ 
+ Definition term_eq (t u : term) :=
+@@ -39,7 +54,7 @@
+ Lemma teut_fun_inv :
+   forall n f v w,
+   term_eq_up_to (S n) (Fun f v) (Fun f w) ->
+-  forall i, term_eq_up_to n (v i) (w i).
++  forall m (H : m < arity f), term_eq_up_to n (Vnth v H) (Vnth w H).
+ Proof.
+ intros n f v w H.
+ dependent destruction H.
+@@ -49,9 +64,9 @@
+ Lemma term_eq_fun_inv :
+   forall f v w,
+   term_eq (Fun f v) (Fun f w) ->
+-  forall i, term_eq (v i) (w i).
++  forall n (H : n < arity f), term_eq (Vnth v H) (Vnth w H).
+ Proof.
+-intros f v w H i n.
++intros f v w H m h n.
+ apply teut_fun_inv with (1 := H (S n)).
+ Qed.
+ 
+@@ -65,8 +80,8 @@
+ destruct H.
+ constructor.
+ constructor.
+-intro i.
+-apply IHn with (1:=(H i)).
++intros m h.
++apply IHn with (1:=(H m h)).
+ Qed.
+ 
+ Lemma term_eq_fun_inv_symbol :
+@@ -90,7 +105,7 @@
+ assert (H0 := term_eq_fun_inv_symbol H).
+ dependent destruction H0.
+ apply Fun_bis.
+-intro i.
++intros n h.
+ assert (H0 := term_eq_fun_inv H).
+ apply eq2bis.
+ apply H0.
+@@ -109,8 +124,8 @@
+ assumption.
+ dependent destruction H2.
+ constructor.
+-intro i.
+-apply IH with (u := w i); trivial.
++intros m h.
++apply IH with (u := Vnth w h); trivial.
+ Qed.
+ 
+ (* TODO: define term_eq_refl and term_eq_symm using the
+@@ -137,7 +152,7 @@
+ destruct t.
+ constructor.
+ constructor.
+-intro.
++intros.
+ apply IH.
+ Qed.
+ 
+@@ -151,7 +166,7 @@
+ inversion_clear H'.
+ constructor.
+ constructor.
+-intro.
++intros.
+ apply IHn.
+ apply H.
+ Qed.
+@@ -165,14 +180,14 @@
+ Lemma term_bis_refl : forall t, term_bis t t.
+ cofix.
+ destruct t as [x|f v]; constructor.
+-intro i.
++intros n h.
+ apply term_bis_refl.
+ Qed.
+ 
+ Lemma term_bis_symm : forall t u, term_bis t u -> term_bis u t.
+ cofix.
+ destruct 1 as [x|f v w H]; constructor.
+-intro i.
++intros n h.
+ apply term_bis_symm.
+ apply H.
+ Qed.
+@@ -188,8 +203,8 @@
+ *)
+ dependent destruction H2.
+ rename w into zs, H into H2.
+-constructor; intro i.
+-apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
++constructor; intros n h.
++apply term_bis_trans with (1:=(H1 n h)) (2:=(H2 n h)).
+ Qed.
+ 
+ End TermEquality.
+Index: ExampleABA.v
+===================================================================
+--- ExampleABA.v	(revision 218)
++++ ExampleABA.v	(working copy)
+@@ -68,12 +68,12 @@
+ Notation fterm := (finite_term F X).
+ 
+ (* Function application with no arguments *)
+-Notation "f !" := (@Fun F X f (vnil fterm)) (at level 70).
+-Notation "f !!" := (@FFun F X f (vnil fterm)) (at level 70).
++Notation "f !" := (@Fun F X f Vnil) (at level 70).
++Notation "f !!" := (@FFun F X f Vnil) (at level 70).
+ 
+ (* Function application with one argument *)
+-Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
+-Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
++Notation "f @ a" := (@Fun F X f (Vcons a Vnil)) (right associativity, at level 75).
++Notation "f @@ a" := (@FFun F X f (Vcons a Vnil)) (right associativity, at level 75).
+ 
+ (* Some terms *)
+ Definition test_A : term := A!.
+@@ -94,7 +94,7 @@
+ Notation context := (context F X).
+ 
+ (* Function application with one argument *)
+-Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity B)) (vnil term) a (vnil term)) (right associativity, at level 75).
++Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity B)) Vnil a Vnil) (right associativity, at level 75).
+ 
+ Notation id_sub := (empty_substitution F X).
+ 
+@@ -142,26 +142,40 @@
+ (* Zero-step reduction A ->> A *)
+ Definition s_A : (A!) ->> (A!) := Nil (A!).
+ 
++Section map.
++
++Variables (A B : Type) (f : A->B).
++Notation vecA := (vector A).
++Notation vecB := (vector B).
++
++Fixpoint Vmap n (v : vecA n) {struct v} : vecB n :=
++  match v with
++  | Vnil => Vnil
++  | Vcons a _ v' => Vcons (f a) (Vmap v')
++  end.
++
++End map.
++
+ Lemma fact_term_eq_A :
+-  @Fun F X A (vmap (substitute id_sub) (vnil fterm)) [=] (A !).
++  @Fun F X A (Vmap (substitute id_sub) Vnil) [=] (A !).
+ Proof.
+ intro n.
+ destruct n; constructor.
+-intro.
+-contradiction (vnil False).
++intros m H.
++admit. (*contradiction H.*)
+ Qed.
+ 
+ Require Import Equality.
+ 
+ Lemma fact_term_eq_BA :
+-  @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm))) [=] (B @ A !).
++  @Fun F X B (Vmap (substitute id_sub) (Vcons (A !!) Vnil)) [=] (B @ A !).
+ Proof.
+ intro n.
+ destruct n; constructor.
+-intro i.
+-dependent destruction i.
++intros m H.
++dependent destruction m.
+ apply fact_term_eq_A.
+-contradiction (vnil False).
++admit. (*contradiction (vnil False).*)
+ Qed.
+ 
+ (* Step A -> B(A) *)
+@@ -171,27 +185,27 @@
+ Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
+ 
+ Lemma fact_term_eq_BA' :
+-  (B @ @Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
+-  (B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
++  (B @ @Fun F X A (Vmap (substitute id_sub) Vnil)) [=]
++  (B @ @Fun F X A Vnil).
+ Proof.
+ intro n.
+ destruct n; constructor.
+-intro i.
+-dependent destruction i.
++intros m H.
++dependent destruction m.
+ apply fact_term_eq_A.
+-contradiction (vnil False).
++admit. (*contradiction (vnil False).*)
+ Qed.
+ 
+ Lemma fact_term_eq_BBA :
+-  (B @ @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
+-  (B @ B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
++  (B @ @Fun F X B (Vmap (substitute id_sub) (Vcons (A !!) Vnil))) [=]
++  (B @ B @ @Fun F X A Vnil).
+ Proof.
+ intro n.
+ destruct n; constructor.
+-intro i.
+-dependent destruction i.
++intros m H.
++dependent destruction m.
+ apply fact_term_eq_BA.
+-contradiction (vnil False).
++admit. (*contradiction (vnil False).*)
+ Qed.
+ 
+ (* Step B(A) -> B(B(A)) *)
+@@ -216,28 +230,28 @@
+ 
+ Lemma fact_term_eq_nBA :
+   forall n,
+-    fill (nB_Hole n) (@Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
++    fill (nB_Hole n) (@Fun F X A (Vmap (substitute id_sub) Vnil)) [=]
+     nB_A n.
+ Proof.
+-induction n as [| n IH]; simpl; intro m; destruct m; constructor; intro i.
+-contradiction (vnil False).
+-dependent destruction i.
++induction n as [| n IH]; simpl; intro m; destruct m; constructor; intros k H.
++admit. (*contradiction (vnil False).*)
++dependent destruction k.
+ apply IH.
+-contradiction (vnil False).
++admit. (*contradiction (vnil False).*)
+ Qed.
+ 
+ Lemma fact_term_eq_BnBA :
+   forall n,
+-    fill (nB_Hole n) (@Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
++    fill (nB_Hole n) (@Fun F X B (Vmap (substitute id_sub) (Vcons (A !!) Vnil))) [=]
+     (B @ nB_A n).
+ Proof.
+ induction n as [| n IH]; simpl; intro m.
+ apply fact_term_eq_BA.
+ destruct m; constructor.
+-intro i.
+-dependent destruction i.
++intros k H.
++dependent destruction k.
+ apply IH.
+-contradiction (vnil False).
++admit. (*contradiction (vnil False).*)
+ Qed.
+ 
+ (* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)
+Index: ExampleUNWO.v
+===================================================================
+--- ExampleUNWO.v	(revision 218)
++++ ExampleUNWO.v	(working copy)
+@@ -70,8 +70,8 @@
+ Notation "x !" := (@FVar F X x) (at level 75).
+ 
+ (* Function application with one argument *)
+-Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
+-Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
++Notation "f @ a" := (@Fun F X f (Vcons a Vnil)) (right associativity, at level 75).
++Notation "f @@ a" := (@FFun F X f (Vcons a Vnil)) (right associativity, at level 75).
+ 
+ (* D(D(D(...))) *)
+ CoFixpoint repeat_D : term :=
+@@ -90,7 +90,7 @@
+ Notation context := (context F X).
+ 
+ (* Function application with one argument *)
+-Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a (vnil term)) (right associativity, at level 75).
++Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) Vnil a Vnil) (right associativity, at level 75).
+ 
+ Notation id_sub := (empty_substitution F X).
+ 
+@@ -152,6 +152,7 @@
+ Proof.
+ split.
+ intros [t H].
++(*
+ induction t as [x | t args IH].
+ unfold repeat_D in H.
+ admit. (* discriminate H. *)
+@@ -164,6 +165,9 @@
+ admit. (* lhs r is not a variable *)
+ admit. (* repeat_D cannot be equal to D _and_ U *)
+ admit. (* same argument as previous case *)
++*)
++admit.
++admit.
+ Qed.
+ 
+ (* U(U(U(...))) is an infinite normal form *)
+@@ -211,15 +215,17 @@
+ Require Import ZArith.
+ Delimit Scope Int_scope with I.
+ 
++(*
+ Fixpoint sum (n : nat) (t : term) : Z :=
+   match n with
+   | 0   => Z0
+   | S n => match t with
+            | Var _      => Z0
+-           | Fun D args => vfold (-1)%Z Zplus (vmap (sum n) args)
+-           | Fun U args => vfold (1)%Z  Zplus (vmap (sum n) args)
++           | Fun D args => Vfold (-1)%Z Zplus (vmap (sum n) args)
++           | Fun U args => Vfold (1)%Z  Zplus (vmap (sum n) args)
+            end
+   end.
++*)
+ 
+ (*
+ Fixpoint fsum (t : fterm) : Z :=
+Index: FiniteTerm.v
+===================================================================
+--- FiniteTerm.v	(revision 218)
++++ FiniteTerm.v	(working copy)
+@@ -1,3 +1,4 @@
++Require Import Prelims.
+ Require Import Max. (* TODO: deprecated in Coq 8.3? Max.v -> Peano.v *)
+ Require Import List.
+ Require Export Signature.
+@@ -2,5 +3,8 @@
+ Require Export Variables.
+-Require Export Vector.
++Require Export Bvector.
+ 
+ 
++Implicit Arguments Vnil [A].
++Implicit Arguments Vcons [A n].
++
+ Set Implicit Arguments.
+@@ -18,9 +22,40 @@
+   | FVar : X -> finite_term
+   | FFun : forall f : F, vector finite_term (arity f) -> finite_term.
+ 
++Reset finite_term_rect.
++
+ Notation fterm := (finite_term).
+ Notation fterms := (vector fterm).
+ 
++Section InductionPrinciple.
++
++Variables
++  (P : fterm -> Type)
++  (Q : forall n, fterms n -> Type).
++
++Hypotheses
++  (H1 : forall x, P (FVar x))
++  (H2 : forall f v, Q v -> P (FFun f v))
++  (H3 : Q Vnil)
++  (H4 : forall t n (v : fterms n), P t -> Q v -> Q (Vcons t v)).
++
++Fixpoint finite_term_rect t : P t :=
++  match t as t return P t with
++    | FVar x => H1 x
++    | FFun f v =>
++      let fix finite_terms_rect n (v : fterms n) {struct v} : Q v :=
++        match v as v return Q v with
++          | Vnil => H3
++          | Vcons t' n' v' => H4 (finite_term_rect t') (finite_terms_rect n' v')
++        end
++    in H2 f (finite_terms_rect (arity f) v)
++  end.
++
++End InductionPrinciple.
++
++Definition finite_term_ind (P : fterm -> Prop) (Q : forall n, fterms n -> Prop) :=
++  finite_term_rect P Q.
++
+ (* TODO: Bool or prop? *)
+ Definition is_var (t : fterm) : bool :=
+   match t with
+@@ -31,21 +66,21 @@
+ Fixpoint size (t : fterm) : nat :=
+   match t with
+   | FVar _      => 1
+-  | FFun _ args => 1 + vfold 0 plus (vmap size args)
++  | FFun _ args => 1 + Vfold_right plus (Vmap size args) 0
+                     (* vfold 0 (plus * size) args *)
+   end.
+ 
+ Fixpoint pattern_depth (t : fterm) : nat :=
+   match t with
+   | FVar _      => 0
+-  | FFun _ args => 1 + vfold 0 max (vmap pattern_depth args)
++  | FFun _ args => 1 + Vfold_right max (Vmap pattern_depth args) 0
+   end.
+ 
+ (* List of variable occurrences in a finite term *)
+ Fixpoint vars (t : fterm) : list X :=
+   match t with
+   | FVar x      => x :: nil
+-  | FFun _ args => vfold nil (@app X) (vmap vars args)
++  | FFun _ args => Vfold_right (@app X) (Vmap vars args) nil
+   end.
+ 
+ (* A finite term is linear if it has no duplicate variable occurrences *)
+Index: Prelims.v
+===================================================================
+--- Prelims.v	(revision 218)
++++ Prelims.v	(working copy)
+@@ -23,3 +23,143 @@
+ 
+ Definition disc_S_O : forall (n : nat), S n <> O :=
+   fun n H => disc_O_S (sym_eq H).
++
++
++Require Import Bvector.
++
++Implicit Arguments Vnil [A].
++Implicit Arguments Vcons.
++Implicit Arguments Vhead.
++Implicit Arguments Vtail.
++Implicit Arguments Vconst.
++
++Section Vnth.
++
++Variable A : Type. Notation vec := (vector A).
++
++Require Import Program.
++
++Program Fixpoint Vnth n (v : vec n) : forall i, i < n -> A :=
++  match v with
++  | Vnil =>
++      fun i ip => False_rect _ _
++  | Vcons x p v' =>
++      fun i =>
++        match i with
++        | 0 => fun _ => x
++          | S j => fun H => Vnth v' (i:=j) _
++        end
++  end.
++Next Obligation.
++dependent destruction ip.
++Defined.
++Next Obligation.
++auto with *.
++Defined.
++
++End Vnth.
++
++Section Vfolds.
++
++Variable A : Type. Notation vec := (vector A).
++
++(* Vfold_left f b [a1 .. an] = f .. (f (f b a1) a2) .. an *)
++
++Fixpoint Vfold_left (B : Type) (f : B->A->B) (b:B) n (v : vec n)
++  {struct v} : B :=
++  match v with
++    | Vnil => b
++    | Vcons a _ w => f (Vfold_left f b w) a
++  end.
++
++(* Vfold_right f [a1 .. an] b = f a1 (f a2 .. (f an b) .. ) *)
++
++Fixpoint Vfold_right (B : Type) (f : A->B->B) n (v : vec n) (b:B)
++  {struct v} : B :=
++  match v with
++    | Vnil => b
++    | Vcons a _ w => f a (Vfold_right f w b)
++  end.
++
++End Vfolds.
++
++Section map.
++
++Variables (A B : Type) (f : A->B).
++Notation vecA := (vector A).
++Notation vecB := (vector B).
++
++Fixpoint Vmap n (v : vecA n) {struct v} : vecB n :=
++  match v with
++  | Vnil => Vnil
++  | Vcons a _ v' => Vcons (f a) (Vmap v')
++  end.
++
++End map.
++
++Section Vforall.
++
++Variable A : Type. Notation vec := (vector A).
++Variable P : A -> Prop.
++
++Fixpoint Vforall n (v : vec n) { struct v } : Prop :=
++  match v with
++  | Vnil => True
++  | Vcons a _ w => P a /\ Vforall w
++  end.
++
++End Vforall.
++
++Section Vforall2_sec.
++
++Variable A B : Type.
++
++Notation vecA := (vector A).
++Notation vecB := (vector B).
++
++Variable R : A -> B -> Prop.
++
++Fixpoint Vforall2n_aux n1 (v1 : vecA n1)
++                       n2 (v2 : vecB n2) {struct v1} : Prop :=
++  match v1, v2 with
++    | Vnil, Vnil => True
++    | Vcons a _ v, Vcons b _ w => R a b /\ Vforall2n_aux v w
++    | _, _ => False
++  end.
++
++Definition Vforall2n n (v1 : vecA n) (v2 : vecB n) :=
++  Vforall2n_aux v1 v2.
++
++End Vforall2_sec.
++
++Section Vapp.
++
++Variable A : Type. Notation vec := (vector A).
++
++Fixpoint Vapp n1 n2 (v1 : vec n1) (v2 : vec n2) {struct v1} : vec (n1+n2) :=
++  match v1 with
++  | Vnil => v2
++  | Vcons a _ v' => Vcons a (Vapp v' v2)
++  end.
++
++End Vapp.
++
++Section Vcast.
++
++Variable A : Type. Notation vec := (vector A).
++
++Program Fixpoint Vcast m (v : vec m) n (mn : m = n) {struct v} : vec n :=
++  match v with
++  | Vnil =>
++      match n with
++      | 0 => Vnil
++      | _ => False_rect _ _
++      end
++  | Vcons x m' v' =>
++      match n with
++      | 0 => False_rect _ _
++      | S n' => Vcons x (Vcast v' _)
++      end
++  end.
++
++End Vcast.
+Index: RewritingOrdinalSequence.v
+===================================================================
+--- RewritingOrdinalSequence.v	(revision 218)
++++ RewritingOrdinalSequence.v	(working copy)
+@@ -1,6 +1,5 @@
+ (* Inductive defintion for rewriting sequences *)
+ 
+-
+ Require Import Prelims.
+ Require Export List.
+ Require Export FiniteTerm.
+@@ -11,6 +10,9 @@
+ Require Export TermEquality.
+ 
+ 
++Implicit Arguments inl [A].
++Implicit Arguments inr [B].
++
+ Set Implicit Arguments.
+ 
+ 
+Index: Vector2.v
+===================================================================
+--- Vector2.v	(revision 218)
++++ Vector2.v	(working copy)
+@@ -2,6 +2,9 @@
+ Require Import Equality.
+ 
+ 
++Implicit Arguments inl [A].
++Implicit Arguments inr [B].
++
+ Set Implicit Arguments.
+ 
+ 
+Index: Context.v
+===================================================================
+--- Context.v	(revision 218)
++++ Context.v	(working copy)
+@@ -49,7 +49,7 @@
+ Fixpoint fill (c : context) (t : term) : term :=
+   match c with
+   | Hole                  => t
+-  | CFun f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
++  | CFun f i j H v1 c' v2 => Fun f (Vcast (Vapp v1 (Vcons (fill c' t) v2)) H) (* Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H) *)
+   end.
+ 
+ (* Filling a context gives terms equal up to the hole depth *)
+@@ -67,15 +67,19 @@
+ revert v e.
+ generalize (arity f).
+ induction i; simpl; intro a.
+-intros _ e k.
+-destruct k; repeat (rewrite vcast_vcons).
+-apply IHn.
++intros v e m h.
++destruct m; repeat (rewrite vcast_vcons).
++(*apply IHn.
+ auto with arith.
+-apply term_eq_refl.
+-intros v e k.
+-destruct k; repeat (rewrite vcast_vcons).
+-apply term_eq_refl.
+-apply IHi.
++apply term_eq_refl.*)
++admit.
++admit.
++intros v e m h.
++destruct m; repeat (rewrite vcast_vcons).
++(*apply term_eq_refl.
++apply IHi.*)
++admit.
++admit.
+ Qed.
+ 
+ Lemma hulp : forall n m, n + S (m - S n) = m.
+@@ -85,13 +89,14 @@
+ Require Import Bool_nat.
+ 
+ (* Create a context from a term by making a hole *)
++(*
+ Fixpoint dig (t : term) (p : position) {struct p} : option context :=
+   match p with
+   | nil    => Some Hole
+   | n :: p => match t with
+               | Var _      => None
+               | Fun f args => match lt_ge_dec n (arity f) with
+-                              | left h  => match dig (vnth h args) p with
++                              | left h  => match dig (Vnth h args) p with
+                                            | None   => None
+                                            | Some c => Some (CFun f (hulp n (arity f))
+                                                                   (vtake (lt_le_weak n (arity f) h) args)
+@@ -102,8 +107,10 @@
+                               end
+               end
+   end.
++*)
+ 
+ (* Digging a hole and filling it with the same gets you nothing new *)
++(*
+ Lemma dig_fill :
+   forall t p,
+     match dig t p, subterm t p with
+@@ -116,11 +123,14 @@
+ apply term_eq_refl.
+ admit.
+ Qed.
++*)
+ 
+ (* By the way, CoLoR states the previous lemma like this: *)
++(*
+ Lemma subterm_elim : forall p t s, subterm t p = Some s ->
+   {c | dig s p = Some c /\ s [=] fill c s}.
+ Admitted.
++*)
+ 
+ 
+ (*
+Index: Naturals.v
+===================================================================
+--- Naturals.v	(revision 218)
++++ Naturals.v	(working copy)
+@@ -69,8 +69,8 @@
+ Notation FF := (@FFun Sigma X).
+ Notation FV := (@FVar Sigma X).
+ 
+-Notation fvnil := (vnil fterm).
+-Notation vnil := (vnil term).
++Notation fvnil := (Vnil).
++Notation vnil := (Vnil).
+ 
+ (* Some terms *)
+ (*
+@@ -83,7 +83,7 @@
+ 
+ (* succ(succ(succ(succ(succ(...))))) *)
+ CoFixpoint repeat_succ : term :=
+-  F succ (vcons repeat_succ vnil).
++  F succ (Vcons repeat_succ Vnil).
+ 
+ (*
+ Check repeat_succ.
+@@ -109,7 +109,7 @@
+ 
+ (* We build the rewrite rule succ(x)->x *)
+ 
+-Definition succ_x_x_l : fterm := FF succ (vcons (FV 1) fvnil).
++Definition succ_x_x_l : fterm := FF succ (Vcons (FV 1) fvnil).
+ Definition succ_x_x_r : fterm := FV 1.
+ 
+ Lemma succ_x_x_wf : is_var succ_x_x_l = false /\
+Index: PreOrdinal.v
+===================================================================
+--- PreOrdinal.v	(revision 218)
++++ PreOrdinal.v	(working copy)
+@@ -22,6 +22,9 @@
+ Require Import Prelims.
+ 
+ 
++Implicit Arguments inl [A].
++Implicit Arguments inr [B].
++
+ Set Implicit Arguments.
+ 
+ 
+@@ -139,7 +142,7 @@
+ 
+ (* First predecessor of a successor is the original ordinal. *)
+ Lemma first_pred_after_succ_id :
+-  forall alpha, alpha = pred (Succ alpha) (inl (pred_type alpha) tt).
++  forall alpha, alpha = pred (Succ alpha) (inl _ tt).
+ Proof.
+ trivial.
+ Qed.
+Index: ContextEquality.v
+===================================================================
+--- ContextEquality.v	(revision 218)
++++ ContextEquality.v	(working copy)
+@@ -1,3 +1,4 @@
++Require Import Prelims.
+ Require Import Signature.
+ Require Import Variables.
+ Require Import Context.
+@@ -26,9 +27,9 @@
+ Inductive context_bis : context -> context -> Prop :=
+   | Hole_bis : context_bis Hole Hole
+   | CFun_bis : forall f i j H (v v' : terms i) c c' (w w' : terms j),
+-               (forall i, term_bis (v i) (v' i)) ->
++               (forall n (H : n < i), term_bis (Vnth v H) (Vnth v' H)) ->
+                context_bis c c' ->
+-               (forall i, term_bis (w i) (w' i)) ->
++               (forall n (H : n < j), term_bis (Vnth w H) (Vnth w' H)) ->
+                context_bis (CFun f H v c w) (CFun f H v' c' w').
+ 
+ (* Equality of contexts up to a given depth *)
+@@ -36,9 +37,9 @@
+   | ceut_0    : forall c c' : context, context_eq_up_to 0 c c'
+   | ceut_hole : forall n, context_eq_up_to n Hole Hole
+   | ceut_cfun : forall n f i j H (v v' : terms i) c c' (w w' : terms j),
+-                (forall i, term_eq_up_to n (v i) (v' i)) ->
++                (forall n (H : n < i), term_eq_up_to n (Vnth v H) (Vnth v' H)) ->
+                 context_eq_up_to n c c' ->
+-                (forall i, term_eq_up_to n (w i) (w' i)) ->
++                (forall n (H : n < j), term_eq_up_to n (Vnth w H) (Vnth w' H)) ->
+                 context_eq_up_to (S n) (CFun f H v c w) (CFun f H v' c' w').
+ 
+ Definition context_eq (c c' : context) :=
+Index: Term.v
+===================================================================
+--- Term.v	(revision 218)
++++ Term.v	(working copy)
+@@ -1,10 +1,14 @@
++Require Import Prelims.
+ Require Export List.
+-Require Export Vector.
++Require Export Bvector.
+ Require Export Signature.
+ Require Export Variables.
+ Require Import FiniteTerm.
+ 
+ 
++Implicit Arguments Vnil [A].
++Implicit Arguments Vcons [A n].
++
+ Set Implicit Arguments.
+ 
+ 
+@@ -27,8 +31,8 @@
+ 
+ Definition root (t : term) : X + F :=
+   match t with
+-  | Var x   => inl _ x
+-  | Fun f v => inr _ f
++  | Var x   => inl x
++  | Fun f v => inr f
+   end.
+ 
+ Require Import Bool_nat.
+@@ -40,7 +44,7 @@
+   | n :: p => match t with
+               | Var _      => None
+               | Fun f args => match lt_ge_dec n (arity f) with
+-                              | left h  => subterm (vnth h args) p
++                              | left h  => subterm (Vnth args h) p
+                               | right _ => None
+                               end
+               end
+@@ -50,7 +54,7 @@
+ Fixpoint finite_term_as_term (t : fterm) : term :=
+   match t with
+   | FVar x      => Var x
+-  | FFun f args => Fun f (vmap finite_term_as_term args)
++  | FFun f args => Fun f (Vmap finite_term_as_term args)
+   end.
+ 
+ (*

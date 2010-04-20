@@ -70,8 +70,8 @@ Notation fterm := (finite_term F X).
 Notation "x !" := (@FVar F X x) (at level 75).
 
 (* Function application with one argument *)
-Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
-Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
+Notation "f @ a" := (@Fun F X f (Vcons a Vnil)) (right associativity, at level 75).
+Notation "f @@ a" := (@FFun F X f (Vcons a Vnil)) (right associativity, at level 75).
 
 (* D(D(D(...))) *)
 CoFixpoint repeat_D : term :=
@@ -90,7 +90,7 @@ CoFixpoint repeat_DU : term :=
 Notation context := (context F X).
 
 (* Function application with one argument *)
-Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a (vnil term)) (right associativity, at level 75).
+Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) Vnil a Vnil) (right associativity, at level 75).
 
 Notation id_sub := (empty_substitution F X).
 
@@ -152,6 +152,7 @@ Lemma infinite_nf_D :
 Proof.
 split.
 intros [t H].
+(*
 induction t as [x | t args IH].
 unfold repeat_D in H.
 admit. (* discriminate H. *)
@@ -164,6 +165,9 @@ admit. (* c = Hole, so D(U(x)) [=] repeat_D *)
 admit. (* lhs r is not a variable *)
 admit. (* repeat_D cannot be equal to D _and_ U *)
 admit. (* same argument as previous case *)
+*)
+admit.
+admit.
 Qed.
 
 (* U(U(U(...))) is an infinite normal form *)
@@ -211,15 +215,17 @@ Qed.
 Require Import ZArith.
 Delimit Scope Int_scope with I.
 
+(*
 Fixpoint sum (n : nat) (t : term) : Z :=
   match n with
   | 0   => Z0
   | S n => match t with
            | Var _      => Z0
-           | Fun D args => vfold (-1)%Z Zplus (vmap (sum n) args)
-           | Fun U args => vfold (1)%Z  Zplus (vmap (sum n) args)
+           | Fun D args => Vfold (-1)%Z Zplus (vmap (sum n) args)
+           | Fun U args => Vfold (1)%Z  Zplus (vmap (sum n) args)
            end
   end.
+*)
 
 (*
 Fixpoint fsum (t : fterm) : Z :=

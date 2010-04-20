@@ -1,0 +1,46 @@
+Index: RewritingOrdinalSequence.v
+===================================================================
+--- RewritingOrdinalSequence.v	(revision 197)
++++ RewritingOrdinalSequence.v	(working copy)
+@@ -66,17 +66,28 @@
+ Reserved Notation "s [>] t" (no associativity, at level 40).
+ 
+ Inductive step : term -> term -> Type :=
+-  | Step : forall (r : rule) (c : context) (s : substitution),
++  | Step : forall (s t : term) (r : rule) (c : context) (u : substitution),
+              In r system ->
+-             fill c (substitute s (lhs r)) [>] fill c (substitute s (rhs r))
++             fill c (substitute u (lhs r)) [=] s ->
++             fill c (substitute u (rhs r)) [=] t ->
++             s [>] t
+ where "s [>] t" := (step s t).
+ 
+ (* Depth of rule application in rewriting step *)
+ Definition depth s t (r : s [>] t) : nat :=
+   match r with
+-  | Step _ c _ _ => hole_depth c
++  | Step _ _ _ c _ _ _ _ => hole_depth c
+   end.
+ 
++Require Export Setoid.
++Require Export Relation_Definitions.
++
++Add Relation term (@term_eq F X)
++  reflexivity proved by (@term_eq_refl F X)
++  symmetry proved by (@term_eq_symm F X)
++  transitivity proved by (@term_eq_trans F X)
++as term_eq_rel.
++
+ (* Source and target are equal up to the depth of the rewrite step *)
+ Lemma eq_up_to_rewriting_depth :
+   forall `(r : s [>] t) n,
+@@ -84,6 +95,9 @@
+     term_eq_up_to n s t.
+ Proof.
+ destruct r.
++simpl.
++setoid_rewrite <- t0.
++
+ apply fill_eq_up_to.
+ Qed.
+ 

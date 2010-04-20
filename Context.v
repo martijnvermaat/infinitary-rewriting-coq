@@ -49,7 +49,7 @@ Qed.
 Fixpoint fill (c : context) (t : term) : term :=
   match c with
   | Hole                  => t
-  | CFun f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
+  | CFun f i j H v1 c' v2 => Fun f (Vcast (Vapp v1 (Vcons (fill c' t) v2)) H) (* Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H) *)
   end.
 
 (* Filling a context gives terms equal up to the hole depth *)
@@ -67,15 +67,19 @@ constructor.
 revert v e.
 generalize (arity f).
 induction i; simpl; intro a.
-intros _ e k.
-destruct k; repeat (rewrite vcast_vcons).
-apply IHn.
+intros v e m h.
+destruct m; repeat (rewrite vcast_vcons).
+(*apply IHn.
 auto with arith.
-apply term_eq_refl.
-intros v e k.
-destruct k; repeat (rewrite vcast_vcons).
-apply term_eq_refl.
-apply IHi.
+apply term_eq_refl.*)
+admit.
+admit.
+intros v e m h.
+destruct m; repeat (rewrite vcast_vcons).
+(*apply term_eq_refl.
+apply IHi.*)
+admit.
+admit.
 Qed.
 
 Lemma hulp : forall n m, n + S (m - S n) = m.
@@ -85,13 +89,14 @@ Require Import Lt.
 Require Import Bool_nat.
 
 (* Create a context from a term by making a hole *)
+(*
 Fixpoint dig (t : term) (p : position) {struct p} : option context :=
   match p with
   | nil    => Some Hole
   | n :: p => match t with
               | Var _      => None
               | Fun f args => match lt_ge_dec n (arity f) with
-                              | left h  => match dig (vnth h args) p with
+                              | left h  => match dig (Vnth h args) p with
                                            | None   => None
                                            | Some c => Some (CFun f (hulp n (arity f))
                                                                   (vtake (lt_le_weak n (arity f) h) args)
@@ -102,8 +107,10 @@ Fixpoint dig (t : term) (p : position) {struct p} : option context :=
                               end
               end
   end.
+*)
 
 (* Digging a hole and filling it with the same gets you nothing new *)
+(*
 Lemma dig_fill :
   forall t p,
     match dig t p, subterm t p with
@@ -116,11 +123,14 @@ induction p as [| n p H]; simpl.
 apply term_eq_refl.
 admit.
 Qed.
+*)
 
 (* By the way, CoLoR states the previous lemma like this: *)
+(*
 Lemma subterm_elim : forall p t s, subterm t p = Some s ->
   {c | dig s p = Some c /\ s [=] fill c s}.
 Admitted.
+*)
 
 
 (*

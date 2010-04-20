@@ -69,8 +69,8 @@ Notation fterm := (finite_term Sigma X).
 Notation FF := (@FFun Sigma X).
 Notation FV := (@FVar Sigma X).
 
-Notation fvnil := (vnil fterm).
-Notation vnil := (vnil term).
+Notation fvnil := (Vnil).
+Notation vnil := (Vnil).
 
 (* Some terms *)
 (*
@@ -83,7 +83,7 @@ Check (V 3).
 
 (* succ(succ(succ(succ(succ(...))))) *)
 CoFixpoint repeat_succ : term :=
-  F succ (vcons repeat_succ vnil).
+  F succ (Vcons repeat_succ Vnil).
 
 (*
 Check repeat_succ.
@@ -109,7 +109,7 @@ Eval simpl in (head repeat_succ).
 
 (* We build the rewrite rule succ(x)->x *)
 
-Definition succ_x_x_l : fterm := FF succ (vcons (FV 1) fvnil).
+Definition succ_x_x_l : fterm := FF succ (Vcons (FV 1) fvnil).
 Definition succ_x_x_r : fterm := FV 1.
 
 Lemma succ_x_x_wf : is_var succ_x_x_l = false /\
