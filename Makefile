@@ -36,11 +36,11 @@ CAMLP4LIB:=$(shell $(CAMLP4BIN)$(CAMLP4) -where)
 ##########################
 
 OCAMLLIBS:=-I .\
-  -I ./Cantor/prelude\
-  -I ./Cantor/misc\
-  -I ./Cantor/rpo\
-  -I ./Cantor/epsilon0\
-  -I ./Cantor/gamma0
+  -I ../Cantor/prelude\
+  -I ../Cantor/misc\
+  -I ../Cantor/rpo\
+  -I ../Cantor/epsilon0\
+  -I ../Cantor/gamma0
 COQSRCLIBS:=-I $(COQLIB)/kernel -I $(COQLIB)/lib \
   -I $(COQLIB)/library -I $(COQLIB)/parsing \
   -I $(COQLIB)/pretyping -I $(COQLIB)/interp \
@@ -54,11 +54,11 @@ COQSRCLIBS:=-I $(COQLIB)/kernel -I $(COQLIB)/lib \
   -I $(COQLIB)/contrib/rtauto -I $(COQLIB)/contrib/setoid_ring \
   -I $(COQLIB)/contrib/subtac -I $(COQLIB)/contrib/xml
 COQLIBS:=-I .\
-  -I ./Cantor/prelude\
-  -I ./Cantor/misc\
-  -I ./Cantor/rpo\
-  -I ./Cantor/epsilon0\
-  -I ./Cantor/gamma0 
+  -I ../Cantor/prelude\
+  -I ../Cantor/misc\
+  -I ../Cantor/rpo\
+  -I ../Cantor/epsilon0\
+  -I ../Cantor/gamma0 
 COQDOCLIBS:=
 
 ##########################
@@ -93,27 +93,27 @@ PP:=-pp "$(CAMLP4BIN)$(CAMLP4)o -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $
 #                                 #
 ###################################
 
-VFILES:=Cantor/rpo/rpo.v\
-  Cantor/rpo/term.v\
-  Cantor/misc/G4.v\
-  Cantor/prelude/more_list.v\
-  Cantor/prelude/not_decreasing.v\
-  Cantor/prelude/AccP.v\
-  Cantor/prelude/list_permut.v\
-  Cantor/prelude/closure.v\
-  Cantor/prelude/dickson.v\
-  Cantor/prelude/PartialFix.v\
-  Cantor/prelude/More_nat.v\
-  Cantor/prelude/list_set.v\
-  Cantor/prelude/Tools.v\
-  Cantor/prelude/decidable_set.v\
-  Cantor/epsilon0/MSE0.v\
-  Cantor/epsilon0/EPSILON0.v\
-  Cantor/epsilon0/Goodstein.v\
-  Cantor/epsilon0/Hydra.v\
-  Cantor/gamma0/Gamma0.v\
-  Cantor/gamma0/Gamma0_length.v\
-  Cantor/gamma0/Gamma0_prelude.v\
+VFILES:=../Cantor/rpo/rpo.v\
+  ../Cantor/rpo/term.v\
+  ../Cantor/misc/G4.v\
+  ../Cantor/prelude/more_list.v\
+  ../Cantor/prelude/not_decreasing.v\
+  ../Cantor/prelude/AccP.v\
+  ../Cantor/prelude/list_permut.v\
+  ../Cantor/prelude/closure.v\
+  ../Cantor/prelude/dickson.v\
+  ../Cantor/prelude/PartialFix.v\
+  ../Cantor/prelude/More_nat.v\
+  ../Cantor/prelude/list_set.v\
+  ../Cantor/prelude/Tools.v\
+  ../Cantor/prelude/decidable_set.v\
+  ../Cantor/epsilon0/MSE0.v\
+  ../Cantor/epsilon0/EPSILON0.v\
+  ../Cantor/epsilon0/Goodstein.v\
+  ../Cantor/epsilon0/Hydra.v\
+  ../Cantor/gamma0/Gamma0.v\
+  ../Cantor/gamma0/Gamma0_length.v\
+  ../Cantor/gamma0/Gamma0_prelude.v\
   CompressionCantor.v\
   CompressionOpenProjections.v\
   Compression.v\

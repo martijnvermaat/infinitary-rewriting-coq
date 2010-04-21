@@ -1,8 +1,8 @@
-Add LoadPath "./Cantor/prelude".
-Add LoadPath "./Cantor/misc".
-Add LoadPath "./Cantor/rpo".
-Add LoadPath "./Cantor/epsilon0".
-Add LoadPath "./Cantor/gamma0".
+Add LoadPath "../Cantor/prelude".
+Add LoadPath "../Cantor/misc".
+Add LoadPath "../Cantor/rpo".
+Add LoadPath "../Cantor/epsilon0".
+Add LoadPath "../Cantor/gamma0".
 
 
 Require Import Prelims.
