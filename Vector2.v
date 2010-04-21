@@ -2,9 +2,6 @@ Require Import Prelims.
 Require Import Equality.
 
 
-Implicit Arguments inl [A].
-Implicit Arguments inr [B].
-
 Set Implicit Arguments.
 
 

@@ -1,13 +1,9 @@
-Require Import Prelims.
 Require Export List.
-Require Export Bvector.
+Require Export Vector.
 Require Export Signature.
 Require Export Variables.
 Require Import FiniteTerm.
 
-
-Implicit Arguments Vnil [A].
-Implicit Arguments Vcons [A n].
 
 Set Implicit Arguments.
 
@@ -31,8 +27,8 @@ Notation fterms := (vector fterm).
 
 Definition root (t : term) : X + F :=
   match t with
-  | Var x   => inl x
-  | Fun f v => inr f
+  | Var x   => inl _ x
+  | Fun f v => inr _ f
   end.
 
 Require Import Bool_nat.
@@ -44,7 +40,7 @@ Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
   | n :: p => match t with
               | Var _      => None
               | Fun f args => match lt_ge_dec n (arity f) with
-                              | left h  => subterm (Vnth args h) p
+                              | left h  => subterm (vnth h args) p
                               | right _ => None
                               end
               end
@@ -54,7 +50,7 @@ Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
 Fixpoint finite_term_as_term (t : fterm) : term :=
   match t with
   | FVar x      => Var x
-  | FFun f args => Fun f (Vmap finite_term_as_term args)
+  | FFun f args => Fun f (vmap finite_term_as_term args)
   end.
 
 (*

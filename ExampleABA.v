@@ -68,12 +68,12 @@ Notation term := (term F X).
 Notation fterm := (finite_term F X).
 
 (* Function application with no arguments *)
-Notation "f !" := (@Fun F X f Vnil) (at level 70).
-Notation "f !!" := (@FFun F X f Vnil) (at level 70).
+Notation "f !" := (@Fun F X f (vnil fterm)) (at level 70).
+Notation "f !!" := (@FFun F X f (vnil fterm)) (at level 70).
 
 (* Function application with one argument *)
-Notation "f @ a" := (@Fun F X f (Vcons a Vnil)) (right associativity, at level 75).
-Notation "f @@ a" := (@FFun F X f (Vcons a Vnil)) (right associativity, at level 75).
+Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
+Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
 
 (* Some terms *)
 Definition test_A : term := A!.
@@ -94,7 +94,7 @@ CoFixpoint repeat_B : term :=
 Notation context := (context F X).
 
 (* Function application with one argument *)
-Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity B)) Vnil a Vnil) (right associativity, at level 75).
+Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity B)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
 Notation id_sub := (empty_substitution F X).
 
@@ -142,40 +142,26 @@ Qed.
 (* Zero-step reduction A ->> A *)
 Definition s_A : (A!) ->> (A!) := Nil (A!).
 
-Section map.
-
-Variables (A B : Type) (f : A->B).
-Notation vecA := (vector A).
-Notation vecB := (vector B).
-
-Fixpoint Vmap n (v : vecA n) {struct v} : vecB n :=
-  match v with
-  | Vnil => Vnil
-  | Vcons a _ v' => Vcons (f a) (Vmap v')
-  end.
-
-End map.
-
 Lemma fact_term_eq_A :
-  @Fun F X A (Vmap (substitute id_sub) Vnil) [=] (A !).
+  @Fun F X A (vmap (substitute id_sub) (vnil fterm)) [=] (A !).
 Proof.
 intro n.
 destruct n; constructor.
-intros m H.
-admit. (*contradiction H.*)
+intro.
+contradiction (vnil False).
 Qed.
 
 Require Import Equality.
 
 Lemma fact_term_eq_BA :
-  @Fun F X B (Vmap (substitute id_sub) (Vcons (A !!) Vnil)) [=] (B @ A !).
+  @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm))) [=] (B @ A !).
 Proof.
 intro n.
 destruct n; constructor.
-intros m H.
-dependent destruction m.
+intro i.
+dependent destruction i.
 apply fact_term_eq_A.
-admit. (*contradiction (vnil False).*)
+contradiction (vnil False).
 Qed.
 
 (* Step A -> B(A) *)
@@ -185,27 +171,27 @@ Definition p_A_BA : (A!) [>] (B @ A!) := Step _ _ ABA Hole id_sub ABA_in fact_te
 Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
 
 Lemma fact_term_eq_BA' :
-  (B @ @Fun F X A (Vmap (substitute id_sub) Vnil)) [=]
-  (B @ @Fun F X A Vnil).
+  (B @ @Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
+  (B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
 Proof.
 intro n.
 destruct n; constructor.
-intros m H.
-dependent destruction m.
+intro i.
+dependent destruction i.
 apply fact_term_eq_A.
-admit. (*contradiction (vnil False).*)
+contradiction (vnil False).
 Qed.
 
 Lemma fact_term_eq_BBA :
-  (B @ @Fun F X B (Vmap (substitute id_sub) (Vcons (A !!) Vnil))) [=]
-  (B @ B @ @Fun F X A Vnil).
+  (B @ @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
+  (B @ B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
 Proof.
 intro n.
 destruct n; constructor.
-intros m H.
-dependent destruction m.
+intro i.
+dependent destruction i.
 apply fact_term_eq_BA.
-admit. (*contradiction (vnil False).*)
+contradiction (vnil False).
 Qed.
 
 (* Step B(A) -> B(B(A)) *)
@@ -230,28 +216,28 @@ Fixpoint nB_Hole (n : nat) : context :=
 
 Lemma fact_term_eq_nBA :
   forall n,
-    fill (nB_Hole n) (@Fun F X A (Vmap (substitute id_sub) Vnil)) [=]
+    fill (nB_Hole n) (@Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
     nB_A n.
 Proof.
-induction n as [| n IH]; simpl; intro m; destruct m; constructor; intros k H.
-admit. (*contradiction (vnil False).*)
-dependent destruction k.
+induction n as [| n IH]; simpl; intro m; destruct m; constructor; intro i.
+contradiction (vnil False).
+dependent destruction i.
 apply IH.
-admit. (*contradiction (vnil False).*)
+contradiction (vnil False).
 Qed.
 
 Lemma fact_term_eq_BnBA :
   forall n,
-    fill (nB_Hole n) (@Fun F X B (Vmap (substitute id_sub) (Vcons (A !!) Vnil))) [=]
+    fill (nB_Hole n) (@Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
     (B @ nB_A n).
 Proof.
 induction n as [| n IH]; simpl; intro m.
 apply fact_term_eq_BA.
 destruct m; constructor.
-intros k H.
-dependent destruction k.
+intro i.
+dependent destruction i.
 apply IH.
-admit. (*contradiction (vnil False).*)
+contradiction (vnil False).
 Qed.
 
 (* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)

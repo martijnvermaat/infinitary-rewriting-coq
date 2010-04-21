@@ -1,5 +1,6 @@
 (* Inductive defintion for rewriting sequences *)
 
+
 Require Import Prelims.
 Require Export List.
 Require Export FiniteTerm.
@@ -9,9 +10,6 @@ Require Export Context.
 Require Export PreOrdinal.
 Require Export TermEquality.
 
-
-Implicit Arguments inl [A].
-Implicit Arguments inr [B].
 
 Set Implicit Arguments.
 

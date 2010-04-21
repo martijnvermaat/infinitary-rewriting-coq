@@ -22,9 +22,6 @@ Definition pd (alpha : ord) : fam ord := existT _ (pred_type alpha) (pred alpha)
 Require Import Prelims.
 
 
-Implicit Arguments inl [A].
-Implicit Arguments inr [B].
-
 Set Implicit Arguments.
 
 
@@ -142,7 +139,7 @@ Infix " ==' " := ord'_eq (no associativity, at level 75) : ord'_scope.
 
 (* First predecessor of a successor is the original ordinal. *)
 Lemma first_pred_after_succ_id :
-  forall alpha, alpha = pred (Succ alpha) (inl _ tt).
+  forall alpha, alpha = pred (Succ alpha) (inl (pred_type alpha) tt).
 Proof.
 trivial.
 Qed.
