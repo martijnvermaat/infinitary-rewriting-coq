@@ -37,10 +37,10 @@ Fixpoint hole_position c : position :=
   | CFun _ i _ _ _ c' _ => i :: (hole_position c')
   end.
 
-(* Depth of a hole is length of its position *)
-Lemma hole_depth_position :
+(* Depth of a hole is depth of its position *)
+Lemma hole_position_depth :
   forall c,
-    hole_depth c = length (hole_position c).
+    hole_depth c = position_depth (hole_position c).
 Proof.
 induction c; simpl; try (rewrite IHc); reflexivity.
 Qed.

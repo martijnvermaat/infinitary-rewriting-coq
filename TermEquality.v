@@ -192,8 +192,66 @@ constructor; intro i.
 apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
 Qed.
 
+Lemma term_eq_up_to_weaken :
+  forall t u n, term_eq_up_to (S n) t u -> term_eq_up_to n t u.
+Proof.
+intros t u n H.
+revert t u H.
+induction n; intros t u H.
+constructor.
+inversion_clear H.
+apply term_eq_up_to_refl.
+constructor.
+intro i.
+apply IHn.
+apply H0.
+Qed.
+
 End TermEquality.
 
 
 Infix " [~] " := term_bis (no associativity, at level 70).
 Infix " [=] " := term_eq (no associativity, at level 70).
+
+
+Section PositionEquality.
+
+Variable F : signature.
+Variable X : variables.
+
+Notation term := (term F X).
+Notation terms := (vector term).
+
+Definition pos_eq (p : position) (t u : term) :=
+  match subterm t p, subterm u p with
+  | None,   None   => True
+  | Some t, Some u => root t = root u
+  | _,      _      => False
+  end.
+
+Definition all_pos_eq (t u : term) :=
+  forall p : position, pos_eq p t u.
+
+Lemma all_pos_eq_implies_term_eq :
+  forall (t u : term), all_pos_eq t u -> term_eq t u.
+Proof.
+intros t u H' n.
+assert (H : forall p, position_depth p = n -> pos_eq p t u).
+intros p H1.
+apply H'.
+clear H'.
+induction n as [| n IH].
+constructor.
+Admitted.
+
+Lemma term_eq_implies_all_pos_eq :
+  forall (t u : term), term_eq t u -> all_pos_eq t u.
+Proof.
+intros t u H p.
+induction p.
+assert (H1 := H 1).
+dependent destruction H1; reflexivity.
+Admitted.
+
+
+End PositionEquality.

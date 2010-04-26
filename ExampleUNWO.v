@@ -144,26 +144,122 @@ intro; assumption.
 constructor.
 Qed.
 
+Lemma vnth_0_vcons :
+  forall (t : term) n (H : 0 < S n) (v : vector term n),
+    (vnth H (vcons t v)) = t.
+Proof.
+Admitted.
+
+(* D(D(D(...))) is infinite *)
+Lemma infinite_D :
+  infinite repeat_D.
+Proof.
+intro d.
+assert (S : exists p : position, position_depth p = d /\ subterm repeat_D p = Some repeat_D).
+exists ((fix z n := match n with O => nil | S n => 0 :: (z n) end) d).
+induction d; split.
+reflexivity.
+reflexivity.
+simpl.
+f_equal.
+apply IHd.
+simpl.
+rewrite vnth_0_vcons.
+apply IHd.
+destruct S as [p S].
+exists p.
+split.
+apply S.
+rewrite (proj2 S).
+discriminate.
+Qed.
+
 Require Import Equality.
+
+(* D(D(D(...))) is a normal form *)
+Lemma nf_D :
+  normal_form (system := UNWO_trs) repeat_D.
+Proof.
+intros [c [r [u [H1 H2]]]].
+destruct H1 as [H1 | H1].
+rewrite <- H1 in *|-.
+clear H1.
+assert (H := H2 (S (S (hole_depth c)))).
+rewrite (peek_eq repeat_D) in H.
+dependent destruction H.
+assert (H' := H First).
+rewrite (peek_eq repeat_D) in H'.
+dependent destruction H'.
+assert (H' := H0 First).
+simpl in H'.
+
+(* idea, make [=] from x0 *)
+assert (y0 : term_eq_up_to 1 (@Fun F X D v) (fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm)))))).
+(*assert (y0 : @Fun F X D v [=] fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm))))).*)
+rewrite x0.
+apply term_eq_up_to_refl.
+clear x0.
+
+induction c.
+
+assert (H3 := H2 2).
+rewrite (peek_eq repeat_D) in H3.
+dependent destruction H3.
+assert (H3 := H1 First).
+rewrite (peek_eq repeat_D) in H3.
+dependent destruction H3.
+
+rewrite (peek_eq repeat_D) in H2.
+(*intro x0.*)
+assert (d : f = D).
+(*assert (y1 := y0 1).*)
+inversion_clear y0.
+reflexivity.
+
+(*injection x0.
+intros _ d.*)
+revert e H2 H y0 H0 H'.
+dependent rewrite d.
+intro e.
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v1 v2.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+intros e v1 v2 H2 H y0 H0 H'.
+clear f i j d ij.
+apply IHc; clear IHc.
+
+(* this part is quite ugly *)
+intro n.
+assert (H2' : term_eq_up_to (S n) (@Fun F X D (vcast (vcons (fill c (substitute u (lhs DU))) v2) e)) (D @ repeat_D)).
+exact (H2 (S n)).
+assert (vcast_fact : vcast (vcons (fill c (substitute u (lhs DU))) v2) e = (vcons (fill c (substitute u (lhs DU))) v2)).
+dependent destruction e.
+reflexivity.
+rewrite vcast_fact in H2'.
+apply (@teut_fun_inv F X n D (vcons (fill c (substitute u (lhs DU))) v2) (vcons repeat_D (vnil term)) H2' First).
+intro i.
+apply term_eq_up_to_weaken.
+apply H.
+intro i.
+dependent destruction i.
+apply term_eq_up_to_weaken.
+assumption.
+dependent destruction i.
+apply term_eq_up_to_weaken.
+assumption.
+
+admit. (* should follow from H2 *)
+
+admit. (* same argument as above for r=UD instead of r=DU *)
+Admitted.
 
 (* D(D(D(...))) is an infinite normal form *)
 Lemma infinite_nf_D :
   ~ finite repeat_D /\ normal_form (system := UNWO_trs) repeat_D.
 Proof.
-split.
-intros [t H].
-induction t as [x | t args IH].
-unfold repeat_D in H.
-admit. (* discriminate H. *)
-admit.
-intros [c [r [u [H1 H2]]]].
-destruct H1 as [H1 | H1].
-assert (H := H2 (hole_depth c)). (* probably depth + 1 needed *)
-dependent destruction H.
-admit. (* c = Hole, so D(U(x)) [=] repeat_D *)
-admit. (* lhs r is not a variable *)
-admit. (* repeat_D cannot be equal to D _and_ U *)
-admit. (* same argument as previous case *)
+exact (conj infinite_D nf_D).
 Qed.
 
 (* U(U(U(...))) is an infinite normal form *)
@@ -187,6 +283,8 @@ Notation Nil := (Nil UNWO_trs).
 
 Notation "s [>] t" := (step UNWO_trs s t) (at level 40).
 Notation "s ->> t" := (sequence UNWO_trs s t) (at level 40).
+
+Generalizable All Variables.
 
 (* D(U(D(U(...)))) rewrites only to itself *)
 Lemma rewrites_to_itself_DU :

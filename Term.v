@@ -1,4 +1,5 @@
 Require Export List.
+Require Import Bool_nat.
 Require Export Vector.
 Require Export Signature.
 Require Export Variables.
@@ -6,9 +7,6 @@ Require Import FiniteTerm.
 
 
 Set Implicit Arguments.
-
-
-Notation position := (list nat).
 
 
 Section Term.
@@ -31,7 +29,37 @@ Definition root (t : term) : X + F :=
   | Fun f v => inr _ f
   end.
 
-Require Import Bool_nat.
+(* Trivial image of finite_term in term *)
+Fixpoint finite_term_as_term (t : fterm) : term :=
+  match t with
+  | FVar x      => Var x
+  | FFun f args => Fun f (vmap finite_term_as_term args)
+  end.
+
+(*
+   TODO: I don't think this is a usefull definition, we probably can never
+   prove a term to be infinite?
+   I guess we could use bisimilarity instead of Coq convertibility.
+*)
+(*
+Definition infinite (t : term) : Prop :=
+  exists t' : fterm, finite_term_as_term t' [=] t.
+*)
+
+End Term.
+
+
+Notation position := (list nat).
+
+
+Section Position.
+
+Variable F : signature.
+Variable X : variables.
+
+Notation term := (term F X).
+
+Definition position_depth (p : position) := length p.
 
 (* Subterm at position *)
 Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
@@ -46,24 +74,15 @@ Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
               end
   end.
 
-(* Trivial image of finite_term in term *)
-Fixpoint finite_term_as_term (t : fterm) : term :=
-  match t with
-  | FVar x      => Var x
-  | FFun f args => Fun f (vmap finite_term_as_term args)
-  end.
+Definition infinite (t : term) : Prop :=
+  forall d,
+    exists p : position,
+      position_depth p = d /\ subterm t p <> None.
 
-(*
-   TODO: I don't think this is a usefull definition, we probably can never
-   prove a term to be infinite?
-   I guess we could use bisimilarity instead of Coq convertibility.
-*)
-Definition finite (t : term) : Prop :=
-  exists t' : fterm, finite_term_as_term t' = t.
-
-End Term.
+End Position.
 
 
 Implicit Arguments Var [F X].
+
 
 Coercion finite_term_as_term : finite_term >-> term.

@@ -165,7 +165,7 @@ contradiction (vnil False).
 Qed.
 
 (* Step A -> B(A) *)
-Definition p_A_BA : (A!) [>] (B @ A!) := Step _ _ ABA Hole id_sub ABA_in fact_term_eq_A fact_term_eq_BA.
+Definition p_A_BA : (A!) [>] (B @ A!) := Step ABA Hole id_sub ABA_in fact_term_eq_A fact_term_eq_BA.
 
 (* Single-step reduction A ->> B(A) *)
 Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
@@ -195,7 +195,7 @@ contradiction (vnil False).
 Qed.
 
 (* Step B(A) -> B(B(A)) *)
-Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step _ _ ABA (B @@@ Hole) id_sub ABA_in fact_term_eq_BA' fact_term_eq_BBA.
+Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step ABA (B @@@ Hole) id_sub ABA_in fact_term_eq_BA' fact_term_eq_BBA.
 
 (* Two-step reduction A ->> B(B(A)) *)
 Definition s_A_BBA : (A!) ->> (B @ B @ A!) := Cons s_A_BA p_BA_BBA.
@@ -241,7 +241,7 @@ contradiction (vnil False).
 Qed.
 
 (* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)
-Definition p_nBA_nBBA (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step _ _ ABA (nB_Hole n) id_sub ABA_in (fact_term_eq_nBA n) (fact_term_eq_BnBA n).
+Definition p_nBA_nBBA (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step ABA (nB_Hole n) id_sub ABA_in (fact_term_eq_nBA n) (fact_term_eq_BnBA n).
 
 (* n-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... -n-> B(B(B(...(A)...))) with n applications of B at right side *)
 Fixpoint s_A_nBA (n : nat) : (A!) ->> (nB_A n) :=

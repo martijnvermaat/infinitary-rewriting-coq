@@ -62,7 +62,7 @@ Notation trs := (trs F X).
 Variable system : trs.
 
 (* Only needed in Coq 8.3 *)
-(*Generalizable All Variables.*)
+Generalizable All Variables.
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
