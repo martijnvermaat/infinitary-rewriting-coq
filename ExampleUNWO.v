@@ -180,6 +180,9 @@ Require Import Equality.
 Lemma nf_D :
   normal_form (system := UNWO_trs) repeat_D.
 Proof.
+(* TODO: a lot of this proof is a mess, cleanup
+   Also, I expect that this could be generalized and shortened quite a bit
+   by using pos_eq. *)
 intros [c [r [u [H1 H2]]]].
 destruct H1 as [H1 | H1].
 rewrite <- H1 in *|-.
@@ -250,31 +253,55 @@ dependent destruction i.
 apply term_eq_up_to_weaken.
 assumption.
 
-admit. (* should follow from H2 *)
+clear v0 x H y0 H0 H'.
+destruct c.
+constructor.
+constructor.
+simpl.
+simpl in H2.
+assert (H2' := term_eq_implies_term_bis H2).
+dependent destruction H2'.
+assert (H3 := H First).
+simpl in H3.
+clear H2 H.
+rewrite (peek_eq repeat_D) in H3.
+dependent destruction H3.
+revert x.
+dependent destruction e.
+intro y.
+simpl in y.
+injection y.
+intros _ d.
+clear y x H v1 v2 v4.
+revert e0.
+rewrite <- d.
+intro e.
+constructor.
+constructor.
 
 admit. (* same argument as above for r=UD instead of r=DU *)
 Admitted.
 
 (* D(D(D(...))) is an infinite normal form *)
 Lemma infinite_nf_D :
-  ~ finite repeat_D /\ normal_form (system := UNWO_trs) repeat_D.
+  infinite repeat_D /\ normal_form (system := UNWO_trs) repeat_D.
 Proof.
 exact (conj infinite_D nf_D).
 Qed.
 
 (* U(U(U(...))) is an infinite normal form *)
 Lemma infinite_nf_U :
-  ~ finite repeat_U /\ normal_form (system := UNWO_trs) repeat_U.
+  infinite repeat_U /\ normal_form (system := UNWO_trs) repeat_U.
 Proof.
 Admitted.
 
 (* D(D(D(...))) and U(U(U(...))) are the only infinite normal forms *)
 Lemma only_infinite_nf_D_U :
   forall t,
-    ~ finite t /\ normal_form (system := UNWO_trs) t ->
+    infinite t /\ normal_form (system := UNWO_trs) t ->
     t [=] repeat_D \/ t [=] repeat_U.
 Proof.
-(* No idea if we can prove this *)
+(* We should be able to prove this, but it's probably a lot of work *)
 Admitted.
 
 (* Reductions *)

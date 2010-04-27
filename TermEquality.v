@@ -262,26 +262,18 @@ unfold pos_eq.
 simpl.
 destruct (Bool_nat.lt_ge_dec a (arity f)).
 
-
-assert (exists i : Fin (arity f), (vnth l v) = v i /\ (vnth l w ) = w i). 
-
+assert (vnth_fact : exists i : Fin (arity f), (vnth l v) = v i /\ (vnth l w ) = w i).
 admit.
 
-
-elim H0; clear H0; intros i [H1 H2].
+destruct vnth_fact as [i [H1 H2]].
 rewrite H1.
 rewrite H2.
+assert (K := IHp (v i) (w i) (H i)).
+unfold pos_eq in K.
 
-unfold subterm.
-simpl.
-assert (H1 := H 1).
-dependent destruction H1; reflexivity.
+destruct (subterm (v i) p), (subterm (w i) p); assumption.
 
-intros.
-
-
-destruct H.
-Admitted.
-
+exact I.
+Qed.
 
 End PositionEquality.
