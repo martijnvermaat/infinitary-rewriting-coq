@@ -245,12 +245,42 @@ constructor.
 Admitted.
 
 Lemma term_eq_implies_all_pos_eq :
-  forall (t u : term), term_eq t u -> all_pos_eq t u.
+  forall (t u : term), t [~] u -> all_pos_eq t u.
 Proof.
 intros t u H p.
+revert t u H.
 induction p.
+intros.
+destruct H; reflexivity.
+
+intros t u [x|f v w H].
+
+unfold pos_eq.
+simpl.
+exact I.
+unfold pos_eq.
+simpl.
+destruct (Bool_nat.lt_ge_dec a (arity f)).
+
+
+assert (exists i : Fin (arity f), (vnth l v) = v i /\ (vnth l w ) = w i). 
+
+admit.
+
+
+elim H0; clear H0; intros i [H1 H2].
+rewrite H1.
+rewrite H2.
+
+unfold subterm.
+simpl.
 assert (H1 := H 1).
 dependent destruction H1; reflexivity.
+
+intros.
+
+
+destruct H.
 Admitted.
 
 

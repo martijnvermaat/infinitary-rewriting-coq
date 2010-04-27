@@ -193,7 +193,7 @@ dependent destruction H'.
 assert (H' := H0 First).
 simpl in H'.
 
-(* idea, make [=] from x0 *)
+(* idea, make [=]1 from x0 *)
 assert (y0 : term_eq_up_to 1 (@Fun F X D v) (fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm)))))).
 (*assert (y0 : @Fun F X D v [=] fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm))))).*)
 rewrite x0.
