@@ -295,6 +295,15 @@ Lemma infinite_nf_U :
 Proof.
 Admitted.
 
+(* D(D(D(...))) and U(U(U(...))) are different *)
+Lemma neq_D_U :
+  ~ repeat_D [~] repeat_U.
+Proof.
+intro H.
+rewrite (peek_eq repeat_D), (peek_eq repeat_U) in H.
+inversion H.
+Qed.
+
 (* D(D(D(...))) and U(U(U(...))) are the only infinite normal forms *)
 Lemma only_infinite_nf_D_U :
   forall t,
@@ -302,6 +311,20 @@ Lemma only_infinite_nf_D_U :
     t [=] repeat_D \/ t [=] repeat_U.
 Proof.
 (* We should be able to prove this, but it's probably a lot of work *)
+intros [x | [] args] [It Nt].
+
+destruct (It 1) as [p [Dp Hp]].
+contradict Hp.
+destruct p as [| a [| b p]].
+discriminate Dp.
+reflexivity.
+discriminate Dp.
+
+left.
+admit.
+
+right.
+admit.
 Admitted.
 
 (* Reductions *)
