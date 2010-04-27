@@ -232,47 +232,72 @@ Definition pos_eq (p : position) (t u : term) :=
 Definition all_pos_eq (t u : term) :=
   forall p : position, pos_eq p t u.
 
-Lemma all_pos_eq_implies_term_eq :
-  forall (t u : term), all_pos_eq t u -> term_eq t u.
+Lemma all_pos_eq_fun_inv :
+  forall f v w,
+    all_pos_eq (Fun f v) (Fun f w) ->
+    forall i, all_pos_eq (v i) (w i).
 Proof.
-intros t u H' n.
-assert (H : forall p, position_depth p = n -> pos_eq p t u).
-intros p H1.
-apply H'.
-clear H'.
-induction n as [| n IH].
-constructor.
+intros f v w H i.
+revert v w H.
+dependent destruction i; intros v w H p.
+assert (H' := H (0 :: p)).
+unfold pos_eq in H'.
+unfold subterm in H'.
+destruct (Bool_nat.lt_ge_dec 0 (arity f)).
+unfold pos_eq.
+unfold subterm.
+assert (vnth_fact : vnth l v = v i0 /\ vnth l w = w i0). (* TODO: vnth should do this *)
+admit.
+rewrite (proj1 vnth_fact), (proj2 vnth_fact) in H'.
+assumption.
+assert (Habsurd : arity f = 0).
+auto with arith.
+rewrite Habsurd in x0.
+discriminate x0.
+(* TODO: i don't know if we're on the right track here *)
 Admitted.
 
-Lemma term_eq_implies_all_pos_eq :
+Lemma all_pos_eq_implies_term_bis :
+  forall (t u : term), all_pos_eq t u -> t [~] u.
+Proof.
+cofix pos2bis.
+intros t u H.
+assert (H1 := H nil).
+unfold pos_eq in H1.
+unfold subterm in H1.
+destruct t, u.
+injection H1; intro e; rewrite e; apply term_bis_refl.
+discriminate H1.
+discriminate H1.
+dependent destruction H1. (*injection H1; clear H1; intro e; rewrite e.*)
+constructor.
+intro i.
+apply pos2bis.
+apply (all_pos_eq_fun_inv H).
+Qed.
+
+Lemma term_bis_implies_all_pos_eq :
   forall (t u : term), t [~] u -> all_pos_eq t u.
 Proof.
 intros t u H p.
 revert t u H.
-induction p.
-intros.
-destruct H; reflexivity.
+induction p as [| a p IH]; intros t u [x | f v w H].
 
-intros t u [x|f v w H].
-
-unfold pos_eq.
-simpl.
+reflexivity.
+reflexivity.
 exact I.
-unfold pos_eq.
-simpl.
-destruct (Bool_nat.lt_ge_dec a (arity f)).
 
-assert (vnth_fact : exists i : Fin (arity f), (vnth l v) = v i /\ (vnth l w ) = w i).
+unfold pos_eq; simpl; destruct (Bool_nat.lt_ge_dec a (arity f)).
+
+(* TODO: vnth should do this of course *)
+assert (vnth_fact : exists i : Fin (arity f), vnth l v = v i /\ vnth l w = w i).
 admit.
 
 destruct vnth_fact as [i [H1 H2]].
-rewrite H1.
-rewrite H2.
-assert (K := IHp (v i) (w i) (H i)).
-unfold pos_eq in K.
-
+rewrite H1, H2.
+assert (Hp := IH (v i) (w i) (H i)).
+unfold pos_eq in Hp.
 destruct (subterm (v i) p), (subterm (w i) p); assumption.
-
 exact I.
 Qed.
 
