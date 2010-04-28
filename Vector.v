@@ -63,6 +63,15 @@ Proof.
 reflexivity.
 Qed.
 
+(* vtake n m v is a vector with first n elements of v *)
+Fixpoint vtake (n m : nat) : vector (n + m) -> vector n :=
+  match n with
+  | O   => fun _ => vnil
+  | S n => fun v => vcons (vhead v) (vtake m (vtail v))
+  end.
+
+Implicit Arguments vtake [m].
+
 Lemma sfs : forall n m, S n <= m -> n <= m.
 Proof.
 induction 1; auto.
@@ -87,7 +96,7 @@ Fixpoint dfs n m (i : Fin n) : (n <= m) -> Fin m :=
 Definition dfs n m (i : Fin n) : (n <= m) -> Fin m.
 Admitted.
 
-Definition vtake (n m : nat) (H : m <= n) (v : vector n) : vector m :=
+Definition vtake' (n m : nat) (H : m <= n) (v : vector n) : vector m :=
   fun i : Fin m => v (dfs i H).
 
 (* TODO *)
