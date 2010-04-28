@@ -87,6 +87,20 @@ Proof.
 induction 1; auto.
 Qed.
 
+(* vtake n m H v is a vector with first n elements of v *)
+(* First try, this is not complete yet, but deconstructing H would not be
+   allowed anyway... *)
+(*
+Program Fixpoint vtake (n m : nat) : n <= m -> vector m -> vector n :=
+  match n return n <= m -> vector m -> vector n with
+  | O   => fun _ _ => vnil
+  | S n => fun H => match H return vector m -> vector n with
+                      | le_n       => fun v => vcons (vhead (n := n) v) (@vtake n n (le_n n) (vtail v))
+                      | le_S m' H' => fun v => vcons (vhead (n := m') v) (@vtake n m' (le_weaken H') (vtail v))
+                    end
+  end.
+*)
+
 (* We cannot eliminate H' here... *)
 (*
 Fixpoint dfs n m (i : Fin n) : (n <= m) -> Fin m :=
