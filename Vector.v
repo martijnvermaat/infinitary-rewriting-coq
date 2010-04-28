@@ -64,13 +64,23 @@ reflexivity.
 Qed.
 
 (* vtake n m v is a vector with first n elements of v *)
-Fixpoint vtake (n m : nat) : vector (n + m) -> vector n :=
+Fixpoint vtake' (n m : nat) : vector (n + m) -> vector n :=
   match n with
   | O   => fun _ => vnil
-  | S n => fun v => vcons (vhead v) (vtake m (vtail v))
+  | S n => fun v => vcons (vhead v) (vtake' m (vtail v))
   end.
 
-Implicit Arguments vtake [m].
+Fixpoint vdrop' (n m : nat) : vector (n + m) -> vector m :=
+  match n with
+  | O   => fun v => v
+  | S n => fun v => vdrop' n (vtail v)
+  end.
+
+Fixpoint vnth' (n m : nat) : vector (n + S m) -> A :=
+  match n with
+  | O   => fun v => vhead v
+  | S n => fun v => vnth' n m (vtail v)
+  end.
 
 Lemma sfs : forall n m, S n <= m -> n <= m.
 Proof.
@@ -96,7 +106,7 @@ Fixpoint dfs n m (i : Fin n) : (n <= m) -> Fin m :=
 Definition dfs n m (i : Fin n) : (n <= m) -> Fin m.
 Admitted.
 
-Definition vtake' (n m : nat) (H : m <= n) (v : vector n) : vector m :=
+Definition vtake (n m : nat) (H : m <= n) (v : vector n) : vector m :=
   fun i : Fin m => v (dfs i H).
 
 (* TODO *)
@@ -123,6 +133,8 @@ End Vector.
 
 
 Implicit Arguments First [n].
+Implicit Arguments vtake' [A m].
+Implicit Arguments vnth' [A m].
 
 
 Section Map.
