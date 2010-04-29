@@ -239,8 +239,8 @@ Lemma all_pos_eq_fun_inv :
 Proof.
 intros f v w H i.
 revert v w H.
-dependent destruction i; intros v w H p.
-assert (H' := H (0 :: p)).
+dependent destruction i; intros v w H1 p.
+assert (H' := H1 (0 :: p)).
 unfold pos_eq in H'.
 unfold subterm in H'.
 destruct (Bool_nat.lt_ge_dec 0 (arity f)).
@@ -252,8 +252,8 @@ rewrite (proj1 vnth_fact), (proj2 vnth_fact) in H'.
 assumption.
 assert (Habsurd : arity f = 0).
 auto with arith.
-rewrite Habsurd in x0.
-discriminate x0.
+rewrite Habsurd in *|-. (* The ugly thing is that dependent destruction i uses different names x0 (Coq 8.3) and H (Coq 8.2) *)
+discriminate.
 (* TODO: i don't know if we're on the right track here *)
 Admitted.
 
@@ -265,7 +265,7 @@ intros t u H.
 assert (H1 := H nil).
 unfold pos_eq in H1.
 unfold subterm in H1.
-destruct t, u.
+destruct t; destruct u. (* "destruct t, u." syntax is Coq 8.3 only *)
 injection H1; intro e; rewrite e; apply term_bis_refl.
 discriminate H1.
 discriminate H1.
@@ -297,7 +297,7 @@ destruct vnth_fact as [i [H1 H2]].
 rewrite H1, H2.
 assert (Hp := IH (v i) (w i) (H i)).
 unfold pos_eq in Hp.
-destruct (subterm (v i) p), (subterm (w i) p); assumption.
+destruct (subterm (v i) p); destruct (subterm (w i) p); assumption.
 exact I.
 Qed.
 

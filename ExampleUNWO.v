@@ -228,12 +228,12 @@ apply IHc; clear IHc.
 
 (* this part is quite ugly *)
 intro n.
-assert (H2' : term_eq_up_to (S n) (@Fun F X D (vcast (vcons (fill c (substitute u (lhs DU))) v2) e)) (D @ repeat_D)).
-exact (H2 (S n)).
-assert (vcast_fact : vcast (vcons (fill c (substitute u (lhs DU))) v2) e = (vcons (fill c (substitute u (lhs DU))) v2)).
+assert (H2' : term_eq_up_to (S n) (@Fun F X D (vcons (fill c (substitute u (lhs DU))) v2)) (D @ repeat_D)).
+assert (jaja : fill (@CFun F X D 0 0 e v1 c v2) (substitute u (lhs DU)) = @Fun F X D (vcons (fill c (substitute u (lhs DU))) v2)).
 dependent destruction e.
 reflexivity.
-rewrite vcast_fact in H2'.
+rewrite jaja in H2.
+exact (H2 (S n)).
 apply (@teut_fun_inv F X n D (vcons (fill c (substitute u (lhs DU))) v2) (vcons repeat_D (vnil term)) H2' First).
 intro i.
 apply term_eq_up_to_weaken.

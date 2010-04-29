@@ -52,6 +52,20 @@ Fixpoint fill (c : context) (t : term) : term :=
   | CFun f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
   end.
 
+(*
+   TODO: I would prefer the definition below where we try to avoid explicit
+   casts but prove equalities with Program.
+   Unfortunately this gives us problems I cannot solve in proofs like
+   fill_eq_up_to below.
+*)
+(*
+Program Fixpoint fill (c : context) (t : term) : term :=
+  match c with
+  | Hole                  => t
+  | CFun f i j H v1 c' v2 => Fun f (vappend v1 (vcons (fill c' t) v2))
+  end.
+*)
+
 (* Filling a context gives terms equal up to the hole depth *)
 Lemma fill_eq_up_to :
   forall (c : context) t u n,
@@ -59,17 +73,17 @@ Lemma fill_eq_up_to :
 Proof.
 intros c t u n.
 revert c.
-induction n; simpl.
+induction n as [| n IH]; simpl.
 constructor.
 destruct c; simpl; intro H.
 inversion H.
 constructor.
 revert v e.
 generalize (arity f).
-induction i; simpl; intro a.
+induction i as [| i IHi]; simpl; intro a.
 intros _ e k.
 destruct k; repeat (rewrite vcast_vcons).
-apply IHn.
+apply IH.
 auto with arith.
 apply term_eq_refl.
 intros v e k.

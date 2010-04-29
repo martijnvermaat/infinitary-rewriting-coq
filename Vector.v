@@ -50,6 +50,7 @@ Definition vhead (n : nat) (v : vector (S n)) : A :=
 Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   fun i : Fin n => v (Next i).
 
+(* TODO: use some vector equality? *)
 Lemma vcons_vhead_vtail :
   forall n (v : vector (S n)) (i : Fin (S n)),
   vcons (vhead v) (vtail v) i = v i.
@@ -57,6 +58,7 @@ Proof.
 dependent destruction i; reflexivity.
 Qed.
 
+(* TODO: use some vector equality? *)
 Lemma vtail_vcons :
   forall a n (v : vector n) (i : (Fin n)),
   vtail (vcons a v) i = v i.
@@ -64,6 +66,7 @@ Proof.
 reflexivity.
 Qed.
 
+(* TODO: solve obligations automatically, e.g. using omega *)
 Program Fixpoint vtake (n m : nat) : n <= m -> vector m -> vector n :=
   match n return n <= m -> vector m -> vector n with
   | O   => fun _ _ => vnil
@@ -72,14 +75,8 @@ Program Fixpoint vtake (n m : nat) : n <= m -> vector m -> vector n :=
            | S m => fun _ v => vcons (vhead v) (vtake _ (vtail v))
            end
   end.
-Next Obligation.
-contradict H.
-auto with arith.
-Defined.
-Next Obligation.
-auto with arith.
-Defined.
 
+(* TODO: is the m-n in the return type really the way to do this? *)
 Program Fixpoint vdrop (n m : nat) {struct n} : n <= m -> vector m -> vector (m - n) :=
   match n return n <= m -> vector m -> vector (m - n) with
   | O   => fun _ v => v
@@ -88,16 +85,6 @@ Program Fixpoint vdrop (n m : nat) {struct n} : n <= m -> vector m -> vector (m 
            | S m => fun _ v => vdrop (n := n) _ (vtail v)
            end
   end.
-Next Obligation.
-auto with arith.
-Defined.
-Next Obligation.
-contradict H.
-auto with arith.
-Defined.
-Next Obligation.
-auto with arith.
-Defined.
 
 Program Fixpoint vnth (n m : nat) : n < m -> vector m -> A :=
   match m return n < m -> vector m -> A with
@@ -107,13 +94,9 @@ Program Fixpoint vnth (n m : nat) : n < m -> vector m -> A :=
            | S n => fun _ v => vnth (n := n) _ (vtail v)
            end
   end.
-Next Obligation.
-contradict H.
-auto with arith.
-Defined.
-Next Obligation.
-auto with arith.
-Defined.
+
+Solve All Obligations using auto with arith.
+Solve All Obligations using intros; contradict H; auto with arith.
 
 Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   match n return vector n -> vector m -> vector (n + m) with
@@ -122,10 +105,31 @@ Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   end.
 
 (*
-Lemma vtake_vdrop_vappend :
-  forall n m (H : m <= n) (v : vector n),
-    vappend (vtake H v) (vdrop H v) = v.
+   TODO: This does not type check, possible solutions:
+   * write this with a cast
+   * with Program (done below)
+   * use what Program makes of it (ugly)
+
+   I would prefer to avoid using an explicit cast function (i.e. solution 2)
+   but this gives me more troubles than I can handle (see also fill in
+   Context).
 *)
+(*
+Lemma vtake_vdrop_vappend :
+  forall n m (H : n <= m) (v : vector m) (i : Fin m),
+    vappend (vtake H v) (vdrop H v) i = v i.
+*)
+
+(* TODO: use some vector equality? *)
+Program Definition vtake_vdrop_vappend :
+  forall n m (H : n <= m) (v : vector m) (i : Fin m),
+    vappend (vtake H v) (vdrop H v) i = v i := _.
+
+Solve Obligations of vtake_vdrop_vappend using auto with arith.
+
+Next Obligation.
+admit.
+Defined.
 
 End Vector.
 
@@ -167,7 +171,7 @@ Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
 
 Lemma vcast_vcons :
   forall (a : A) n (v : vector A n) m (H : S n = S m) (i : Fin (S m)),
-  vcast (vcons a v) H i = vcons a (vcast v (S_eq_inv H)) i.
+    vcast (vcons a v) H i = vcons a (vcast v (S_eq_inv H)) i.
 Proof.
 intros a n v m H i.
 dependent destruction H.
