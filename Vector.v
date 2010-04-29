@@ -1,4 +1,5 @@
 Require Import Prelims.
+Require Import Arith.
 Require Import Equality.
 
 
@@ -63,73 +64,56 @@ Proof.
 reflexivity.
 Qed.
 
-(* vtake n m v is a vector with first n elements of v *)
-Fixpoint vtake' (n m : nat) : vector (n + m) -> vector n :=
-  match n with
-  | O   => fun _ => vnil
-  | S n => fun v => vcons (vhead v) (vtake' m (vtail v))
-  end.
-
-Fixpoint vdrop' (n m : nat) : vector (n + m) -> vector m :=
-  match n with
-  | O   => fun v => v
-  | S n => fun v => vdrop' n (vtail v)
-  end.
-
-Fixpoint vnth' (n m : nat) : vector (n + S m) -> A :=
-  match n with
-  | O   => fun v => vhead v
-  | S n => fun v => vnth' n m (vtail v)
-  end.
-
-Lemma sfs : forall n m, S n <= m -> n <= m.
-Proof.
-induction 1; auto.
-Qed.
-
-(* vtake n m H v is a vector with first n elements of v *)
-(* First try, this is not complete yet, but deconstructing H would not be
-   allowed anyway... *)
-(*
 Program Fixpoint vtake (n m : nat) : n <= m -> vector m -> vector n :=
   match n return n <= m -> vector m -> vector n with
   | O   => fun _ _ => vnil
-  | S n => fun H => match H return vector m -> vector n with
-                      | le_n       => fun v => vcons (vhead (n := n) v) (@vtake n n (le_n n) (vtail v))
-                      | le_S m' H' => fun v => vcons (vhead (n := m') v) (@vtake n m' (le_weaken H') (vtail v))
-                    end
+  | S n => match m return S n <= m -> vector m -> vector (S n) with
+           | O   => fun _ _ => False_rect _ _
+           | S m => fun _ v => vcons (vhead v) (vtake _ (vtail v))
+           end
   end.
-*)
+Next Obligation.
+contradict H.
+auto with arith.
+Defined.
+Next Obligation.
+auto with arith.
+Defined.
 
-(* We cannot eliminate H' here... *)
-(*
-Fixpoint dfs n m (i : Fin n) : (n <= m) -> Fin m :=
-  match i in Fin n return (n <= m) -> Fin m with
-  | First n'  => fun H => match H with
-                 | le_n       => First n'
-                 | le_S m' H' => First m'
-                 end
-  | Next n' i => fun H => match H with
-                 | le_n       => Next (dfs i (le_n n'))
-                 | le_S m' H' => Next (dfs i (sfs H'))
-                 end
+Program Fixpoint vdrop (n m : nat) {struct n} : n <= m -> vector m -> vector (m - n) :=
+  match n return n <= m -> vector m -> vector (m - n) with
+  | O   => fun _ v => v
+  | S n => match m return S n <= m -> vector m -> vector (m - S n) with
+           | O   => fun _ _ => False_rect _ _
+           | S m => fun _ v => vdrop (n := n) _ (vtail v)
+           end
   end.
-*)
+Next Obligation.
+auto with arith.
+Defined.
+Next Obligation.
+contradict H.
+auto with arith.
+Defined.
+Next Obligation.
+auto with arith.
+Defined.
 
-(* TODO: why is this so hard? *)
-Definition dfs n m (i : Fin n) : (n <= m) -> Fin m.
-Admitted.
-
-Definition vtake (n m : nat) (H : m <= n) (v : vector n) : vector m :=
-  fun i : Fin m => v (dfs i H).
-
-(* TODO *)
-Definition vdrop (n m : nat) (H : m <= n) (v : vector n) : vector (n - m).
-Admitted.
-
-(* TODO *)
-Definition vnth (n m : nat) (H : m < n) (v : vector n) : A.
-Admitted.
+Program Fixpoint vnth (n m : nat) : n < m -> vector m -> A :=
+  match m return n < m -> vector m -> A with
+  | O   => fun _ _ => False_rect _ _
+  | S m => match n return n < S m -> vector (S m) -> A with
+           | O   => fun _ v => vhead v
+           | S n => fun _ v => vnth (n := n) _ (vtail v)
+           end
+  end.
+Next Obligation.
+contradict H.
+auto with arith.
+Defined.
+Next Obligation.
+auto with arith.
+Defined.
 
 Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   match n return vector n -> vector m -> vector (n + m) with
@@ -147,8 +131,6 @@ End Vector.
 
 
 Implicit Arguments First [n].
-Implicit Arguments vtake' [A m].
-Implicit Arguments vnth' [A m].
 
 
 Section Map.

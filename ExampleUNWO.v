@@ -144,12 +144,6 @@ intro; assumption.
 constructor.
 Qed.
 
-Lemma vnth_0_vcons :
-  forall (t : term) n (H : 0 < S n) (v : vector term n),
-    (vnth H (vcons t v)) = t.
-Proof.
-Admitted.
-
 (* D(D(D(...))) is infinite *)
 Lemma infinite_D :
   infinite repeat_D.
@@ -164,7 +158,6 @@ simpl.
 f_equal.
 apply IHd.
 simpl.
-rewrite vnth_0_vcons.
 apply IHd.
 destruct S as [p S].
 exists p.
