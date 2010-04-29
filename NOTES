@@ -1,6 +1,6 @@
 COMPILATION
 
-coq_makefile -f INCLUDE *.v -o Makefile
+coq_makefile -no-install -I . *.v -o Makefile
 make
 
 
