@@ -1,4 +1,4 @@
-Require Import RewritingOrdinalSequence.
+Require Import Rewriting.
 
 Set Implicit Arguments.
 
