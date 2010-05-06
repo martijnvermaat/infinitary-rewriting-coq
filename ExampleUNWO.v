@@ -313,6 +313,12 @@ constructor.
 admit. (* same argument as above for r=UD instead of r=DU *)
 Admitted.
 
+(* U(U(U(...))) is a normal form *)
+Lemma nf_U :
+  normal_form (system := UNWO_trs) repeat_U.
+Proof.
+Admitted.
+
 (* D(D(D(...))) is an infinite normal form *)
 Lemma infinite_nf_D :
   infinite repeat_D /\ normal_form (system := UNWO_trs) repeat_D.
@@ -365,6 +371,18 @@ Notation Nil := (Nil UNWO_trs).
 Notation "s [>] t" := (step UNWO_trs s t) (at level 40).
 Notation "s ->> t" := (sequence UNWO_trs s t) (at level 40).
 
+Lemma DU_in :
+  In DU UNWO_trs.
+Proof.
+left; reflexivity.
+Qed.
+
+Lemma UD_in :
+  In UD UNWO_trs.
+Proof.
+right; left; reflexivity.
+Qed.
+
 Generalizable All Variables.
 
 (* D(U(D(U(...)))) rewrites only to itself *)
@@ -410,6 +428,246 @@ admit. (* same as previous case *)
 
 contradict H.
 Qed.
+
+(* Zero-step reduction psi ->> psi *)
+Definition s_psi0 : psi' 0 ->> psi' 0 := Nil (psi' 0).
+
+(* Substitution for step psi' 0 -> U @ psi' 2 *)
+Definition sub_psi0_Upsi2 (x : X) : term :=
+  match x with
+  | 1 => U @ psi' 2
+  | _ => Var x
+  end.
+
+Lemma fact_term_eq_psi0 :
+  fill Hole (substitute sub_psi0_Upsi2 (lhs DU)) [=] psi' 0.
+Proof.
+intro n.
+destruct n.
+(* TODO: this is a mess and i guess destructing n should
+   not be necessary, we would just need to rewrite some
+   lemma about vmap in the left term *)
+constructor.
+rewrite (peek_eq (psi' 0)).
+simpl.
+constructor.
+intro i; simpl in i.
+dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+(* this is really annoying, but i guess there's no way around it... *)
+rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+         match d with
+         | 0 =>
+             (cofix SnU (u : nat) : term :=
+               match u with
+                 | 0 => U @ psi' 2
+                   | S u0 => U @ SnU u0
+                     end) 1
+         | S d0 => D @ SnD d0
+         end) 0)).
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+         match u with
+         | 0 => U @ psi' 2
+            | S u0 => U @ SnU u0
+               end) 0)).
+simpl.
+destruct n.
+constructor.
+constructor.
+unfold vmap.
+intro i.
+dependent destruction i; [idtac | inversion i].
+simpl.
+apply term_eq_up_to_refl.
+Qed.
+
+(* Step psi' 0 -> U @ psi' 2 *)
+Definition p_psi0_Upsi2 : psi' 0 [>] (U @ psi' 2) := Step DU Hole sub_psi0_Upsi2 DU_in fact_term_eq_psi0 (term_eq_refl (U @ psi' 2)).
+
+(* Single-step reduction psi' 0 ->> U @ psi' 2 *)
+Definition s_psi0_Upsi2 : psi' 0 ->> (U @ psi' 2) := Cons s_psi0 p_psi0_Upsi2.
+
+(* Substitution for step U @ psi' 2 -> U D D U U U @ psi' 4 *)
+Definition sub_Upsi2_UDDUUUpsi4 (x : X) : term :=
+  match x with
+  | 1 => U @ U @ U @ psi' 4
+  | _ => Var x
+  end.
+
+Lemma fact_term_eq_Upsi2 :
+  fill (U @@@ D @@@ D @@@ Hole) (substitute sub_Upsi2_UDDUUUpsi4 (lhs DU))
+  [=]
+  (U @ psi' 2).
+Proof.
+simpl.
+intro n.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+rewrite (peek_eq (psi' 2)).
+simpl.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+simpl.
+rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+         match d with
+         | 0 =>
+             (cofix SnU (u : nat) : term :=
+                match u with
+                | 0 => U @ psi' 4
+                | S u0 => U @ SnU u0
+                end) 3
+         | S d0 => D @ SnD d0
+         end) 2)).
+simpl.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+simpl.
+rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+         match d with
+         | 0 =>
+             (cofix SnU (u : nat) : term :=
+                match u with
+                | 0 => U @ psi' 4
+                | S u0 => U @ SnU u0
+                end) 3
+         | S d0 => D @ SnD d0
+         end) 1)).
+simpl.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+         match d with
+         | 0 =>
+             (cofix SnU (u : nat) : term :=
+                match u with
+                | 0 => U @ psi' 4
+                | S u0 => U @ SnU u0
+                end) 3
+         | S d0 => D @ SnD d0
+         end) 0)).
+simpl.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+         match u with
+         | 0 => U @ psi' 4
+         | S u0 => U @ SnU u0
+         end) 2)).
+simpl.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+         match u with
+         | 0 => U @ psi' 4
+         | S u0 => U @ SnU u0
+         end) 1)).
+simpl.
+destruct n; constructor.
+intro i.
+dependent destruction i; [idtac | inversion i].
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+         match u with
+         | 0 => U @ psi' 4
+         | S u0 => U @ SnU u0
+         end) 0)).
+simpl.
+apply term_eq_up_to_refl.
+Qed.
+
+(* Step U @ psi' 2 -> U D D U U U @ psi' 4 *)
+Definition p_Upsi2_UDDUUUpsi4 : (U @ psi' 2) [>] (U @ D @ D @ U @ U @ U @ psi' 4) :=
+  Step DU (U @@@ D @@@ D @@@ Hole) sub_Upsi2_UDDUUUpsi4 DU_in fact_term_eq_Upsi2 (term_eq_refl (U @ D @ D @ U @ U @ U @ psi' 4)).
+
+(* Two-step reduction psi' 0 ->> U D D U U U @ psi' 4 *)
+Definition s_psi0_UDDUUUpsi4 : psi' 0 ->> (U @ D @ D @ U @ U @ U @ psi' 4) := Cons s_psi0_Upsi2 p_Upsi2_UDDUUUpsi4.
+
+(* Substitution for step U D D U U U @ psi' 4 -> U D U U @ psi' 4 *)
+Definition sub_UDDUUUpsi4_UDUUpsi4 (x : X) : term :=
+  match x with
+  | 1 => U @ U @ psi' 4
+  | _ => Var x
+  end.
+
+Lemma fact_term_eq_UDDUUUpsi4 :
+  fill (U @@@ D @@@ Hole) (substitute sub_UDDUUUpsi4_UDUUpsi4 (lhs DU))
+  [=]
+  (U @ D @ D @ U @ U @ U @ psi' 4).
+Proof.
+(* more of the same *)
+Admitted.
+
+(* Step U D D U U U @ psi' 4 -> U D U U @ psi' 4*)
+Definition p_UDDUUUpsi4_UDUUpsi4 : (U @ D @ D @ U @ U @ U @ psi' 4) [>] (U @ D @ U @ U @ psi' 4) :=
+  Step DU (U @@@ D @@@ Hole) sub_UDDUUUpsi4_UDUUpsi4 DU_in fact_term_eq_UDDUUUpsi4 (term_eq_refl (U @ D @ U @ U @ psi' 4)).
+
+(* Three-step reduction psi' 0 ->> U D U U @ psi' 4 *)
+Definition s_psi0_UDUUpsi4 : psi' 0 ->> (U @ D @ U @ U @ psi' 4) := Cons s_psi0_UDDUUUpsi4 p_UDDUUUpsi4_UDUUpsi4.
+
+(* Substitution for step U D U U @ psi' 4 -> U U @ psi' 4 *)
+Definition sub_UDUUpsi4_UUpsi4 (x : X) : term :=
+  match x with
+  | 1 => U @ psi' 4
+  | _ => Var x
+  end.
+
+Lemma fact_term_eq_UDUUpsi4 :
+  fill (U @@@ Hole) (substitute sub_UDUUpsi4_UUpsi4 (lhs DU))
+  [=]
+  (U @ D @ U @ U @ psi' 4).
+Proof.
+(* more of the same *)
+Admitted.
+
+(* Step U D U U @ psi' 4 -> U U @ psi' 4*)
+Definition p_UDUUpsi4_UUpsi4 : (U @ D @ U @ U @ psi' 4) [>] (U @ U @ psi' 4) :=
+  Step DU (U @@@ Hole) sub_UDUUpsi4_UUpsi4 DU_in fact_term_eq_UDUUpsi4 (term_eq_refl (U @ U @ psi' 4)).
+
+(* Four-step reduction psi' 0 ->> U U @ psi' 4 *)
+Definition s_psi0_UUpsi4 : psi' 0 ->> (U @ U @ psi' 4) := Cons s_psi0_UDUUpsi4 p_UDUUpsi4_UUpsi4.
+
+(* psi rewrites to repeat_U *)
+Definition s_psi_U : psi ->> repeat_U.
+Admitted.
+
+(* psi rewrites to repeat_D *)
+Definition s_psi_D : psi ->> repeat_D.
+Admitted.
+
+Definition unique_normal_forms :=
+  forall t u v,
+    t ->> u ->
+    t ->> v ->
+    normal_form (system := UNWO_trs) u ->
+    normal_form (system := UNWO_trs) v ->
+    u [~] v.
+
+Lemma no_unique_normal_forms :
+  ~ unique_normal_forms.
+Proof.
+intros H.
+apply neq_D_U.
+apply (H psi).
+exact psi_to_D.
+exact psi_to_U.
+exact nf_D.
+exact nf_U.
+Qed.
+
+(* I think we don't need the norm function *)
 
 Require Import ZArith.
 Delimit Scope Int_scope with I.
