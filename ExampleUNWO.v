@@ -73,17 +73,55 @@ Notation "x !" := (@FVar F X x) (at level 75).
 Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
 Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
 
-(* D(D(D(...))) *)
-CoFixpoint repeat_D : term :=
-  D @ repeat_D.
-
 (* U(U(U(...))) *)
 CoFixpoint repeat_U : term :=
   U @ repeat_U.
 
+(* D(D(D(...))) *)
+CoFixpoint repeat_D : term :=
+  D @ repeat_D.
+
 (* D(U(D(U(...)))) *)
+(* TODO: better to define repeat_DU and repeat_UD together? *)
 CoFixpoint repeat_DU : term :=
   D @ U @ repeat_DU.
+
+(* U(U(U(...t...))) *)
+Fixpoint SnU (n : nat) t :=
+  match n with
+  | O   => t
+  | S n => U @ (SnU n t)
+  end.
+
+(* D(D(D(...t...))) *)
+Fixpoint SnD (n : nat) t :=
+  match n with
+  | O   => t
+  | S n => D @ (SnD n t)
+  end.
+
+(*
+   We would like to define psi' like this
+
+     CoFixpoint psi' n : term :=
+       SnU n (SnD (S n) (psi' (S (S n)))).
+
+   but unfortunately this is not guarded.
+*)
+
+(* D(U(U(D(D(D(U(U(U(U(...)))))))))) *)
+CoFixpoint psi' n : term :=
+  (cofix SnD (d : nat) :=
+    match d with
+    | O   => (cofix SnU (u : nat) :=
+                 match u with
+                 | O   => U @ psi' (S (S n))
+                 | S u => U @ (SnU u)
+                 end) (S n)
+    | S d => D @ (SnD d)
+    end) (S n).
+
+Definition psi := psi' 0.
 
 (* Contexts *)
 
@@ -338,10 +376,34 @@ intros s p.
 dependent destruction p.
 destruct i as [H | [H | H]]; try (rewrite <- H in t1, t0; clear H).
 
-induction c as [| f i j e v c IH w]; simpl in t1, t0.
-admit. (* from t0 deduce u 1 [=] repeat_DU, then transitivity of [=] *)
-apply IH; clear IH.
-admit. (* more work *)
+unfold DU, lhs, DU_l in t0.
+unfold DU, rhs, DU_r in t1.
+apply term_eq_trans with (fill c (substitute u (1 !))).
+exact (term_eq_symm t1).
+clear t1.
+induction c as [| f i j e v c IH w]; simpl in t0 |- *.
+
+(* This does not seem to be the right way, we cannot prove the induction step *)
+
+(* from t0 deduce u 1 [=] repeat_DU, then transitivity of [=] *)
+intro n.
+assert (H := t0 (S (S n))).
+rewrite (peek_eq repeat_DU) in H.
+dependent destruction H.
+assert (H1 := H First).
+dependent destruction H1.
+assert (H2 := H0 First).
+rewrite (peek_eq repeat_DU) in H2.
+dependent destruction H2.
+constructor.
+unfold vmap in x; simpl in x.
+rewrite <- x.
+rewrite (peek_eq repeat_DU).
+simpl.
+constructor.
+assumption.
+
+(*apply IH; clear IH.*)
 admit. (* more work *)
 
 admit. (* same as previous case *)

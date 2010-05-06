@@ -66,7 +66,6 @@ Proof.
 reflexivity.
 Qed.
 
-(* TODO: solve obligations automatically, e.g. using omega *)
 Program Fixpoint vtake (n m : nat) : n <= m -> vector m -> vector n :=
   match n return n <= m -> vector m -> vector n with
   | O   => fun _ _ => vnil
@@ -177,6 +176,12 @@ intros a n v m H i.
 dependent destruction H.
 reflexivity.
 Qed.
+
+Lemma vtake_vdrop_vappend' :
+  forall n m (H : n <= m) (v : vector A m) (i : Fin m),
+    vcast (vappend (vtake H v) (vdrop H v)) (le_plus_minus_r n m H) i = v i.
+Proof.
+Admitted.
 
 (*
 Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
