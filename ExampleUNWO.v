@@ -661,8 +661,8 @@ Proof.
 intros H.
 apply neq_D_U.
 apply (H psi).
-exact psi_to_D.
-exact psi_to_U.
+exact s_psi_D.
+exact s_psi_U.
 exact nf_D.
 exact nf_U.
 Qed.
