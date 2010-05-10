@@ -639,6 +639,14 @@ Definition p_UDUUpsi4_UUpsi4 : (U @ D @ U @ U @ psi' 4) [>] (U @ U @ psi' 4) :=
 (* Four-step reduction psi' 0 ->> U U @ psi' 4 *)
 Definition s_psi0_UUpsi4 : psi' 0 ->> (U @ U @ psi' 4) := Cons s_psi0_UDUUpsi4 p_UDUUpsi4_UUpsi4.
 
+(* What about odd n? *)
+Definition s_psin_UpsiSSn n : psi' n ->> (U @ psi' (S (S n))).
+Admitted.
+
+(*
+Definition s_psi0_Unpsi2n n : psi' 0 ->> (U^n @ psi' (2 * n)).
+*)
+
 (* psi rewrites to repeat_U *)
 Definition s_psi_U : psi ->> repeat_U.
 Admitted.
