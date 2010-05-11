@@ -142,60 +142,56 @@ Qed.
 (* Zero-step reduction A ->> A *)
 Definition s_A : (A!) ->> (A!) := Nil (A!).
 
-Lemma fact_term_eq_A :
-  @Fun F X A (vmap (substitute id_sub) (vnil fterm)) [=] (A !).
+Lemma fact_term_bis_A :
+  @Fun F X A (vmap (substitute id_sub) (vnil fterm)) [~] (A !).
 Proof.
-intro n.
-destruct n; constructor.
+constructor.
 intro.
 contradiction (vnil False).
 Qed.
 
 Require Import Equality.
 
-Lemma fact_term_eq_BA :
-  @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm))) [=] (B @ A !).
+Lemma fact_term_bis_BA :
+  @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm))) [~] (B @ A !).
 Proof.
-intro n.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i.
-apply fact_term_eq_A.
+apply fact_term_bis_A.
 contradiction (vnil False).
 Qed.
 
 (* Step A -> B(A) *)
-Definition p_A_BA : (A!) [>] (B @ A!) := Step ABA Hole id_sub ABA_in fact_term_eq_A fact_term_eq_BA.
+Definition p_A_BA : (A!) [>] (B @ A!) := Step ABA Hole id_sub ABA_in fact_term_bis_A fact_term_bis_BA.
 
 (* Single-step reduction A ->> B(A) *)
 Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
 
-Lemma fact_term_eq_BA' :
-  (B @ @Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
+Lemma fact_term_bis_BA' :
+  (B @ @Fun F X A (vmap (substitute id_sub) (vnil fterm))) [~]
   (B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
 Proof.
-intro n.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i.
-apply fact_term_eq_A.
+apply fact_term_bis_A.
 contradiction (vnil False).
 Qed.
 
-Lemma fact_term_eq_BBA :
-  (B @ @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
+Lemma fact_term_bis_BBA :
+  (B @ @Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [~]
   (B @ B @ @Fun F X A (fun x : Fin 0 => vnil fterm x)).
 Proof.
-intro n.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i.
-apply fact_term_eq_BA.
+apply fact_term_bis_BA.
 contradiction (vnil False).
 Qed.
 
 (* Step B(A) -> B(B(A)) *)
-Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step ABA (B @@@ Hole) id_sub ABA_in fact_term_eq_BA' fact_term_eq_BBA.
+Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step ABA (B @@@ Hole) id_sub ABA_in fact_term_bis_BA' fact_term_bis_BBA.
 
 (* Two-step reduction A ->> B(B(A)) *)
 Definition s_A_BBA : (A!) ->> (B @ B @ A!) := Cons s_A_BA p_BA_BBA.
@@ -214,26 +210,26 @@ Fixpoint nB_Hole (n : nat) : context :=
   | S n => B @@@ (nB_Hole n)
   end.
 
-Lemma fact_term_eq_nBA :
+Lemma fact_term_bis_nBA :
   forall n,
-    fill (nB_Hole n) (@Fun F X A (vmap (substitute id_sub) (vnil fterm))) [=]
+    fill (nB_Hole n) (@Fun F X A (vmap (substitute id_sub) (vnil fterm))) [~]
     nB_A n.
 Proof.
-induction n as [| n IH]; simpl; intro m; destruct m; constructor; intro i.
+induction n as [| n IH]; simpl; constructor; intro i.
 contradiction (vnil False).
 dependent destruction i.
 apply IH.
 contradiction (vnil False).
 Qed.
 
-Lemma fact_term_eq_BnBA :
+Lemma fact_term_bis_BnBA :
   forall n,
-    fill (nB_Hole n) (@Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [=]
+    fill (nB_Hole n) (@Fun F X B (vmap (substitute id_sub) (vcons (A !!) (vnil fterm)))) [~]
     (B @ nB_A n).
 Proof.
-induction n as [| n IH]; simpl; intro m.
-apply fact_term_eq_BA.
-destruct m; constructor.
+induction n as [| n IH]; simpl.
+apply fact_term_bis_BA.
+constructor.
 intro i.
 dependent destruction i.
 apply IH.
@@ -241,7 +237,7 @@ contradiction (vnil False).
 Qed.
 
 (* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)
-Definition p_nBA_nBBA (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step ABA (nB_Hole n) id_sub ABA_in (fact_term_eq_nBA n) (fact_term_eq_BnBA n).
+Definition p_nBA_nBBA (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step ABA (nB_Hole n) id_sub ABA_in (fact_term_bis_nBA n) (fact_term_bis_BnBA n).
 
 (* n-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... -n-> B(B(B(...(A)...))) with n applications of B at right side *)
 Fixpoint s_A_nBA (n : nat) : (A!) ->> (nB_A n) :=

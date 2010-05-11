@@ -87,38 +87,75 @@ CoFixpoint repeat_DU : term :=
   D @ U @ repeat_DU.
 
 (* U(U(U(...t...))) *)
-Fixpoint SnU (n : nat) t :=
+Fixpoint Unt (n : nat) t :=
   match n with
   | O   => t
-  | S n => U @ (SnU n t)
+  | S n => U @ (Unt n t)
   end.
 
 (* D(D(D(...t...))) *)
-Fixpoint SnD (n : nat) t :=
+Fixpoint Dnt (n : nat) t :=
   match n with
   | O   => t
-  | S n => D @ (SnD n t)
+  | S n => D @ (Dnt n t)
   end.
+
+(* D^n @ U^n @ t *)
+Definition DnUnt n t : term :=
+  Dnt n (Unt n t).
+
+Lemma UUnt_eq_UnUt :
+  forall n t,
+    (U @ Unt n t) = Unt n (U @ t).
+induction n; intro t.
+reflexivity.
+simpl.
+rewrite <- IHn.
+simpl.
+reflexivity.
+Qed.
+
+Lemma DDnt_eq_DnDt :
+  forall n t,
+    (D @ Dnt n t) = Dnt n (D @ t).
+induction n; intro t.
+reflexivity.
+simpl.
+rewrite <- IHn.
+simpl.
+reflexivity.
+Qed.
+
+Lemma DSnUSnt_eq_DDnUnUt :
+  forall n t,
+    DnUnt (S n) t = (D @ (DnUnt n (U @ t))).
+Proof.
+intros n t.
+unfold DnUnt.
+simpl.
+rewrite UUnt_eq_UnUt.
+reflexivity.
+Qed.
 
 (*
    We would like to define psi' like this
 
      CoFixpoint psi' n : term :=
-       SnU n (SnD (S n) (psi' (S (S n)))).
+       Unt n (Dnt (S n) (psi' (S (S n)))).
 
    but unfortunately this is not guarded.
 *)
 
 (* D(U(U(D(D(D(U(U(U(U(...)))))))))) *)
 CoFixpoint psi' n : term :=
-  (cofix SnD (d : nat) :=
+  (cofix Dnt (d : nat) :=
     match d with
-    | O   => (cofix SnU (u : nat) :=
+    | O   => (cofix USnt (u : nat) :=
                match u with
                | O   => U @ psi' (S (S n))
-               | S u => U @ (SnU u)
+               | S u => U @ (USnt u)
                end) (S n)
-    | S d => D @ (SnD d)
+    | S d => D @ (Dnt d)
     end) (S n).
 
 Definition psi := psi' 0.
@@ -131,6 +168,24 @@ Notation context := (context F X).
 Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
 Notation id_sub := (empty_substitution F X).
+
+Fixpoint DnHole n : context :=
+  match n with
+  | O   => Hole
+  | S n => D @@@ (DnHole n)
+  end.
+
+Lemma fill_DnHole_t_Dnt :
+  forall n t,
+    fill (DnHole n) t = Dnt n t.
+Proof.
+induction n.
+reflexivity.
+intro t.
+simpl.
+rewrite IHn.
+reflexivity.
+Qed.
 
 (* Rewriting *)
 
@@ -218,7 +273,7 @@ intros [c [r [u [H1 H2]]]].
 destruct H1 as [H1 | H1].
 rewrite <- H1 in *|-.
 clear H1.
-assert (H := H2 (S (S (hole_depth c)))).
+assert (H := (term_bis_implies_term_eq H2) (S (S (hole_depth c)))).
 rewrite (peek_eq repeat_D) in H.
 dependent destruction H.
 assert (H' := H First).
@@ -236,7 +291,7 @@ clear x0.
 
 induction c.
 
-assert (H3 := H2 2).
+assert (H3 := (term_bis_implies_term_eq H2) 2).
 rewrite (peek_eq repeat_D) in H3.
 dependent destruction H3.
 assert (H3 := H1 First).
@@ -265,13 +320,14 @@ clear f i j d ij.
 apply IHc; clear IHc.
 
 (* this part is quite ugly *)
+apply term_eq_implies_term_bis.
 intro n.
 assert (H2' : term_eq_up_to (S n) (@Fun F X D (vcons (fill c (substitute u (lhs DU))) v2)) (D @ repeat_D)).
 assert (jaja : fill (@CFun F X D 0 0 e v1 c v2) (substitute u (lhs DU)) = @Fun F X D (vcons (fill c (substitute u (lhs DU))) v2)).
 dependent destruction e.
 reflexivity.
 rewrite jaja in H2.
-exact (H2 (S n)).
+exact ((term_bis_implies_term_eq H2) (S n)).
 apply (@teut_fun_inv F X n D (vcons (fill c (substitute u (lhs DU))) v2) (vcons repeat_D (vnil term)) H2' First).
 intro i.
 apply term_eq_up_to_weaken.
@@ -290,11 +346,10 @@ constructor.
 constructor.
 simpl.
 simpl in H2.
-assert (H2' := term_eq_implies_term_bis H2).
-dependent destruction H2'.
+dependent destruction H2.
 assert (H3 := H First).
 simpl in H3.
-clear H2 H.
+clear H.
 rewrite (peek_eq repeat_D) in H3.
 dependent destruction H3.
 revert x.
@@ -345,7 +400,7 @@ Qed.
 Lemma only_infinite_nf_D_U :
   forall t,
     infinite t /\ normal_form (system := UNWO_trs) t ->
-    t [=] repeat_D \/ t [=] repeat_U.
+    t [~] repeat_D \/ t [~] repeat_U.
 Proof.
 (* We should be able to prove this, but it's probably a lot of work *)
 intros [x | [] args] [It Nt].
@@ -388,7 +443,7 @@ Generalizable All Variables.
 (* D(U(D(U(...)))) rewrites only to itself *)
 Lemma rewrites_to_itself_DU :
   forall `(p : repeat_DU [>] t),
-    t [=] repeat_DU.
+    t [~] repeat_DU.
 Proof.
 intros s p.
 dependent destruction p.
@@ -396,16 +451,17 @@ destruct i as [H | [H | H]]; try (rewrite <- H in t1, t0; clear H).
 
 unfold DU, lhs, DU_l in t0.
 unfold DU, rhs, DU_r in t1.
-apply term_eq_trans with (fill c (substitute u (1 !))).
-exact (term_eq_symm t1).
+apply term_bis_trans with (fill c (substitute u (1 !))).
+exact (term_bis_symm t1).
 clear t1.
 induction c as [| f i j e v c IH w]; simpl in t0 |- *.
 
 (* This does not seem to be the right way, we cannot prove the induction step *)
 
 (* from t0 deduce u 1 [=] repeat_DU, then transitivity of [=] *)
+apply term_eq_implies_term_bis.
 intro n.
-assert (H := t0 (S (S n))).
+assert (H := (term_bis_implies_term_eq t0) (S (S n))).
 rewrite (peek_eq repeat_DU) in H.
 dependent destruction H.
 assert (H1 := H First).
@@ -430,7 +486,7 @@ contradict H.
 Qed.
 
 (* Zero-step reduction psi ->> psi *)
-Definition s_psi0 : psi' 0 ->> psi' 0 := Nil (psi' 0).
+Definition s_psi0_psi0 : psi' 0 ->> psi' 0 := Nil (psi' 0).
 
 (* Substitution for step psi' 0 -> U @ psi' 2 *)
 Definition sub_psi0_Upsi2 (x : X) : term :=
@@ -439,15 +495,9 @@ Definition sub_psi0_Upsi2 (x : X) : term :=
   | _ => Var x
   end.
 
-Lemma fact_term_eq_psi0 :
-  fill Hole (substitute sub_psi0_Upsi2 (lhs DU)) [=] psi' 0.
+Lemma fact_term_bis_psi0 :
+  fill Hole (substitute sub_psi0_Upsi2 (lhs DU)) [~] psi' 0.
 Proof.
-intro n.
-destruct n.
-(* TODO: this is a mess and i guess destructing n should
-   not be necessary, we would just need to rewrite some
-   lemma about vmap in the left term *)
-constructor.
 rewrite (peek_eq (psi' 0)).
 simpl.
 constructor.
@@ -456,38 +506,38 @@ dependent destruction i; [idtac | inversion i].
 unfold vmap.
 simpl.
 (* this is really annoying, but i guess there's no way around it... *)
-rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
          match d with
          | 0 =>
-             (cofix SnU (u : nat) : term :=
+             (cofix USnt (u : nat) : term :=
                match u with
                  | 0 => U @ psi' 2
-                   | S u0 => U @ SnU u0
+                   | S u0 => U @ USnt u0
                      end) 1
-         | S d0 => D @ SnD d0
+         | S d0 => D @ Dnt d0
          end) 0)).
 simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
          match u with
          | 0 => U @ psi' 2
-            | S u0 => U @ SnU u0
+            | S u0 => U @ USnt u0
                end) 0)).
 simpl.
-destruct n.
-constructor.
 constructor.
 unfold vmap.
 intro i.
 dependent destruction i; [idtac | inversion i].
 simpl.
-apply term_eq_up_to_refl.
+apply term_bis_refl.
 Qed.
 
 (* Step psi' 0 -> U @ psi' 2 *)
-Definition p_psi0_Upsi2 : psi' 0 [>] (U @ psi' 2) := Step DU Hole sub_psi0_Upsi2 DU_in fact_term_eq_psi0 (term_eq_refl (U @ psi' 2)).
+Definition p_psi0_Upsi2 : psi' 0 [>] (U @ psi' 2) :=
+  Step DU Hole sub_psi0_Upsi2 DU_in fact_term_bis_psi0 (term_bis_refl (U @ psi' 2)).
 
 (* Single-step reduction psi' 0 ->> U @ psi' 2 *)
-Definition s_psi0_Upsi2 : psi' 0 ->> (U @ psi' 2) := Cons s_psi0 p_psi0_Upsi2.
+Definition s_psi0_Upsi2 : psi' 0 ->> (U @ psi' 2) :=
+  Cons s_psi0_psi0 p_psi0_Upsi2.
 
 (* Substitution for step U @ psi' 2 -> U D D U U U @ psi' 4 *)
 Definition sub_Upsi2_UDDUUUpsi4 (x : X) : term :=
@@ -496,19 +546,18 @@ Definition sub_Upsi2_UDDUUUpsi4 (x : X) : term :=
   | _ => Var x
   end.
 
-Lemma fact_term_eq_Upsi2 :
+Lemma fact_term_bis_Upsi2 :
   fill (U @@@ D @@@ D @@@ Hole) (substitute sub_Upsi2_UDDUUUpsi4 (lhs DU))
-  [=]
+  [~]
   (U @ psi' 2).
 Proof.
 simpl.
-intro n.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 rewrite (peek_eq (psi' 2)).
 simpl.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 simpl.
@@ -523,7 +572,7 @@ rewrite (peek_eq ((cofix SnD (d : nat) : term :=
          | S d0 => D @ SnD d0
          end) 2)).
 simpl.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 simpl.
@@ -538,7 +587,7 @@ rewrite (peek_eq ((cofix SnD (d : nat) : term :=
          | S d0 => D @ SnD d0
          end) 1)).
 simpl.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 unfold vmap.
@@ -554,7 +603,7 @@ rewrite (peek_eq ((cofix SnD (d : nat) : term :=
          | S d0 => D @ SnD d0
          end) 0)).
 simpl.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 unfold vmap.
@@ -565,7 +614,7 @@ rewrite (peek_eq ((cofix SnU (u : nat) : term :=
          | S u0 => U @ SnU u0
          end) 2)).
 simpl.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 simpl.
@@ -575,7 +624,7 @@ rewrite (peek_eq ((cofix SnU (u : nat) : term :=
          | S u0 => U @ SnU u0
          end) 1)).
 simpl.
-destruct n; constructor.
+constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 simpl.
@@ -585,12 +634,12 @@ rewrite (peek_eq ((cofix SnU (u : nat) : term :=
          | S u0 => U @ SnU u0
          end) 0)).
 simpl.
-apply term_eq_up_to_refl.
+apply term_bis_refl.
 Qed.
 
 (* Step U @ psi' 2 -> U D D U U U @ psi' 4 *)
 Definition p_Upsi2_UDDUUUpsi4 : (U @ psi' 2) [>] (U @ D @ D @ U @ U @ U @ psi' 4) :=
-  Step DU (U @@@ D @@@ D @@@ Hole) sub_Upsi2_UDDUUUpsi4 DU_in fact_term_eq_Upsi2 (term_eq_refl (U @ D @ D @ U @ U @ U @ psi' 4)).
+  Step DU (U @@@ D @@@ D @@@ Hole) sub_Upsi2_UDDUUUpsi4 DU_in fact_term_bis_Upsi2 (term_bis_refl (U @ D @ D @ U @ U @ U @ psi' 4)).
 
 (* Two-step reduction psi' 0 ->> U D D U U U @ psi' 4 *)
 Definition s_psi0_UDDUUUpsi4 : psi' 0 ->> (U @ D @ D @ U @ U @ U @ psi' 4) := Cons s_psi0_Upsi2 p_Upsi2_UDDUUUpsi4.
@@ -602,9 +651,9 @@ Definition sub_UDDUUUpsi4_UDUUpsi4 (x : X) : term :=
   | _ => Var x
   end.
 
-Lemma fact_term_eq_UDDUUUpsi4 :
+Lemma fact_term_bis_UDDUUUpsi4 :
   fill (U @@@ D @@@ Hole) (substitute sub_UDDUUUpsi4_UDUUpsi4 (lhs DU))
-  [=]
+  [~]
   (U @ D @ D @ U @ U @ U @ psi' 4).
 Proof.
 (* more of the same *)
@@ -612,7 +661,7 @@ Admitted.
 
 (* Step U D D U U U @ psi' 4 -> U D U U @ psi' 4*)
 Definition p_UDDUUUpsi4_UDUUpsi4 : (U @ D @ D @ U @ U @ U @ psi' 4) [>] (U @ D @ U @ U @ psi' 4) :=
-  Step DU (U @@@ D @@@ Hole) sub_UDDUUUpsi4_UDUUpsi4 DU_in fact_term_eq_UDDUUUpsi4 (term_eq_refl (U @ D @ U @ U @ psi' 4)).
+  Step DU (U @@@ D @@@ Hole) sub_UDDUUUpsi4_UDUUpsi4 DU_in fact_term_bis_UDDUUUpsi4 (term_bis_refl (U @ D @ U @ U @ psi' 4)).
 
 (* Three-step reduction psi' 0 ->> U D U U @ psi' 4 *)
 Definition s_psi0_UDUUpsi4 : psi' 0 ->> (U @ D @ U @ U @ psi' 4) := Cons s_psi0_UDDUUUpsi4 p_UDDUUUpsi4_UDUUpsi4.
@@ -624,9 +673,9 @@ Definition sub_UDUUpsi4_UUpsi4 (x : X) : term :=
   | _ => Var x
   end.
 
-Lemma fact_term_eq_UDUUpsi4 :
+Lemma fact_term_bis_UDUUpsi4 :
   fill (U @@@ Hole) (substitute sub_UDUUpsi4_UUpsi4 (lhs DU))
-  [=]
+  [~]
   (U @ D @ U @ U @ psi' 4).
 Proof.
 (* more of the same *)
@@ -634,34 +683,10 @@ Admitted.
 
 (* Step U D U U @ psi' 4 -> U U @ psi' 4*)
 Definition p_UDUUpsi4_UUpsi4 : (U @ D @ U @ U @ psi' 4) [>] (U @ U @ psi' 4) :=
-  Step DU (U @@@ Hole) sub_UDUUpsi4_UUpsi4 DU_in fact_term_eq_UDUUpsi4 (term_eq_refl (U @ U @ psi' 4)).
+  Step DU (U @@@ Hole) sub_UDUUpsi4_UUpsi4 DU_in fact_term_bis_UDUUpsi4 (term_bis_refl (U @ U @ psi' 4)).
 
 (* Four-step reduction psi' 0 ->> U U @ psi' 4 *)
 Definition s_psi0_UUpsi4 : psi' 0 ->> (U @ U @ psi' 4) := Cons s_psi0_UDUUpsi4 p_UDUUpsi4_UUpsi4.
-
-(* D^n @ U^n @ t *)
-Definition DnUnt n t : term :=
-  (cofix SnD (d : nat) :=
-    match d with
-    | O   => (cofix SnU (u : nat) :=
-               match u with
-               | O   => t
-               | S u => U @ (SnU u)
-               end) n
-    | S d => D @ (SnD d)
-    end) n.
-
-Fixpoint DnHole n : context :=
-  match n with
-  | O   => Hole
-  | S n => D @@@ (DnHole n)
-  end.
-
-CoFixpoint Unt n t : term :=
-  match n with
-  | O   => t
-  | S n => U @ (Unt n t)
-  end.
 
 Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
   match x with
@@ -669,140 +694,50 @@ Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
   | _ => Var x
   end.
 
-Lemma fact_term_eq_DSnUSnt :
+(* TODO: also for U *)
+Lemma handy :
+  forall t s,
+    t [~] s -> (D @ t) [~] (D @ s).
+Proof.
+intros t s H.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+assumption.
+Qed.
+
+(* TODO: perhaps a better name? *)
+Lemma handy2 :
+  forall n t s,
+    t [~] s -> Dnt n t [~] Dnt n s.
+Proof.
+induction n; intros t s H; simpl.
+assumption.
+apply handy.
+apply IHn.
+assumption.
+Qed.
+
+Lemma fact_term_bis_DSnUSnt :
   forall (n : nat) (t : term),
     fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
-    [=]
+    [~]
     DnUnt (S n) t.
 Proof.
-Admitted.
-
-Lemma USnt_eq_UntUt :
-  forall n t,
-    Unt (S n) t = Unt n (U @ t).
-Proof.
-induction n; intro t.
-rewrite (peek_eq (Unt 1 t)).
-rewrite (peek_eq (Unt 0 (U @ t))).
+intros n t.
+rewrite fill_DnHole_t_Dnt.
+unfold DnUnt.
 simpl.
-rewrite (peek_eq (Unt 0 t)).
+rewrite DDnt_eq_DnDt.
+apply handy2.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+unfold vmap.
 simpl.
-(* euh why can't we do another peek_eq on the match? *)
-destruct t; reflexivity.
-rewrite (peek_eq (Unt (S (S n)) t)).
-rewrite (peek_eq (Unt (S n) (U @ t))).
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+unfold vmap.
 simpl.
-rewrite IHn.
-reflexivity.
-Qed.
-
-Lemma xxx :
-  forall n t,
-    (cofix SnU (u : nat) : term :=
-      match u with
-        | 0 => U @ t
-        | S u0 => U @ SnU u0
-      end) n
-    =
-    (U @ (cofix SnU (u : nat) : term :=
-      match u with
-        | 0 => t
-        | S u0 => U @ SnU u0
-      end) n).
-Proof.
-induction n; intro t.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-      match u with
-      | 0 => U @ t
-      | S u0 => U @ SnU u0
-      end) 0)).
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ SnU u0
-       end) 0)).
-simpl.
-destruct t; reflexivity.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-      match u with
-      | 0 => U @ t
-      | S u0 => U @ SnU u0
-      end) (S n))).
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ SnU u0
-       end) (S n))).
-simpl.
-rewrite (IHn t).
-reflexivity.
-Qed.
-
-Lemma DSnUSnt_eq_DDnUnUt :
-  forall n t,
-    DnUnt (S n) t = (D @ (DnUnt n (U @ t))).
-Proof.
-(* TODO: induction is moved to xxx lemma *)
-induction n; intro t.
-rewrite (peek_eq (DnUnt 1 t)).
-rewrite (peek_eq (DnUnt 0 (U @ t))).
-simpl.
-rewrite (peek_eq ((cofix SnD (d : nat) : term :=
-       match d with
-       | 0 =>
-           (cofix SnU (u : nat) : term :=
-              match u with
-              | 0 => t
-              | S u0 => U @ SnU u0
-              end) 1
-       | S d0 => D @ SnD d0
-       end) 0)).
-simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ SnU u0
-       end) 0)).
-simpl.
-destruct t; reflexivity.
-specialize IHn with (U @ t).
-rewrite (peek_eq (DnUnt (S n) (U @ t))) in IHn; simpl in IHn.
-rewrite (xxx (S n) t) in IHn.
-rewrite (peek_eq (DnUnt (S (S n)) t)).
-rewrite (peek_eq (DnUnt (S n) (U @ t))).
-simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-              match u with
-              | 0 => t
-              | S u0 => U @ SnU u0
-              end) (S (S n)))).
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-              match u with
-              | 0 => U @ t
-              | S u0 => U @ SnU u0
-              end) (S n))).
-simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-              match u with
-              | 0 => t
-              | S u0 => U @ SnU u0
-              end) (S n))).
-simpl.
-rewrite (peek_eq ((cofix SnD (d : nat) : term :=
-       match d with
-       | 0 =>
-           U @
-           U @
-           (cofix SnU (u : nat) : term :=
-              match u with
-              | 0 => t
-              | S u0 => U @ SnU u0
-              end) n
-       | S d0 => D @ SnD d0
-       end) (S n))).
-simpl.
-rewrite -> (xxx n t).
-reflexivity.
+apply term_bis_refl.
 Qed.
 
 Lemma fact_term_eq_DnUnt :
@@ -811,21 +746,30 @@ Lemma fact_term_eq_DnUnt :
     =
     DnUnt n t.
 Proof.
-simpl.
-induction n; intro t.
-rewrite (peek_eq (Unt 0 t)).
-rewrite (peek_eq (DnUnt 0 t)).
+induction n; intro t; simpl.
 reflexivity.
-simpl.
-rewrite USnt_eq_UntUt.
-rewrite DSnUSnt_eq_DDnUnUt.
+simpl in IHn.
+rewrite UUnt_eq_UnUt.
 rewrite IHn with (U @ t).
+unfold DnUnt; simpl.
+rewrite UUnt_eq_UnUt.
 reflexivity.
 Qed.
 
+Lemma fact_term_bis_DnUnt :
+  forall (n : nat) (t : term),
+    fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    [~]
+    DnUnt n t.
+Proof.
+intros n t.
+rewrite fact_term_eq_DnUnt.
+apply term_bis_refl.
+Qed.
+
 (* Step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
-Program Definition p_DSnUSnt_DnUnt n t : (DnUnt (S n) t) [>] (DnUnt n t) :=
-  Step DU (DnHole n) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_eq_DSnUSnt n t) (fact_term_eq_DnUnt n t).
+Definition p_DSnUSnt_DnUnt n t : (DnUnt (S n) t) [>] (DnUnt n t) :=
+  Step DU (DnHole n) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
 
 Definition s_psin_UpsiSSn n : psi' n ->> (U @ psi' (S (S n))).
 Admitted.

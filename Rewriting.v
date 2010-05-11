@@ -69,8 +69,8 @@ Reserved Notation "s [>] t" (no associativity, at level 40).
 Inductive step : term -> term -> Type :=
   | Step : forall (s t : term) (r : rule) (c : context) (u : substitution),
              In r system ->
-             fill c (substitute u (lhs r)) [=] s ->
-             fill c (substitute u (rhs r)) [=] t ->
+             fill c (substitute u (lhs r)) [~] s ->
+             fill c (substitute u (rhs r)) [~] t ->
              s [>] t
 where "s [>] t" := (step s t).
 
@@ -89,10 +89,10 @@ Proof.
 destruct p as [s t r c u Hr Hs Ht].
 intros n H.
 exact (term_eq_up_to_trans
-  (term_eq_up_to_symm (Hs n))
+  (term_eq_up_to_symm ((term_bis_implies_term_eq Hs) n))
   (term_eq_up_to_trans
     (fill_eq_up_to c (substitute u (lhs r)) (substitute u (rhs r)) H)
-    (Ht n))).
+    ((term_bis_implies_term_eq Ht) n))).
 Qed.
 
 (* TODO: c' has hole at same position as c *)
@@ -109,7 +109,7 @@ Admitted.
 (* Normal form if no left-hand side matches *)
 Definition normal_form t :=
   ~ exists c:context, exists r, exists u,
-    In r system /\ fill c (substitute u (lhs r)) [=] t.
+    In r system /\ fill c (substitute u (lhs r)) [~] t.
 
 (* TODO: we could use these more generally and move them to Prelims *)
 Notation "| s |" := (projT2 s) (no associativity, at level 75).
@@ -165,10 +165,10 @@ End InductionPrinciple.
 Definition sequence_ind (P : `(s ->> t -> Prop)) :=
   sequence_rect P.
 
-Definition cons_term_eq `(r : s ->> t, p : u [>] v) : u [=] t -> s ->> v :=
-  match p in u [>] v return u [=] t -> s ->> v with
+Definition cons_term_bis `(r : s ->> t, p : u [>] v) : u [~] t -> s ->> v :=
+  match p in u [>] v return u [~] t -> s ->> v with
   | Step u v rul c sub Hr Hs Ht =>
-      fun H => Cons r (Step rul c sub Hr (term_eq_trans Hs H) Ht)
+      fun H => Cons r (Step rul c sub Hr (term_bis_trans Hs H) Ht)
   end.
 
 Fixpoint length `(r : s ->> t) : ord' :=
