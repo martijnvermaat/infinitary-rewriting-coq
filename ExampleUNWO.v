@@ -114,10 +114,10 @@ CoFixpoint psi' n : term :=
   (cofix SnD (d : nat) :=
     match d with
     | O   => (cofix SnU (u : nat) :=
-                 match u with
-                 | O   => U @ psi' (S (S n))
-                 | S u => U @ (SnU u)
-                 end) (S n)
+               match u with
+               | O   => U @ psi' (S (S n))
+               | S u => U @ (SnU u)
+               end) (S n)
     | S d => D @ (SnD d)
     end) (S n).
 
@@ -639,7 +639,194 @@ Definition p_UDUUpsi4_UUpsi4 : (U @ D @ U @ U @ psi' 4) [>] (U @ U @ psi' 4) :=
 (* Four-step reduction psi' 0 ->> U U @ psi' 4 *)
 Definition s_psi0_UUpsi4 : psi' 0 ->> (U @ U @ psi' 4) := Cons s_psi0_UDUUpsi4 p_UDUUpsi4_UUpsi4.
 
-(* What about odd n? *)
+(* D^n @ U^n @ t *)
+Definition DnUnt n t : term :=
+  (cofix SnD (d : nat) :=
+    match d with
+    | O   => (cofix SnU (u : nat) :=
+               match u with
+               | O   => t
+               | S u => U @ (SnU u)
+               end) n
+    | S d => D @ (SnD d)
+    end) n.
+
+Fixpoint DnHole n : context :=
+  match n with
+  | O   => Hole
+  | S n => D @@@ (DnHole n)
+  end.
+
+CoFixpoint Unt n t : term :=
+  match n with
+  | O   => t
+  | S n => U @ (Unt n t)
+  end.
+
+Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
+  match x with
+  | 1 => Unt n t
+  | _ => Var x
+  end.
+
+Lemma fact_term_eq_DSnUSnt :
+  forall (n : nat) (t : term),
+    fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
+    [=]
+    DnUnt (S n) t.
+Proof.
+Admitted.
+
+Lemma USnt_eq_UntUt :
+  forall n t,
+    Unt (S n) t = Unt n (U @ t).
+Proof.
+induction n; intro t.
+rewrite (peek_eq (Unt 1 t)).
+rewrite (peek_eq (Unt 0 (U @ t))).
+simpl.
+rewrite (peek_eq (Unt 0 t)).
+simpl.
+(* euh why can't we do another peek_eq on the match? *)
+destruct t; reflexivity.
+rewrite (peek_eq (Unt (S (S n)) t)).
+rewrite (peek_eq (Unt (S n) (U @ t))).
+simpl.
+rewrite IHn.
+reflexivity.
+Qed.
+
+Lemma xxx :
+  forall n t,
+    (cofix SnU (u : nat) : term :=
+      match u with
+        | 0 => U @ t
+        | S u0 => U @ SnU u0
+      end) n
+    =
+    (U @ (cofix SnU (u : nat) : term :=
+      match u with
+        | 0 => t
+        | S u0 => U @ SnU u0
+      end) n).
+Proof.
+induction n; intro t.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ SnU u0
+      end) 0)).
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ SnU u0
+       end) 0)).
+simpl.
+destruct t; reflexivity.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ SnU u0
+      end) (S n))).
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ SnU u0
+       end) (S n))).
+simpl.
+rewrite (IHn t).
+reflexivity.
+Qed.
+
+Lemma DSnUSnt_eq_DDnUnUt :
+  forall n t,
+    DnUnt (S n) t = (D @ (DnUnt n (U @ t))).
+Proof.
+(* TODO: induction is moved to xxx lemma *)
+induction n; intro t.
+rewrite (peek_eq (DnUnt 1 t)).
+rewrite (peek_eq (DnUnt 0 (U @ t))).
+simpl.
+rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+       match d with
+       | 0 =>
+           (cofix SnU (u : nat) : term :=
+              match u with
+              | 0 => t
+              | S u0 => U @ SnU u0
+              end) 1
+       | S d0 => D @ SnD d0
+       end) 0)).
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ SnU u0
+       end) 0)).
+simpl.
+destruct t; reflexivity.
+specialize IHn with (U @ t).
+rewrite (peek_eq (DnUnt (S n) (U @ t))) in IHn; simpl in IHn.
+rewrite (xxx (S n) t) in IHn.
+rewrite (peek_eq (DnUnt (S (S n)) t)).
+rewrite (peek_eq (DnUnt (S n) (U @ t))).
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+              match u with
+              | 0 => t
+              | S u0 => U @ SnU u0
+              end) (S (S n)))).
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+              match u with
+              | 0 => U @ t
+              | S u0 => U @ SnU u0
+              end) (S n))).
+simpl.
+rewrite (peek_eq ((cofix SnU (u : nat) : term :=
+              match u with
+              | 0 => t
+              | S u0 => U @ SnU u0
+              end) (S n))).
+simpl.
+rewrite (peek_eq ((cofix SnD (d : nat) : term :=
+       match d with
+       | 0 =>
+           U @
+           U @
+           (cofix SnU (u : nat) : term :=
+              match u with
+              | 0 => t
+              | S u0 => U @ SnU u0
+              end) n
+       | S d0 => D @ SnD d0
+       end) (S n))).
+simpl.
+rewrite -> (xxx n t).
+reflexivity.
+Qed.
+
+Lemma fact_term_eq_DnUnt :
+  forall (n : nat) (t : term),
+    fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    =
+    DnUnt n t.
+Proof.
+simpl.
+induction n; intro t.
+rewrite (peek_eq (Unt 0 t)).
+rewrite (peek_eq (DnUnt 0 t)).
+reflexivity.
+simpl.
+rewrite USnt_eq_UntUt.
+rewrite DSnUSnt_eq_DDnUnUt.
+rewrite IHn with (U @ t).
+reflexivity.
+Qed.
+
+(* Step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
+Program Definition p_DSnUSnt_DnUnt n t : (DnUnt (S n) t) [>] (DnUnt n t) :=
+  Step DU (DnHole n) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_eq_DSnUSnt n t) (fact_term_eq_DnUnt n t).
+
 Definition s_psin_UpsiSSn n : psi' n ->> (U @ psi' (S (S n))).
 Admitted.
 
