@@ -1,4 +1,5 @@
 Require Import Rewriting.
+Require Import Equality.
 
 Set Implicit Arguments.
 
@@ -103,6 +104,48 @@ Fixpoint Dnt (n : nat) t :=
 (* D^n @ U^n @ t *)
 Definition DnUnt n t : term :=
   Dnt n (Unt n t).
+
+Lemma term_bis_U :
+  forall t s,
+    t [~] s -> (U @ t) [~] (U @ s).
+Proof.
+intros t s H.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+assumption.
+Qed.
+
+Lemma term_bis_D :
+  forall t s,
+    t [~] s -> (D @ t) [~] (D @ s).
+Proof.
+intros t s H.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+assumption.
+Qed.
+
+Lemma term_bis_Unt :
+  forall n t s,
+    t [~] s -> Unt n t [~] Unt n s.
+Proof.
+induction n; intros t s H; simpl.
+assumption.
+apply term_bis_U.
+apply IHn.
+assumption.
+Qed.
+
+Lemma term_bis_Dnt :
+  forall n t s,
+    t [~] s -> Dnt n t [~] Dnt n s.
+Proof.
+induction n; intros t s H; simpl.
+assumption.
+apply term_bis_D.
+apply IHn.
+assumption.
+Qed.
 
 Lemma UUnt_eq_UnUt :
   forall n t,
@@ -259,8 +302,6 @@ apply S.
 rewrite (proj2 S).
 discriminate.
 Qed.
-
-Require Import Equality.
 
 (* D(D(D(...))) is a normal form *)
 Lemma nf_D :
@@ -694,29 +735,6 @@ Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
   | _ => Var x
   end.
 
-(* TODO: also for U *)
-Lemma handy :
-  forall t s,
-    t [~] s -> (D @ t) [~] (D @ s).
-Proof.
-intros t s H.
-constructor.
-intro i; dependent destruction i; [idtac | inversion i].
-assumption.
-Qed.
-
-(* TODO: perhaps a better name? *)
-Lemma handy2 :
-  forall n t s,
-    t [~] s -> Dnt n t [~] Dnt n s.
-Proof.
-induction n; intros t s H; simpl.
-assumption.
-apply handy.
-apply IHn.
-assumption.
-Qed.
-
 Lemma fact_term_bis_DSnUSnt :
   forall (n : nat) (t : term),
     fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
@@ -728,7 +746,7 @@ rewrite fill_DnHole_t_Dnt.
 unfold DnUnt.
 simpl.
 rewrite DDnt_eq_DnDt.
-apply handy2.
+apply term_bis_Dnt.
 constructor.
 intro i; dependent destruction i; [idtac | inversion i].
 unfold vmap.
@@ -768,8 +786,15 @@ apply term_bis_refl.
 Qed.
 
 (* Step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
-Definition p_DSnUSnt_DnUnt n t : (DnUnt (S n) t) [>] (DnUnt n t) :=
+Definition p_DSnUSnt_DnUnt n t : DnUnt (S n) t [>] DnUnt n t :=
   Step DU (DnHole n) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
+
+(* n-step reduction D^n @ U^n @ t -> t *)
+Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
+  match n return DnUnt n t ->> t with
+  | O   => Nil t
+  | S n => snoc (p_DSnUSnt_DnUnt n t) (s_DnUnt_t n t)
+  end.
 
 Definition s_psin_UpsiSSn n : psi' n ->> (U @ psi' (S (S n))).
 Admitted.

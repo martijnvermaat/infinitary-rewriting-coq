@@ -657,7 +657,7 @@ Lemma append_length :
   forall `(r : s ->> t, q : t ->> u),
     length (append r q) ==' add (length r) (length q).
 Proof.
-induction q as [u| t u q v p IH | t u f IH]; simpl.
+induction q as [u | t u q v p IH | t u f IH]; simpl.
 apply ord'_eq_refl.
 split.
 apply Ord'_le_Succ with (inl (pred_type (add (length r) (length q))) tt).
@@ -666,6 +666,29 @@ apply Ord'_le_Succ with (inl (pred_type (length (append r q))) tt).
 apply (IH r).
 split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
 Qed.
+
+Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
+  match r in t ->> u return s [>] t -> s ->> u with
+  | Nil _          => fun p => Cons (Nil s) p
+  | Cons _ _ q _ o => fun p => Cons (snoc_rec q p) o
+  | Lim _ u f      => fun p => Lim u (fun o => existT (fun u => s ->> u) ($ f o $) (snoc_rec (| f o|) p))
+  end.
+
+Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
+
+Lemma snoc_length :
+  forall `(p : s [>] t, r : t ->> u),
+    length (snoc p r) ==' Succ (length r).
+Proof.
+induction r as [u | t u r v o IH | t u f IH]; simpl.
+apply ord'_eq_refl.
+split.
+apply Ord'_le_Succ with (inl (pred_type (Succ (length r))) tt).
+apply (IH p).
+apply Ord'_le_Succ with (inl (pred_type (length (snoc p r))) tt).
+apply (IH p).
+(* TODO *)
+Admitted.
 
 Lemma compression :
   trs_left_linear system ->
