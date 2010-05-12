@@ -105,6 +105,10 @@ Fixpoint Dnt (n : nat) t :=
 Definition DnUnt n t : term :=
   Dnt n (Unt n t).
 
+(* U^n @ D^n @ t *)
+Definition UnDnt n t : term :=
+  Unt n (Dnt n t).
+
 Lemma term_bis_U :
   forall t s,
     t [~] s -> (U @ t) [~] (U @ s).
@@ -180,6 +184,17 @@ rewrite UUnt_eq_UnUt.
 reflexivity.
 Qed.
 
+Lemma USnDSnt_eq_UUnDnDt :
+  forall n t,
+    UnDnt (S n) t = (U @ (UnDnt n (D @ t))).
+Proof.
+intros n t.
+unfold UnDnt.
+simpl.
+rewrite DDnt_eq_DnDt.
+reflexivity.
+Qed.
+
 (*
    We would like to define psi' like this
 
@@ -202,6 +217,104 @@ CoFixpoint psi' n : term :=
     end) (S n).
 
 Definition psi := psi' 0.
+
+Lemma UUSnt_eq_USnUt :
+  forall n t,
+    (U @ (cofix USnt (u : nat) : term :=
+      match u with
+      | 0 => t
+      | S u0 => U @ USnt u0
+      end) n)
+    =
+    (cofix USnt (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ USnt u0
+      end) n.
+Proof.
+induction n; intro t.
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ USnt u0
+      end) 0)).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ USnt u0
+       end) 0)).
+simpl.
+destruct t; reflexivity.
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ USnt u0
+       end) (S n))).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ USnt u0
+      end) (S n))).
+simpl.
+rewrite IHn with t.
+reflexivity.
+Qed.
+
+Lemma psin_eq_DSnUSnUtpsiSSn :
+  forall n,
+    psi' n = DnUnt (S n) (U @ (psi' (S (S n)))).
+Proof.
+intro n.
+rewrite (peek_eq (psi' n)).
+simpl.
+generalize (psi' (S (S n))).
+induction n; intro t.
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
+       match d with
+       | 0 =>
+           (cofix USnt (u : nat) : term :=
+              match u with
+              | 0 => U @ t
+              | S u0 => U @ USnt u0
+              end) 1
+       | S d0 => D @ Dnt d0
+       end) 0)).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+                 match u with
+                 | 0 => U @ t
+                 | S u0 => U @ USnt u0
+                 end) 1)).
+rewrite DSnUSnt_eq_DDnUnUt.
+unfold DnUnt.
+simpl.
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+       match u with
+       | 0 => U @ t
+       | S u0 => U @ USnt u0
+       end) 0)).
+simpl.
+reflexivity.
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
+       match d with
+       | 0 =>
+           (cofix USnt (u : nat) : term :=
+              match u with
+              | 0 => U @ t
+              | S u0 => U @ USnt u0
+              end) (S (S n))
+       | S d0 => D @ Dnt d0
+       end) (S n))).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+                 match u with
+                 | 0 => U @ t
+                 | S u0 => U @ USnt u0
+                 end) (S (S n)))).
+rewrite DSnUSnt_eq_DDnUnUt.
+simpl.
+rewrite UUSnt_eq_USnUt with (S n) (U @ t).
+rewrite IHn with (U @ t).
+reflexivity.
+Qed.
 
 (* Contexts *)
 
@@ -796,8 +909,14 @@ Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
   | S n => snoc (p_DSnUSnt_DnUnt n t) (s_DnUnt_t n t)
   end.
 
-Definition s_psin_UpsiSSn n : psi' n ->> (U @ psi' (S (S n))).
-Admitted.
+(* n-step reduction psi n -> U @ psi (S (S n)) *)
+(* TODO: would it be better to write this without program? *)
+Program Definition s_psin_UpsiSSn n : psi' n ->> (U @ (psi' (S (S n)))) :=
+  s_DnUnt_t (S n) (U @ psi' (S (S n))).
+Next Obligation.
+symmetry.
+apply psin_eq_DSnUSnUtpsiSSn.
+Defined.
 
 (*
 Definition s_psi0_Unpsi2n n : psi' 0 ->> (U^n @ psi' (2 * n)).
