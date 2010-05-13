@@ -1575,7 +1575,8 @@ Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
   | S n => snoc (p_UmDSnUSnt_UmDnUnt m n t) (s_UmDnUnt_Umt m n t)
   end.
 
-(* Coq ERROR
+(* Is the following error a bug in Program? *)
+(*
 Program Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)) :=
   s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n)).
 Next Obligation.
@@ -1591,9 +1592,27 @@ Show Proof.
 Defined.
 *)
 
-(*
-Definition s_psi0_Unpsi2n n : psi' 0 ->> Unt n (psi' n).
-*)
+(* This is the ugly but working alternative to the Program above *)
+Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)).
+intro n.
+assert (H :Unt n (DnUnt (S (2 * n)) (U @ psi' (S n))) ->> Unt n (U @ psi' (S n))).
+refine (s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n))).
+unfold DnUnt in H.
+rewrite psin_eq_DS2nUS2nUpsiSn.
+simpl.
+simpl in H.
+unfold DnUnt.
+simpl.
+rewrite UUnt_eq_UnUt with n (psi' (S n)).
+exact H.
+Defined.
+
+(* psi ->> U^n @ psi' n *)
+Fixpoint s_psi0_Unpsin n : psi' 0 ->> Unt n (psi' n) :=
+  match n return psi' 0 ->> Unt n (psi' n) with
+  | O   => Nil (psi' 0)
+  | S n => append (s_psi0_Unpsin n) (s_Unpsin_USnpsiSn n)
+  end.
 
 (* psi rewrites to repeat_U *)
 Definition s_psi_U : psi ->> repeat_U.
