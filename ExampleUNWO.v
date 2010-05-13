@@ -1608,10 +1608,10 @@ exact H.
 Defined.
 
 (* psi ->> U^n @ psi' n *)
-Fixpoint s_psi0_Unpsin n : psi' 0 ->> Unt n (psi' n) :=
-  match n return psi' 0 ->> Unt n (psi' n) with
-  | O   => Nil (psi' 0)
-  | S n => append (s_psi0_Unpsin n) (s_Unpsin_USnpsiSn n)
+Fixpoint s_psi_Unpsin n : psi ->> Unt n (psi' n) :=
+  match n return psi ->> Unt n (psi' n) with
+  | O   => Nil psi
+  | S n => append (s_psi_Unpsin n) (s_Unpsin_USnpsiSn n)
   end.
 
 (* psi rewrites to repeat_U *)
