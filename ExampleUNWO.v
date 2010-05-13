@@ -686,22 +686,74 @@ Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a
 
 Notation id_sub := (empty_substitution F X).
 
-Fixpoint DnHole n : context :=
+Fixpoint Dnc n c : context :=
   match n with
-  | O   => Hole
-  | S n => D @@@ (DnHole n)
+  | O   => c
+  | S n => D @@@ (Dnc n c)
   end.
 
-Lemma fill_DnHole_t_Dnt :
-  forall n t,
-    fill (DnHole n) t = Dnt n t.
+Fixpoint Unc n c : context :=
+  match n with
+  | O   => c
+  | S n => U @@@ (Unc n c)
+  end.
+
+Lemma fill_Dnc_t :
+  forall n c t,
+    fill (Dnc n c) t = Dnt n (fill c t).
 Proof.
 induction n.
 reflexivity.
-intro t.
+intros c t.
 simpl.
 rewrite IHn.
 reflexivity.
+Qed.
+
+Lemma fill_Unc_t :
+  forall n c t,
+    fill (Unc n c) t = Unt n (fill c t).
+Proof.
+induction n.
+reflexivity.
+intros c t.
+simpl.
+rewrite IHn.
+reflexivity.
+Qed.
+
+Lemma fill_DnHole_t :
+  forall n t,
+    fill (Dnc n Hole) t = Dnt n t.
+Proof.
+intros n t.
+apply fill_Dnc_t.
+Qed.
+
+Lemma fill_UnHole_t :
+  forall n t,
+    fill (Unc n Hole) t = Unt n t.
+Proof.
+intros n t.
+apply fill_Unc_t.
+Qed.
+
+Lemma fill_UmDnc_t :
+  forall m n c t,
+    fill (Unc m (Dnc n c)) t = Unt m (Dnt n (fill c t)).
+Proof.
+intros m n c t.
+rewrite fill_Unc_t.
+rewrite fill_Dnc_t.
+reflexivity.
+Qed.
+
+Lemma fill_UmDnHole_t :
+  forall m n t,
+    fill (Unc m (Dnc n Hole)) t = Unt m (Dnt n t).
+Proof.
+intros m n t.
+apply fill_UmDnc_t.
 Qed.
 
 (* Rewriting *)
@@ -1378,12 +1430,12 @@ Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
 
 Lemma fact_term_bis_DSnUSnt :
   forall (n : nat) (t : term),
-    fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
+    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
     [~]
     DnUnt (S n) t.
 Proof.
 intros n t.
-rewrite fill_DnHole_t_Dnt.
+rewrite fill_DnHole_t.
 unfold DnUnt.
 simpl.
 rewrite DDnt_eq_DnDt.
@@ -1401,7 +1453,7 @@ Qed.
 
 Lemma fact_term_eq_DnUnt :
   forall (n : nat) (t : term),
-    fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
     =
     DnUnt n t.
 Proof.
@@ -1417,7 +1469,7 @@ Qed.
 
 Lemma fact_term_bis_DnUnt :
   forall (n : nat) (t : term),
-    fill (DnHole n) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
     [~]
     DnUnt n t.
 Proof.
@@ -1428,7 +1480,7 @@ Qed.
 
 (* Step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
 Definition p_DSnUSnt_DnUnt n t : DnUnt (S n) t [>] DnUnt n t :=
-  Step DU (DnHole n) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
+  Step DU (Dnc n Hole) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
 
 (* n-step reduction D^n @ U^n @ t -> t *)
 Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
@@ -1462,8 +1514,85 @@ symmetry.
 apply psin_eq_DS2nUS2nUpsiSn.
 Defined.
 
+(* Now we slightly adjust these sequences to take place under U^m *)
+
+Lemma fact_term_bis_UmDSnUSnt :
+  forall (m n : nat) (t : term),
+    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
+    [~]
+    Unt m (DnUnt (S n) t).
+Proof.
+intros m n t.
+rewrite fill_UmDnHole_t.
+unfold DnUnt.
+simpl.
+rewrite DDnt_eq_DnDt.
+apply term_bis_Unt.
+apply term_bis_Dnt.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+apply term_bis_refl.
+Qed.
+
+Lemma fact_term_eq_UmDnUnt :
+  forall (m n : nat) (t : term),
+    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    =
+    Unt m (DnUnt n t).
+Proof.
+intros m n t.
+rewrite fill_Unc_t.
+rewrite fill_Dnc_t.
+simpl.
+reflexivity.
+Qed.
+
+Lemma fact_term_bis_UmDnUnt :
+  forall (m n : nat) (t : term),
+    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    [~]
+    Unt m (DnUnt n t).
+Proof.
+intros m n t.
+rewrite fact_term_eq_UmDnUnt.
+apply term_bis_refl.
+Qed.
+
+(* Step U^m @ D^Sn @ U^Sn @ t -> U^m @ D^n @ U^n @ t *)
+Definition p_UmDSnUSnt_UmDnUnt m n t : Unt m (DnUnt (S n) t) [>] Unt m (DnUnt n t) :=
+  Step DU (Unc m (Dnc n Hole)) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
+
+(* n-step reduction U^m @ D^n @ U^n @ t -> U^m t *)
+Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
+  match n return Unt m (DnUnt n t) ->> Unt m t with
+  | O   => Nil (Unt m t)
+  | S n => snoc (p_UmDSnUSnt_UmDnUnt m n t) (s_UmDnUnt_Umt m n t)
+  end.
+
+(* Coq ERROR
+Program Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)) :=
+  s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n)).
+Next Obligation.
+symmetry.
+unfold DnUnt.
+rewrite psin_eq_DS2nUS2nUpsiSn.
+reflexivity.
+Defined.
+Next Obligation.
+rewrite UUnt_eq_UnUt.
+reflexivity.
+Show Proof.
+Defined.
+*)
+
 (*
-Definition s_psi0_Unpsi2n n : psi' 0 ->> (U^n @ psi' (2 * n)).
+Definition s_psi0_Unpsi2n n : psi' 0 ->> Unt n (psi' n).
 *)
 
 (* psi rewrites to repeat_U *)
