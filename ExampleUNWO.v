@@ -1630,8 +1630,16 @@ Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 Lemma good_s_Unpsin_USnpsiSn :
   forall n, good (s_Unpsin_USnpsiSn n).
 Proof.
-induction n as [| n IH]; simpl.
+intro n.
 unfold s_Unpsin_USnpsiSn; simpl.
+unfold eq_rect_r.
+(* http://www.lix.polytechnique.fr/coq/stdlib/Coq.Program.Equality.html *)
+elim_eq_rect.
+simpl.
+elim_eq_rect.
+simpl.
+induction n as [| n IH]. simpl.
+trivial.
 Admitted.
 
 (* This reduction is 'good' *)
