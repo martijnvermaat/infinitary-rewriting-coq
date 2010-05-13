@@ -257,6 +257,7 @@ discriminate.
 (* TODO: i don't know if we're on the right track here *)
 Admitted.
 
+(* TODO: this lemma gives universe inconsitency in coq trunk 2010-05-13 *)
 Lemma all_pos_eq_implies_term_bis :
   forall (t u : term), all_pos_eq t u -> t [~] u.
 Proof.

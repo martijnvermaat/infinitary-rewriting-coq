@@ -1614,12 +1614,34 @@ Fixpoint s_psi_Unpsin n : psi ->> Unt n (psi' n) :=
   | S n => append (s_psi_Unpsin n) (s_Unpsin_USnpsiSn n)
   end.
 
-(* psi rewrites to repeat_U *)
-Definition s_psi_U : psi ->> repeat_U.
+(* psi ->> U^n @ psi' n but with Sigma return type including right-most term *)
+Definition limit_s_psi_Unpsin n : {t : term & psi ->> t} :=
+  existT (fun (t : term) => psi ->> t) (Unt n (psi' n)) (s_psi_Unpsin n).
+
+(* Omega-step reduction psi --> UUU... *)
+Definition s_psi_repeat_U : psi ->> repeat_U :=
+  Lim repeat_U limit_s_psi_Unpsin.
+
+(* Ugly notation *)
+(*
+Notation "| s |" := (projT2 s) (no associativity, at level 75).
+Notation "$ s $" := (projT1 s) (no associativity, at level 75).
+*)
+
+(* This reduction is 'good' *)
+Lemma good_s_psi_repeat_U :
+  good s_psi_repeat_U.
+Proof.
+Admitted.
+
+(* This reduction is weakly convergent *)
+Lemma weakly_convergent_s_psi_repeat_U :
+  weakly_convergent s_psi_repeat_U.
+Proof.
 Admitted.
 
 (* psi rewrites to repeat_D *)
-Definition s_psi_D : psi ->> repeat_D.
+Definition s_psi_repeat_D : psi ->> repeat_D.
 Admitted.
 
 Definition unique_normal_forms :=
@@ -1636,8 +1658,8 @@ Proof.
 intros H.
 apply neq_D_U.
 apply (H psi).
-exact s_psi_D.
-exact s_psi_U.
+exact s_psi_repeat_D.
+exact s_psi_repeat_U.
 exact nf_D.
 exact nf_U.
 Qed.
