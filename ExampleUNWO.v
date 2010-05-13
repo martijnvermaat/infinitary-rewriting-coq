@@ -1588,7 +1588,6 @@ Defined.
 Next Obligation.
 rewrite UUnt_eq_UnUt.
 reflexivity.
-Show Proof.
 Defined.
 *)
 
@@ -1628,10 +1627,25 @@ Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 *)
 
+Lemma good_s_Unpsin_USnpsiSn :
+  forall n, good (s_Unpsin_USnpsiSn n).
+Proof.
+induction n as [| n IH]; simpl.
+unfold s_Unpsin_USnpsiSn; simpl.
+Admitted.
+
 (* This reduction is 'good' *)
 Lemma good_s_psi_repeat_U :
   good s_psi_repeat_U.
 Proof.
+split.
+induction n as [| n IH]; simpl.
+trivial.
+apply good_inv_append.
+exact IH.
+apply good_s_Unpsin_USnpsiSn.
+intros n m H.
+induction H; simpl.
 Admitted.
 
 (* This reduction is weakly convergent *)

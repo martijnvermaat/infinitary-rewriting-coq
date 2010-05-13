@@ -690,6 +690,36 @@ apply (IH p).
 (* TODO *)
 Admitted.
 
+Lemma embed_strict_inv_append :
+  forall `(r : s ->> t, q : t ->> u, z : t ->> v),
+    q < z ->
+    append r q < append r z.
+Proof.
+(* TODO *)
+(* This needs some more theory on append and embed *)
+Admitted.
+
+Lemma good_inv_append :
+  forall `(r : s ->> t, q : t ->> u),
+    good r ->
+    good q ->
+    good (append r q).
+Proof.
+induction q as [u | t u q v p IH | t u f IH]; simpl.
+trivial.
+apply IH.
+intros G [H1 H2].
+split.
+intro n.
+apply IH.
+assumption.
+apply H1.
+intros n m H.
+apply embed_strict_inv_append.
+apply H2.
+assumption.
+Qed.
+
 Lemma compression :
   trs_left_linear system ->
   forall `(r : s ->> t),
