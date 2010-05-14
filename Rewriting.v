@@ -389,8 +389,55 @@ Lemma embed_cons_left :
     Cons r p <= q ->
     r <= q.
 Proof.
-intros.
-admit.
+(* TODO *)
+Admitted.
+
+Lemma embed_pref_right :
+  forall `(r : s ->> t, q : u ->> v, i : pref_type q),
+    r <= pref q i ->
+    r <= q.
+Proof.
+intros s t.
+induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
+constructor.
+(*apply (@Embed_Cons u v q s i r).*) (* cannot work *)
+(* TODO: this is a key lemma! *)
+(* (* proof of ord'_le_pred_right: *)
+induction alpha as [| alpha IH | f IH]; intros beta i H.
+constructor.
+apply Ord'_le_Succ with i.
+inversion H as [| a b j |].
+apply IH with j.
+assumption.
+constructor.
+intro n.
+inversion_clear H.
+apply IH with i.
+trivial.
+*)
+Admitted.
+
+Lemma embed_strict_cons_right :
+  forall `(r : s ->> t, q : u ->> v, p : v [>] w),
+    r < q ->
+    r < Cons q p.
+Proof.
+intros s t r u v q w p.
+destruct 1 as [i H].
+exists (inl (pref_type q) tt).
+apply embed_pref_right with i.
+assumption.
+Qed.
+
+Lemma embed_strict_embed :
+  forall `(r : s ->> t, q : u ->> v),
+    r < q ->
+    r <= q.
+Proof.
+intros s t r u v q.
+destruct 1 as [i H].
+apply embed_pref_right with i.
+assumption.
 Qed.
 
 (* Strict prefix relation *)
@@ -692,6 +739,27 @@ apply Ord'_le_Succ with (inl (pred_type (length (append r q))) tt).
 apply (IH r).
 split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
 Qed.
+
+(* TODO: is there a better way to formulate this? *)
+Lemma embed_strict_append_notnil :
+  forall `(r : s ->> t, q : t ->> u),
+    match q with
+    | Nil _          => True
+    | Cons _ _ _ _ _ => r < append r q
+    | Lim _ _ _      => r < append r q
+    end.
+Proof.
+induction q as [u | t u q v p IH | t u f IH]; simpl.
+trivial.
+destruct q; simpl.
+exists (inl _ tt).
+apply embed_refl.
+apply embed_strict_cons_right.
+apply IH.
+apply embed_strict_cons_right.
+apply IH.
+(* TODO *)
+Admitted.
 
 Lemma append_embed_strict :
   forall `(r : s ->> t, q : t ->> u, z : t ->> v),
