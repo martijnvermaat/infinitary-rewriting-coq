@@ -609,29 +609,55 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   end.
 *)
 
-Lemma aaa :
-  forall s t f c l sigma,
-    strongly_convergent (Lim t f : s ->> t) ->
-    t [=] fill c (substitute sigma l) ->
-    exists i : pref_type (Lim t f),
-      exists tau,
-        (pref_term (Lim t f) i) [=] fill c (substitute tau l).
+Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
+  match r in t ->> u return s [>] t -> s ->> u with
+  | Nil _          => fun p => Cons (Nil s) p
+  | Cons _ _ q _ o => fun p => Cons (snoc_rec q p) o
+  | Lim _ u f      => fun p => Lim u (fun o => existT (fun u => s ->> u) ($ f o $) (snoc_rec (| f o|) p))
+  end.
+
+Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
+
+Lemma snoc_length :
+  forall `(p : s [>] t, r : t ->> u),
+    length (snoc p r) ==' Succ (length r).
 Proof.
-intros s t f c l sigma sc H.
-destruct sc as [[_ [_ wc]] [_ _]].
-destruct (wc (hole_depth c + pattern_depth l)) as [i Hi].
-exists i.
-assert (H1 : term_eq_up_to (hole_depth c + pattern_depth l) (pref_term (Lim t f) i) t).
-apply Hi.
-admit.
+induction r as [u | t u r v o IH | t u f IH]; simpl.
+apply ord'_eq_refl.
+split.
+apply Ord'_le_Succ with (inl (pred_type (Succ (length r))) tt).
+apply (IH p).
+apply Ord'_le_Succ with (inl (pred_type (length (snoc p r))) tt).
+apply (IH p).
+(* TODO *)
 Admitted.
 
-Lemma bbb :
-  forall c (l : finite_term F X) sigma s,
-    term_eq_up_to (hole_depth c + pattern_depth l) s (fill c (substitute sigma l)) ->
-    exists d, exists tau,
-      s [=] fill d (substitute tau l).
+Lemma snoc_embed_strict :
+  forall `(p : s [>] t, r : t ->> u, q : t ->> v),
+    r < q ->
+    snoc p r < snoc p q.
+Proof.
+(* TODO *)
 Admitted.
+
+Lemma snoc_good :
+  forall `(p : s [>] t, r : t ->> u),
+    good r ->
+    good (snoc p r).
+Proof.
+induction r as [u | t u r v o IH | t u f IH]; simpl.
+trivial.
+apply IH.
+intros [H1 H2].
+split.
+intro n.
+apply IH.
+apply H1.
+intros n m H.
+apply snoc_embed_strict.
+apply H2.
+assumption.
+Qed.
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
 (*
@@ -667,30 +693,7 @@ apply (IH r).
 split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
 Qed.
 
-Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
-  match r in t ->> u return s [>] t -> s ->> u with
-  | Nil _          => fun p => Cons (Nil s) p
-  | Cons _ _ q _ o => fun p => Cons (snoc_rec q p) o
-  | Lim _ u f      => fun p => Lim u (fun o => existT (fun u => s ->> u) ($ f o $) (snoc_rec (| f o|) p))
-  end.
-
-Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
-
-Lemma snoc_length :
-  forall `(p : s [>] t, r : t ->> u),
-    length (snoc p r) ==' Succ (length r).
-Proof.
-induction r as [u | t u r v o IH | t u f IH]; simpl.
-apply ord'_eq_refl.
-split.
-apply Ord'_le_Succ with (inl (pred_type (Succ (length r))) tt).
-apply (IH p).
-apply Ord'_le_Succ with (inl (pred_type (length (snoc p r))) tt).
-apply (IH p).
-(* TODO *)
-Admitted.
-
-Lemma embed_strict_inv_append :
+Lemma append_embed_strict :
   forall `(r : s ->> t, q : t ->> u, z : t ->> v),
     q < z ->
     append r q < append r z.
@@ -699,7 +702,7 @@ Proof.
 (* This needs some more theory on append and embed *)
 Admitted.
 
-Lemma good_inv_append :
+Lemma append_good :
   forall `(r : s ->> t, q : t ->> u),
     good r ->
     good q ->
@@ -715,7 +718,7 @@ apply IH.
 assumption.
 apply H1.
 intros n m H.
-apply embed_strict_inv_append.
+apply append_embed_strict.
 apply H2.
 assumption.
 Qed.

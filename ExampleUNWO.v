@@ -1627,20 +1627,25 @@ Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 *)
 
+Lemma good_s_UmDnUnt_Umt :
+  forall m n t, good (s_UmDnUnt_Umt m n t).
+Proof.
+induction n as [| n IH]; simpl.
+trivial.
+intro t.
+apply snoc_good.
+apply IH.
+Qed.
+
 Lemma good_s_Unpsin_USnpsiSn :
   forall n, good (s_Unpsin_USnpsiSn n).
 Proof.
 intro n.
 unfold s_Unpsin_USnpsiSn; simpl.
-unfold eq_rect_r.
 (* http://www.lix.polytechnique.fr/coq/stdlib/Coq.Program.Equality.html *)
-elim_eq_rect.
-simpl.
-elim_eq_rect.
-simpl.
-induction n as [| n IH]. simpl.
-trivial.
-Admitted.
+unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+apply good_s_UmDnUnt_Umt.
+Qed.
 
 (* This reduction is 'good' *)
 Lemma good_s_psi_repeat_U :
@@ -1649,7 +1654,7 @@ Proof.
 split.
 induction n as [| n IH]; simpl.
 trivial.
-apply good_inv_append.
+apply append_good.
 exact IH.
 apply good_s_Unpsin_USnpsiSn.
 intros n m H.
