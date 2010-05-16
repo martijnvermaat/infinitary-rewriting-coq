@@ -1647,6 +1647,44 @@ unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 apply good_s_UmDnUnt_Umt.
 Qed.
 
+Lemma a_lemma :
+  forall n,
+    n + S (n + 0) = S (n + n).
+Proof.
+induction n as [| n IH].
+reflexivity.
+simpl.
+f_equal.
+Admitted.
+
+Lemma b_lemma :
+  forall n,
+    n + S n = S (n + n).
+Proof.
+auto.
+Qed.
+
+Lemma embed_strict_append_Unpsin_USnpsiSn :
+  forall `(r : t ->> Unt n (psi' n)),
+    embed_strict r (append r (s_Unpsin_USnpsiSn n)).
+Proof.
+intro t.
+induction n as [| n IH]; simpl;
+unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
+exists (inl _ tt).
+apply embed_refl.
+revert r.
+rewrite (a_lemma n).
+intro r.
+simpl.
+destruct n; simpl.
+exists (inr _ (inr _ (inl _ tt))).
+simpl.
+apply embed_refl.
+(* why can't we do this? the idea is it would put a cons in front of the append after simplification *)
+(*rewrite (b_lemma n).*)
+Admitted.
+
 (* This reduction is 'good' *)
 Lemma good_s_psi_repeat_U :
   good s_psi_repeat_U.
@@ -1659,7 +1697,11 @@ exact IH.
 apply good_s_Unpsin_USnpsiSn.
 intros n m H.
 induction H; simpl.
-Admitted.
+apply embed_strict_append_Unpsin_USnpsiSn.
+apply embed_strict_transitive with psi (Unt m (psi' m)) (s_psi_Unpsin m).
+apply IHle.
+apply embed_strict_append_Unpsin_USnpsiSn.
+Qed.
 
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :

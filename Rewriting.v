@@ -10,6 +10,9 @@ Require Export Context.
 Require Export PreOrdinal.
 Require Export TermEquality.
 
+(* TODO: figure out what to import exactly (Equality imports PI axiom) *)
+Require Import Equality.
+
 
 Set Implicit Arguments.
 
@@ -332,9 +335,6 @@ Infix " < " := embed_strict (no associativity, at level 70).
 
 Open Scope ord'_scope.
 
-(* TODO: figure out what to import exactly (Equality imports PI axiom) *)
-Require Import Equality.
-
 Lemma embed_length :
   forall `(r : s ->> t, q : u ->> v),
     r <= q -> length r <=' length q.
@@ -384,20 +384,11 @@ apply embed_lim_right with n.
 apply IH.
 Qed.
 
-Lemma embed_cons_left :
-  forall `(r : s ->> t, q : v ->> w, p : t [>] u),
-    Cons r p <= q ->
-    r <= q.
-Proof.
-(* TODO *)
-Admitted.
-
 Lemma embed_pref_right :
   forall `(r : s ->> t, q : u ->> v, i : pref_type q),
     r <= pref q i ->
     r <= q.
 Proof.
-intros s t.
 induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
 constructor.
 (*apply (@Embed_Cons u v q s i r).*) (* cannot work *)
@@ -416,6 +407,39 @@ apply IH with i.
 trivial.
 *)
 Admitted.
+
+Lemma embed_pref_left :
+  forall `(r : s ->> t, q : u ->> v, i : pref_type r),
+    r <= q ->
+    pref r i <= q.
+Proof.
+intros s t r u v q i H.
+induction H as [s u v q | u v q s j r H IH | s f u v q t H IH].
+elim i.
+destruct i as [[] | i]; apply embed_pref_right with j.
+apply H.
+apply IH.
+destruct i.
+apply IH.
+Qed.
+
+Lemma first_pref_after_cons_id :
+  forall `(r : s ->> t, p : t [>] u),
+    r = pref (Cons r p) (inl (pref_type r) tt).
+Proof.
+trivial.
+Qed.
+
+Lemma embed_cons_left :
+  forall `(r : s ->> t, q : v ->> w, p : t [>] u),
+    Cons r p <= q ->
+    r <= q.
+Proof.
+intros s t r v w q u p H.
+rewrite (first_pref_after_cons_id r) with p.
+apply (@embed_pref_left s u (Cons r p) v w q (inl (pref_type r) tt)).
+assumption.
+Qed.
 
 Lemma embed_strict_cons_right :
   forall `(r : s ->> t, q : u ->> v, p : v [>] w),
@@ -439,6 +463,15 @@ destruct 1 as [i H].
 apply embed_pref_right with i.
 assumption.
 Qed.
+
+Lemma embed_strict_transitive :
+  forall `(r : s ->> t, q : u ->> v, x : w ->> z),
+    r < q ->
+    q < x ->
+    r < x.
+Proof.
+(* TODO *)
+Admitted.
 
 (* Strict prefix relation *)
 (*
