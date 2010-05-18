@@ -284,6 +284,7 @@ Lemma sfdsf :
 Lemma weakly_convergent_s_A_repeat_B :
   weakly_convergent s_A_repeat_B.
 Proof.
+(*
 split.
 exact good_s_A_repeat_B.
 split; simpl.
@@ -303,7 +304,7 @@ intros [n i] H.
 (* we have to look one step further back than i here *)
 assert (IH := IHd (existT (fun n:nat => pref_type (s_A_nBA n)) n i) (embed_cons_left H)); clear IHd.
 admit.
-
+*)
 (*
 split.
 exact good_s_A_repeat_B.

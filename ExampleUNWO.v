@@ -1685,16 +1685,22 @@ apply embed_refl.
 (*rewrite (b_lemma n).*)
 Admitted.
 
-(* This reduction is 'good' *)
-Lemma good_s_psi_repeat_U :
-  good s_psi_repeat_U.
+Lemma good_s_psi_Unpsin :
+  forall n : nat, good (s_psi_Unpsin n).
 Proof.
-split.
 induction n as [| n IH]; simpl.
 trivial.
 apply append_good.
 exact IH.
 apply good_s_Unpsin_USnpsiSn.
+Qed.
+
+(* This reduction is 'good' *)
+Lemma good_s_psi_repeat_U :
+  good s_psi_repeat_U.
+Proof.
+split.
+apply good_s_psi_Unpsin.
 intros n m H.
 induction H; simpl.
 apply embed_strict_append_Unpsin_USnpsiSn.
@@ -1703,10 +1709,25 @@ apply IHle.
 apply embed_strict_append_Unpsin_USnpsiSn.
 Qed.
 
+Lemma weakly_convergent_s_psi_Unpsin :
+  forall n : nat, weakly_convergent (s_psi_Unpsin n).
+Proof.
+induction n as [| n IH].
+split; simpl; trivial.
+simpl.
+
+Admitted.
+
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
 Proof.
+split.
+apply weakly_convergent_s_psi_Unpsin.
+intro d.
+(*
+exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) (inl _ tt)).
+*)
 Admitted.
 
 (* psi rewrites to repeat_D *)

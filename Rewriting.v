@@ -615,7 +615,7 @@ Fixpoint good `(r : s ->> t) : Prop :=
   end.
 
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
-  good r /\
+(*  good r /\ *)
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => weakly_convergent q
