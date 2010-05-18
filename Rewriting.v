@@ -391,6 +391,13 @@ Lemma embed_pref_right :
 Proof.
 induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
 constructor.
+dependent destruction H.
+(*
+  I think we need pref_trans here, but also for pref_step.
+  To this end it might be best to switch pref back to a
+  Sigma type, including pref_term, pref_term_next, and
+  pref_step.
+*)
 (*apply (@Embed_Cons u v q s i r).*) (* cannot work *)
 (* TODO: this is a key lemma! *)
 (* (* proof of ord'_le_pred_right: *)
