@@ -212,6 +212,26 @@ Fixpoint pref `(r : s ->> t) :
                                 end
   end.
 
+Lemma pref_trans :
+  forall `(r : s ->> t, i : pref_type r, j : pref_type (fst (| pref r i |))),
+    exists k : pref_type r, pref r k = pref (fst (| pref r i |)) j.
+Proof.
+induction r; intros.
+elim i.
+destruct i as [[] | i]; simpl in j |- *.
+exists (inr _ j).
+reflexivity.
+destruct (IHr i j) as [k H].
+exists (inr _ k).
+assumption.
+destruct i as [n i]; simpl in j |- *.
+destruct (H n i j) as [k H1].
+exists (existT (fun n => pref_type (|f n|)) n k).
+assumption.
+Qed.
+
+Implicit Arguments pref_trans [s t r].
+
 (* maybe this could be a coercion *)
 Fixpoint pref_type_as_pred_type `(r : s ->> t) : pref_type r -> pred_type (length r) :=
   match r in s ->> t return pref_type r -> pred_type (length r) with
@@ -318,57 +338,6 @@ apply (IH n u v q).
 apply H.
 Qed.
 
-Lemma embed_lim_right :
-  forall `(r : s ->> t, f : (nat -> { v' : term & u ->> v' })) v n,
-    r <= (|f n|) ->
-    r <= Lim v f.
-Proof.
-induction r as [t | s t r w p _ | s t f IH]; intros u g v n H.
-constructor.
-dependent destruction H.
-(*apply Embed_Cons with (q := Lim v g) (i := existT (fun n => pref_type (|g n|)) n i).*)
-apply (@Embed_Cons u v (Lim v g) s (existT (fun n => pref_type (|g n|)) n i) r).
-assumption.
-constructor.
-intro m.
-apply (IH m u g v n).
-dependent destruction H.
-trivial.
-Qed.
-
-Lemma embed_refl :
-  forall `(r : s ->> t), r <= r.
-Proof.
-induction r as [t | s t r u p IH | s t f IH].
-constructor.
-apply Embed_Cons with (q := Cons r p) (i := inl (pref_type r) tt).
-assumption.
-constructor.
-intro n.
-apply embed_lim_right with n.
-apply IH.
-Qed.
-
-Lemma pref_trans :
-  forall `(r : s ->> t, i : pref_type r, j : pref_type (fst (| pref r i |))),
-    exists k : pref_type r, pref r k = pref (fst (| pref r i |)) j.
-Proof.
-induction r; intros.
-elim i.
-destruct i as [[] | i]; simpl in j |- *.
-exists (inr _ j).
-reflexivity.
-destruct (IHr i j) as [k H].
-exists (inr _ k).
-assumption.
-destruct i as [n i]; simpl in j |- *.
-destruct (H n i j) as [k H1].
-exists (existT (fun n => pref_type (|f n|)) n k).
-assumption.
-Qed.
-
-Implicit Arguments pref_trans [s t r].
-
 Lemma embed_pref_right :
   forall `(r : s ->> t, q : u ->> v, i : pref_type q),
     r <= fst (| pref q i |) ->
@@ -377,15 +346,11 @@ Proof.
 induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
 constructor.
 dependent destruction H.
-assert (T := pref_trans i i0).
-destruct T as [k T].
-generalize dependent H. (* TODO: maybe not all generalizations are necessary *)
-generalize dependent IH.
-generalize dependent r.
-generalize dependent s.
+destruct (pref_trans i i0) as [k T].
+revert r IH H.
 rewrite <- T.
-intros.
-apply (@Embed_Cons u v q s k r).
+intros r IH H.
+apply Embed_Cons.
 assumption.
 constructor.
 intro n.
@@ -427,6 +392,64 @@ apply (@embed_pref_left s u (Cons r p) v w q (inl (pref_type r) tt)).
 assumption.
 Qed.
 
+Lemma embed_lim_right :
+  forall `(r : s ->> t, f : (nat -> { v' : term & u ->> v' })) v n,
+    r <= (|f n|) ->
+    r <= Lim v f.
+Proof.
+induction r as [t | s t r w p _ | s t f IH]; intros u g v n H.
+constructor.
+dependent destruction H.
+(*apply Embed_Cons with (q := Lim v g) (i := existT (fun n => pref_type (|g n|)) n i).*)
+apply (@Embed_Cons u v (Lim v g) s (existT (fun n => pref_type (|g n|)) n i) r).
+assumption.
+constructor.
+intro m.
+apply (IH m u g v n).
+dependent destruction H.
+trivial.
+Qed.
+
+Lemma embed_refl :
+  forall `(r : s ->> t), r <= r.
+Proof.
+induction r as [t | s t r u p IH | s t f IH].
+constructor.
+apply Embed_Cons with (q := Cons r p) (i := inl (pref_type r) tt).
+assumption.
+constructor.
+intro n.
+apply embed_lim_right with n.
+apply IH.
+Qed.
+
+Lemma embed_trans :
+  forall `(r : s ->> t, q : u ->> v, x : w ->> z),
+    r <= q ->
+    q <= x ->
+    r <= x.
+Proof.
+intros s t r u v q w z x H1.
+revert w z x.
+induction H1 as [s u v q | u v q s i r H IH | s f u v q t H IH]; intros w z x H2.
+constructor.
+induction H2 as [u w z x | w z x u j q H' IH' | u f w z x v H' IH'].
+destruct i.
+destruct i as [[] | i']; simpl in * |- *.
+apply Embed_Cons.
+apply IH.
+assumption.
+apply embed_pref_right with j.
+apply IH'.
+assumption.
+assumption.
+destruct i as [n i]; simpl in * |- *.
+apply (IH' n i r H IH).
+constructor.
+intro n.
+exact (IH n w z x H2).
+Qed.
+
 Lemma embed_strict_cons_right :
   forall `(r : s ->> t, q : u ->> v, p : v [>] w),
     r < q ->
@@ -456,6 +479,7 @@ Lemma embed_strict_transitive :
     q < x ->
     r < x.
 Proof.
+
 (* TODO *)
 Admitted.
 
