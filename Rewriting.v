@@ -392,6 +392,23 @@ apply (@embed_pref_left s u (Cons r p) v w q (inl (pref_type r) tt)).
 assumption.
 Qed.
 
+Lemma embed_cons_right :
+  forall `(r : s ->> t, q : u ->> v, p : v [>] w),
+    r <= q ->
+    r <= Cons q p.
+Proof.
+induction r as [t | s t r z o _ | s t f IH]; intros u v q w p H.
+constructor.
+dependent destruction H.
+apply (@Embed_Cons u w (Cons q p) s (inr _ i) r).
+assumption.
+constructor.
+intro n.
+apply IH.
+dependent destruction H.
+trivial.
+Qed.
+
 Lemma embed_lim_right :
   forall `(r : s ->> t, f : (nat -> { v' : term & u ->> v' })) v n,
     r <= (|f n|) ->
@@ -479,9 +496,12 @@ Lemma embed_strict_transitive :
     q < x ->
     r < x.
 Proof.
-
-(* TODO *)
-Admitted.
+intros s t r u v q w z x.
+destruct 1 as [i Hi].
+destruct 1 as [j Hj].
+exists j.
+apply embed_trans with u v q; [apply embed_pref_right with i |]; assumption.
+Qed.
 
 Lemma pred_trans :
   forall alpha i j,
@@ -605,6 +625,8 @@ Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
 
 Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
 
+(* This lemma of course does not hold! *)
+(*
 Lemma snoc_length :
   forall `(p : s [>] t, r : t ->> u),
     length (snoc p r) ==' Succ (length r).
@@ -616,14 +638,77 @@ apply Ord'_le_Succ with (inl (pred_type (Succ (length r))) tt).
 apply (IH p).
 apply Ord'_le_Succ with (inl (pred_type (length (snoc p r))) tt).
 apply (IH p).
-(* TODO *)
+split.
+constructor.
+intro n.
 Admitted.
+*)
+
+Lemma pref_snoc :
+  forall `(p : s [>] t, r : t ->> u),
+    exists i, pref (snoc p r) i = pref (Cons (Nil s) p) (inl _ tt).
+Proof.
+induction r as [u | t u r v o IH | t u f IH].
+exists (inl _ tt); reflexivity.
+specialize IH with p.
+destruct IH as [i IH].
+exists (inr _ i); simpl.
+rewrite IH; reflexivity.
+specialize IH with 0 p.
+destruct IH as [i IH].
+exists (existT _ 0 i); simpl.
+rewrite IH; reflexivity.
+Qed.
+
+(* This proof is quite hairy and ad-hoc *)
+Lemma snoc_embed :
+  forall `(p : s [>] t, r : t ->> u, q : t ->> v),
+    r <= q ->
+    snoc p r <= snoc p q.
+Proof.
+intros s t p u r v q H.
+dependent induction H.
+induction q as [t | t v q w o IH | t v f IH]; simpl.
+apply embed_refl.
+apply embed_cons_right; simpl in IH.
+trivial.
+apply embed_lim_right with 0; simpl in IH |- *.
+trivial.
+induction q as [t | t v q w o IH | t v f IH]; simpl.
+destruct i.
+destruct i as [[] | i].
+simpl.
+change (Cons (snoc p r) (snd (|pref (Cons (snoc p q) o) (inl _ tt) |)) <= Cons (snoc p q) o).
+apply (@Embed_Cons s w (Cons (snoc p q) o) s (inl _ tt) (snoc p r)).
+simpl. simpl in IH. simpl in IHembed.
+apply IHembed.
+assumption.
+simpl in H. simpl in IH. simpl in IHembed. fold (@pref_type t v) in i.
+apply embed_cons_right.
+apply IH.
+assumption.
+trivial.
+destruct i as [n i].
+simpl.
+apply embed_lim_right with n.
+simpl. simpl in IHembed. simpl in H. simpl in r. fold (@pref_type t ($ f n $)) in i.
+apply IH.
+assumption.
+assumption.
+simpl.
+constructor.
+simpl.
+intro n.
+apply H0.
+assumption.
+Qed.
 
 Lemma snoc_embed_strict :
   forall `(p : s [>] t, r : t ->> u, q : t ->> v),
     r < q ->
     snoc p r < snoc p q.
 Proof.
+intros s t p u r v q H.
 (* TODO *)
 Admitted.
 
