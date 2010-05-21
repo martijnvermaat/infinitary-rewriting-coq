@@ -718,7 +718,7 @@ destruct i as [[] | i]; simpl in H.
 assumption.
 apply embed_pref_right with i.
 assumption.
-destruct i as [n i]; simpl in H. fold (@pref_type t ($ f n $)) in i.
+destruct i as [n i]; simpl in H; fold (@pref_type t ($ f n $)) in i.
 specialize IH with n p r i.
 destruct IH as [j IH].
 assumption.
@@ -800,14 +800,74 @@ apply IH.
 (* TODO *)
 Admitted.
 
+(* TODO: So this proof is a verbatim copy of snoc_embed an thus is
+   also quite hairy and ad-hoc
+   There might be a way to at least not repeat ourselves here... same
+   goes for snoc_embed_strict and append_embed_strict by the way *)
+Lemma append_embed :
+  forall `(r : s ->> t, q : t ->> u, z : t ->> v),
+    q <= z ->
+    append r q <= append r z.
+Proof.
+intros s t r u q v z H.
+dependent induction H.
+induction z as [t | t v z w o IH | t v f IH]; simpl.
+apply embed_refl.
+apply embed_cons_right; simpl in IH.
+trivial.
+apply embed_lim_right with 0; simpl in IH |- *.
+trivial.
+induction z as [t | t v z w o IH | t v f IH]; simpl.
+destruct i.
+destruct i as [[] | i].
+simpl.
+change (Cons (append r r0) (snd (|pref (Cons (append r z) o) (inl _ tt) |)) <= Cons (append r z) o).
+apply (@Embed_Cons s w (Cons (append r z) o) s (inl _ tt) (append r r0)).
+simpl. simpl in IH. simpl in IHembed.
+apply IHembed.
+assumption.
+simpl in H. simpl in IH. simpl in IHembed. fold (@pref_type t v) in i.
+apply embed_cons_right.
+apply IH.
+assumption.
+trivial.
+destruct i as [n i].
+simpl.
+apply embed_lim_right with n.
+simpl. simpl in IHembed. simpl in H. simpl in r. fold (@pref_type t ($ f n $)) in i.
+apply IH.
+assumption.
+assumption.
+simpl.
+constructor.
+simpl.
+intro n.
+apply H0.
+assumption.
+Qed.
+
 Lemma append_embed_strict :
   forall `(r : s ->> t, q : t ->> u, z : t ->> v),
     q < z ->
     append r q < append r z.
 Proof.
-(* TODO *)
-(* This needs some more theory on append and embed *)
-Admitted.
+intros s t r u q v z H.
+unfold embed_strict; destruct H as [i H].
+induction z as [t | t v z w o _ | t v f IH]; simpl.
+destruct i.
+exists (inl _ tt); simpl.
+apply append_embed.
+destruct i as [[] | i]; simpl in H.
+assumption.
+apply embed_pref_right with i.
+assumption.
+destruct i as [n i]; simpl in H; fold (@pref_type t ($ f n $)) in i.
+specialize IH with n r q i.
+destruct IH as [j IH].
+assumption.
+exists (existT _ n j).
+assumption.
+Qed.
 
 Lemma append_good :
   forall `(r : s ->> t, q : t ->> u),
