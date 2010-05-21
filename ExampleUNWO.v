@@ -1704,7 +1704,7 @@ apply good_s_psi_Unpsin.
 intros n m H.
 induction H; simpl.
 apply embed_strict_append_Unpsin_USnpsiSn.
-apply embed_strict_transitive with psi (Unt m (psi' m)) (s_psi_Unpsin m).
+apply embed_strict_trans with psi (Unt m (psi' m)) (s_psi_Unpsin m).
 apply IHle.
 apply embed_strict_append_Unpsin_USnpsiSn.
 Qed.

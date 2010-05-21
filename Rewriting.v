@@ -490,7 +490,7 @@ apply embed_pref_right with i.
 assumption.
 Qed.
 
-Lemma embed_strict_transitive :
+Lemma embed_strict_trans :
   forall `(r : s ->> t, q : u ->> v, x : w ->> z),
     r < q ->
     q < x ->
@@ -709,8 +709,22 @@ Lemma snoc_embed_strict :
     snoc p r < snoc p q.
 Proof.
 intros s t p u r v q H.
-(* TODO *)
-Admitted.
+unfold embed_strict; destruct H as [i H].
+induction q as [t | t v q w o _ | t v f IH]; simpl.
+destruct i.
+exists (inl _ tt); simpl.
+apply snoc_embed.
+destruct i as [[] | i]; simpl in H.
+assumption.
+apply embed_pref_right with i.
+assumption.
+destruct i as [n i]; simpl in H. fold (@pref_type t ($ f n $)) in i.
+specialize IH with n p r i.
+destruct IH as [j IH].
+assumption.
+exists (existT _ n j).
+assumption.
+Qed.
 
 Lemma snoc_good :
   forall `(p : s [>] t, r : t ->> u),
