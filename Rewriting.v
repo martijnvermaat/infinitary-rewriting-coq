@@ -304,6 +304,7 @@ Qed.
 
 (* Embeddings of reductions
    Idea by Vincent, this is all still a very rough try *)
+(* TODO: maybe should Nil s <= q only hold for q : s ->> _ ? *)
 Inductive embed : forall `(r : s ->> t, q : u ->> v), Prop :=
   | Embed_Nil  : forall s `(q : u ->> v),
                    Nil s <= q
@@ -407,6 +408,16 @@ intro n.
 apply IH.
 dependent destruction H.
 trivial.
+Qed.
+
+Lemma embed_cons_intro :
+  forall `(r : s ->> t, q : u ->> t, p : t [>] v),
+    r <= q ->
+    Cons r p <= Cons q p.
+Proof.
+intros.
+apply (@Embed_Cons u v (Cons q p) s (inl _ tt) r).
+assumption.
 Qed.
 
 Lemma embed_lim_right :
@@ -660,6 +671,31 @@ exists (existT _ 0 i); simpl.
 rewrite IH; reflexivity.
 Qed.
 
+Lemma embed_snoc_right :
+  forall `(r : s ->> t, p : u [>] s),
+    r <= snoc p r.
+Proof.
+induction r as [s | s t r v o IH | s t f IH]; intros u p; simpl.
+constructor.
+apply embed_cons_intro.
+apply IH.
+constructor.
+intro n.
+apply embed_lim_right with n.
+apply IH.
+Qed.
+
+(* of course this is not true *)
+(*
+Lemma embed_strict_snoc_right :
+  forall `(r : s ->> t, p : u [>] s),
+    r < snoc p r.
+Proof.
+induction r as [s | s t r v o IH | s t f IH]; intros u p; simpl.
+exists (inl _ tt).
+constructor.
+*)
+
 (* This proof is quite hairy and ad-hoc *)
 Lemma snoc_embed :
   forall `(p : s [>] t, r : t ->> u, q : t ->> v),
@@ -777,6 +813,18 @@ apply (IH r).
 apply Ord'_le_Succ with (inl (pred_type (length (append r q))) tt).
 apply (IH r).
 split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
+Qed.
+
+Lemma embed_append_right :
+  forall `(r : s ->> t, q : t ->> u),
+    r <= append r q.
+Proof.
+induction q as [u | t u q v p IH | t u f IH]; simpl.
+apply embed_refl.
+apply embed_cons_right.
+apply IH.
+apply embed_lim_right with 0.
+apply IH.
 Qed.
 
 (* TODO: is there a better way to formulate this? *)

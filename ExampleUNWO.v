@@ -1657,11 +1657,25 @@ simpl.
 f_equal.
 Admitted.
 
-Lemma b_lemma :
-  forall n,
-    n + S n = S (n + n).
+Lemma s_UmDSnUSnt_Umt_is_cons :
+  forall m n t,
+    exists s, exists r : _ ->> s, exists p : s [>] _,
+      s_UmDnUnt_Umt m (S n) t = Cons r p.
 Proof.
-auto.
+induction n; intro t; simpl.
+exists (Unt m (DnUnt 1 t)).
+exists (Nil (Unt m (DnUnt 1 t))).
+exists (p_UmDSnUSnt_UmDnUnt m 0 t).
+reflexivity.
+simpl in IHn.
+specialize IHn with t.
+destruct IHn as [s [r [p IH]]].
+rewrite IH.
+simpl.
+exists s.
+exists (snoc (p_UmDSnUSnt_UmDnUnt m (S n) t) r).
+exists p.
+reflexivity.
 Qed.
 
 Lemma embed_strict_append_Unpsin_USnpsiSn :
@@ -1676,14 +1690,12 @@ apply embed_refl.
 revert r.
 rewrite (a_lemma n).
 intro r.
+destruct (s_UmDSnUSnt_Umt_is_cons (S n) (n + n) (U @ psi' (S (S n)))) as [s [q [p H]]].
+rewrite H.
+exists (inl _ tt).
 simpl.
-destruct n; simpl.
-exists (inr _ (inr _ (inl _ tt))).
-simpl.
-apply embed_refl.
-(* why can't we do this? the idea is it would put a cons in front of the append after simplification *)
-(*rewrite (b_lemma n).*)
-Admitted.
+apply embed_append_right.
+Qed.
 
 Lemma good_s_psi_Unpsin :
   forall n : nat, good (s_psi_Unpsin n).
