@@ -258,7 +258,7 @@ discriminate.
 Admitted.
 
 (* TODO: this lemma gives universe inconsitency in coq trunk 2010-05-13 *)
-Lemma all_pos_eq_implies_term_bis :
+(*Lemma all_pos_eq_implies_term_bis :
   forall (t u : term), all_pos_eq t u -> t [~] u.
 Proof.
 cofix pos2bis.
@@ -275,7 +275,7 @@ constructor.
 intro i.
 apply pos2bis.
 apply (all_pos_eq_fun_inv H).
-Qed.
+Qed.*)
 
 Lemma term_bis_implies_all_pos_eq :
   forall (t u : term), t [~] u -> all_pos_eq t u.

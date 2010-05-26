@@ -1647,16 +1647,6 @@ unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 apply good_s_UmDnUnt_Umt.
 Qed.
 
-Lemma a_lemma :
-  forall n,
-    n + S (n + 0) = S (n + n).
-Proof.
-induction n as [| n IH].
-reflexivity.
-simpl.
-f_equal.
-Admitted.
-
 Lemma s_UmDSnUSnt_Umt_is_cons :
   forall m n t,
     exists s, exists r : _ ->> s, exists p : s [>] _,
@@ -1675,6 +1665,16 @@ simpl.
 exists s.
 exists (snoc (p_UmDSnUSnt_UmDnUnt m (S n) t) r).
 exists p.
+reflexivity.
+Qed.
+
+Lemma a_lemma :
+  forall n,
+    n + S (n + 0) = S (n + n).
+Proof.
+intro n.
+rewrite <- plus_n_O.
+rewrite plus_n_Sm.
 reflexivity.
 Qed.
 

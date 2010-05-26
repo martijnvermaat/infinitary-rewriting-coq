@@ -375,6 +375,189 @@ destruct i.
 apply IH.
 Qed.
 
+Lemma embed_not_cons_nil :
+  forall `(r : s ->> t, p : t [>] u) v,
+    ~ Cons r p <= Nil v.
+Proof.
+intros s t r u p v H.
+dependent destruction H.
+destruct i.
+Qed.
+
+Lemma embed_cons_elim :
+  forall `(r : s ->> t, q : u ->> v, p : t [>] w, o : v [>] x),
+    Cons r p <= Cons q o ->
+    r <= q.
+Proof.
+intros s t r u v q w p x o H.
+dependent destruction H.
+destruct i as [[] |]; [| apply embed_pref_right with p]; assumption.
+Qed.
+
+Lemma embed_not_cons :
+  forall `(r : s ->> t, p : t [>] u),
+    ~ Cons r p <= r.
+Proof.
+induction r as [t | s t r w o IH | s t f IH]; intros u p H.
+contradict H.
+apply embed_not_cons_nil.
+apply IH with w o.
+apply embed_cons_elim with u p w o.
+assumption.
+generalize_eqs H.
+destruct H.
+discriminate.
+destruct q.
+destruct i.
+destruct i as [[] |].
+simpl in *|-*.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+destruct i as [n i].
+simpl in *|-*.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+(* do 73 simplify_one_dep_elim. *)
+generalize_eqs H.
+destruct H.
+intros.
+rewrite <- H in H0.
+discriminate.
+intros.
+rewrite <- H0 in H1.
+discriminate.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+(* uhm this of course fails, left term of p does not match *)
+(* specialize IH with n (snd ($ pref (|f n|) i $)) (snd (| pref (|f n|) i |)). *)
+(*
+apply IH with n.
+apply Ord'_le_Succ with i.
+apply H.
+*)
+admit.
+discriminate.
+Qed.
+
+(*
+Lemma embed_not_pref_right_strong :
+  forall `(r : s ->> t, q : u ->> v, i : pref_type r),
+    r <= q ->
+    ~ q <= fst (|pref r i|).
+Proof.
+induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
+destruct i.
+destruct i as [[] | i].
+apply ord'_le_not_succ with alpha.
+apply ord'_le_trans with beta; assumption.
+exact (IH beta p (ord'_le_succ_left H1) H2).
+destruct i.
+inversion_clear H1.
+exact (IH x beta p (H x) H2).
+Qed.
+
+(* TODO: move this lemma too *)
+Lemma ord'_le_not_pred_right :
+  forall alpha i, ~ alpha <=' pred alpha i.
+Proof.
+intros.
+apply ord'_le_not_pred_right_strong.
+apply ord'_le_refl.
+Qed.
+*)
+
 Lemma first_pref_after_cons_id :
   forall `(r : s ->> t, p : t [>] u),
     r = fst (|pref (Cons r p) (inl (pref_type r) tt)|).
@@ -545,6 +728,7 @@ Fixpoint good `(r : s ->> t) : Prop :=
     forall n m, (n < m)%nat -> (|f n|) < (|f m|)
   end.
 
+(*
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
 (*  good r /\ *)
   match r with
@@ -553,7 +737,21 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   | Lim _ t f      =>
     (forall n, weakly_convergent (|f n|)) /\
     forall d, exists i, forall j,
-      fst (|pref r i|) <= fst (|pref r j|) ->   (* prefix (|pref r i|) (|pref r j|) -> *)
+      fst (|pref r i|) <= fst (|pref r j|) ->
+      term_eq_up_to d (fst ($ pref r j $)) t
+  end.
+*)
+
+(* TODO: is is quite important that this definition is correct... *)
+Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
+(*  good r /\ *)
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => weakly_convergent q
+  | Lim _ t f      =>
+    (forall n, weakly_convergent (|f n|)) /\
+    forall d, exists n, forall j,
+      (|f n|) <= fst (|pref r j|) ->
       term_eq_up_to d (fst ($ pref r j $)) t
   end.
 
@@ -937,6 +1135,46 @@ apply append_embed_strict.
 apply H2.
 assumption.
 Qed.
+
+Lemma sdfsfsdf :
+  forall d `(r : s ->> t, q : t ->> u) v (i : pref_type (append r q)),
+
+  (forall j : pref_type q,
+    q <= fst (|pref q j|) ->
+    term_eq_up_to d (fst ($ pref q j $)) v) ->
+
+  append r q <= fst (|pref (append r q) i|) ->
+
+  term_eq_up_to d (fst ($ pref (append r q) i $)) v.
+Proof.
+induction q as [u | t u q w p IH | t u f IH]; simpl; intros v i H1 H2.
+Admitted.
+
+
+
+
+Lemma append_weakly_convergent :
+  forall `(r : s ->> t, q : t ->> u),
+    weakly_convergent r ->
+    weakly_convergent q ->
+    weakly_convergent (append r q).
+Proof.
+induction q as [u | t u q v p IH | t u f IH]; simpl.
+trivial.
+apply IH.
+intro H1.
+intros [H2 H3].
+split.
+intro n.
+apply IH.
+assumption.
+apply H2.
+intro d.
+specialize H3 with d.
+destruct H3 as [n H3].
+exists n.
+intros [m j] H.
+Admitted.
 
 Lemma compression :
   trs_left_linear system ->
