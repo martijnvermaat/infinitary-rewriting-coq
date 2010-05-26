@@ -394,6 +394,110 @@ dependent destruction H.
 destruct i as [[] |]; [| apply embed_pref_right with p]; assumption.
 Qed.
 
+Lemma first_pref_after_cons_id :
+  forall `(r : s ->> t, p : t [>] u),
+    r = fst (|pref (Cons r p) (inl (pref_type r) tt)|).
+Proof.
+trivial.
+Qed.
+
+Lemma embed_cons_left :
+  forall `(r : s ->> t, q : v ->> w, p : t [>] u),
+    Cons r p <= q ->
+    r <= q.
+Proof.
+intros s t r v w q u p H.
+rewrite (first_pref_after_cons_id r) with p.
+apply (@embed_pref_left s u (Cons r p) v w q (inl (pref_type r) tt)).
+assumption.
+Qed.
+
+Lemma embed_cons_right :
+  forall `(r : s ->> t, q : u ->> v, p : v [>] w),
+    r <= q ->
+    r <= Cons q p.
+Proof.
+induction r as [t | s t r z o _ | s t f IH]; intros u v q w p H.
+constructor.
+dependent destruction H.
+apply (@Embed_Cons u w (Cons q p) s (inr _ i) r).
+assumption.
+constructor.
+intro n.
+apply IH.
+dependent destruction H.
+trivial.
+Qed.
+
+Lemma embed_cons_intro :
+  forall `(r : s ->> t, q : u ->> t, p : t [>] v),
+    r <= q ->
+    Cons r p <= Cons q p.
+Proof.
+intros.
+apply (@Embed_Cons u v (Cons q p) s (inl _ tt) r).
+assumption.
+Qed.
+
+Lemma embed_lim_right :
+  forall `(r : s ->> t, f : (nat -> { v' : term & u ->> v' })) v n,
+    r <= (|f n|) ->
+    r <= Lim v f.
+Proof.
+induction r as [t | s t r w p _ | s t f IH]; intros u g v n H.
+constructor.
+dependent destruction H.
+(*apply Embed_Cons with (q := Lim v g) (i := existT (fun n => pref_type (|g n|)) n i).*)
+apply (@Embed_Cons u v (Lim v g) s (existT (fun n => pref_type (|g n|)) n i) r).
+assumption.
+constructor.
+intro m.
+apply (IH m u g v n).
+dependent destruction H.
+trivial.
+Qed.
+
+Lemma embed_refl :
+  forall `(r : s ->> t), r <= r.
+Proof.
+induction r as [t | s t r u p IH | s t f IH].
+constructor.
+apply Embed_Cons with (q := Cons r p) (i := inl (pref_type r) tt).
+assumption.
+constructor.
+intro n.
+apply embed_lim_right with n.
+apply IH.
+Qed.
+
+Lemma embed_trans :
+  forall `(r : s ->> t, q : u ->> v, x : w ->> z),
+    r <= q ->
+    q <= x ->
+    r <= x.
+Proof.
+intros s t r u v q w z x H1.
+revert w z x.
+induction H1 as [s u v q | u v q s i r H IH | s f u v q t H IH]; intros w z x H2.
+constructor.
+induction H2 as [u w z x | w z x u j q H' IH' | u f w z x v H' IH'].
+destruct i.
+destruct i as [[] | i']; simpl in * |- *.
+apply Embed_Cons.
+apply IH.
+assumption.
+apply embed_pref_right with j.
+apply IH'.
+assumption.
+assumption.
+destruct i as [n i]; simpl in * |- *.
+apply (IH' n i r H IH).
+constructor.
+intro n.
+exact (IH n w z x H2).
+Qed.
+
+(*
 Lemma embed_not_cons :
   forall `(r : s ->> t, p : t [>] u),
     ~ Cons r p <= r.
@@ -520,8 +624,17 @@ simplify_one_dep_elim.
 simplify_one_dep_elim.
 simplify_one_dep_elim.
 simplify_one_dep_elim.
+assert (p := snd (|pref (|f n|) i|)).
+
+specialize H with n.
+
+
+
+assert (H' := embed_pref_right (|f n|) i H).
+
+
 (* uhm this of course fails, left term of p does not match *)
-(* specialize IH with n (snd ($ pref (|f n|) i $)) (snd (| pref (|f n|) i |)). *)
+specialize IH with n (snd ($ pref (|f n|) i $)) (snd (| pref (|f n|) i |)).
 (*
 apply IH with n.
 apply Ord'_le_Succ with i.
@@ -530,6 +643,7 @@ apply H.
 admit.
 discriminate.
 Qed.
+*)
 
 (*
 Lemma embed_not_pref_right_strong :
@@ -540,7 +654,8 @@ Proof.
 induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
 destruct i.
 destruct i as [[] | i].
-apply ord'_le_not_succ with alpha.
+simpl.
+apply embed_not_cons with r.
 apply ord'_le_trans with beta; assumption.
 exact (IH beta p (ord'_le_succ_left H1) H2).
 destruct i.
@@ -557,109 +672,6 @@ apply ord'_le_not_pred_right_strong.
 apply ord'_le_refl.
 Qed.
 *)
-
-Lemma first_pref_after_cons_id :
-  forall `(r : s ->> t, p : t [>] u),
-    r = fst (|pref (Cons r p) (inl (pref_type r) tt)|).
-Proof.
-trivial.
-Qed.
-
-Lemma embed_cons_left :
-  forall `(r : s ->> t, q : v ->> w, p : t [>] u),
-    Cons r p <= q ->
-    r <= q.
-Proof.
-intros s t r v w q u p H.
-rewrite (first_pref_after_cons_id r) with p.
-apply (@embed_pref_left s u (Cons r p) v w q (inl (pref_type r) tt)).
-assumption.
-Qed.
-
-Lemma embed_cons_right :
-  forall `(r : s ->> t, q : u ->> v, p : v [>] w),
-    r <= q ->
-    r <= Cons q p.
-Proof.
-induction r as [t | s t r z o _ | s t f IH]; intros u v q w p H.
-constructor.
-dependent destruction H.
-apply (@Embed_Cons u w (Cons q p) s (inr _ i) r).
-assumption.
-constructor.
-intro n.
-apply IH.
-dependent destruction H.
-trivial.
-Qed.
-
-Lemma embed_cons_intro :
-  forall `(r : s ->> t, q : u ->> t, p : t [>] v),
-    r <= q ->
-    Cons r p <= Cons q p.
-Proof.
-intros.
-apply (@Embed_Cons u v (Cons q p) s (inl _ tt) r).
-assumption.
-Qed.
-
-Lemma embed_lim_right :
-  forall `(r : s ->> t, f : (nat -> { v' : term & u ->> v' })) v n,
-    r <= (|f n|) ->
-    r <= Lim v f.
-Proof.
-induction r as [t | s t r w p _ | s t f IH]; intros u g v n H.
-constructor.
-dependent destruction H.
-(*apply Embed_Cons with (q := Lim v g) (i := existT (fun n => pref_type (|g n|)) n i).*)
-apply (@Embed_Cons u v (Lim v g) s (existT (fun n => pref_type (|g n|)) n i) r).
-assumption.
-constructor.
-intro m.
-apply (IH m u g v n).
-dependent destruction H.
-trivial.
-Qed.
-
-Lemma embed_refl :
-  forall `(r : s ->> t), r <= r.
-Proof.
-induction r as [t | s t r u p IH | s t f IH].
-constructor.
-apply Embed_Cons with (q := Cons r p) (i := inl (pref_type r) tt).
-assumption.
-constructor.
-intro n.
-apply embed_lim_right with n.
-apply IH.
-Qed.
-
-Lemma embed_trans :
-  forall `(r : s ->> t, q : u ->> v, x : w ->> z),
-    r <= q ->
-    q <= x ->
-    r <= x.
-Proof.
-intros s t r u v q w z x H1.
-revert w z x.
-induction H1 as [s u v q | u v q s i r H IH | s f u v q t H IH]; intros w z x H2.
-constructor.
-induction H2 as [u w z x | w z x u j q H' IH' | u f w z x v H' IH'].
-destruct i.
-destruct i as [[] | i']; simpl in * |- *.
-apply Embed_Cons.
-apply IH.
-assumption.
-apply embed_pref_right with j.
-apply IH'.
-assumption.
-assumption.
-destruct i as [n i]; simpl in * |- *.
-apply (IH' n i r H IH).
-constructor.
-intro n.
-exact (IH n w z x H2).
-Qed.
 
 Lemma embed_strict_cons_right :
   forall `(r : s ->> t, q : u ->> v, p : v [>] w),
