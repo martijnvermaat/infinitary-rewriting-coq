@@ -877,7 +877,7 @@ exists (inr _ i); simpl.
 rewrite IH; reflexivity.
 specialize IH with 0 p.
 destruct IH as [i IH].
-exists (existT _ 0 i); simpl.
+exists (existT (fun n => pref_type (snoc p (|f n|))) 0 i); simpl.
 rewrite IH; reflexivity.
 Qed.
 
@@ -968,7 +968,7 @@ destruct i as [n i]; simpl in H; fold (@pref_type t ($ f n $)) in i.
 specialize IH with n p r i.
 destruct IH as [j IH].
 assumption.
-exists (existT _ n j).
+exists (existT (fun n => pref_type (snoc p (|f n|))) n j).
 assumption.
 Qed.
 
@@ -1123,7 +1123,7 @@ destruct i as [n i]; simpl in H; fold (@pref_type t ($ f n $)) in i.
 specialize IH with n r q i.
 destruct IH as [j IH].
 assumption.
-exists (existT _ n j).
+exists (existT (fun n => pref_type (append r (|f n|))) n j).
 assumption.
 Qed.
 
@@ -1161,9 +1161,6 @@ Lemma sdfsfsdf :
 Proof.
 induction q as [u | t u q w p IH | t u f IH]; simpl; intros v i H1 H2.
 Admitted.
-
-
-
 
 Lemma append_weakly_convergent :
   forall `(r : s ->> t, q : t ->> u),
