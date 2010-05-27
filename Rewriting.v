@@ -497,6 +497,25 @@ intro n.
 exact (IH n w z x H2).
 Qed.
 
+Lemma embed_not_cons :
+  forall `(r : s ->> t, p : t [>] u),
+    ~ Cons r p <= r.
+Proof.
+(* TODO: this seems very hard to prove... *)
+Admitted.
+
+Lemma embed_not_cons' :
+  forall `(r : s ->> t, p : t [>] u),
+    ~ Cons r p <= r.
+Proof.
+induction r as [t | s t r w o IH | s t f IH]; intros u p H.
+contradict H.
+apply embed_not_cons_nil.
+apply IH with w o.
+apply embed_cons_elim with u p w o.
+assumption.
+Admitted.
+
 (*
 Lemma embed_not_cons :
   forall `(r : s ->> t, p : t [>] u),
@@ -645,33 +664,29 @@ discriminate.
 Qed.
 *)
 
-(*
 Lemma embed_not_pref_right_strong :
   forall `(r : s ->> t, q : u ->> v, i : pref_type r),
     r <= q ->
     ~ q <= fst (|pref r i|).
 Proof.
-induction r as [t | s t r w p IH | s t f IH]; intros u v q i H.
+induction r as [t | s t r w p IH | s t f IH]; intros u v q i H1 H2.
 destruct i.
-destruct i as [[] | i].
-simpl.
-apply embed_not_cons with r.
-apply ord'_le_trans with beta; assumption.
-exact (IH beta p (ord'_le_succ_left H1) H2).
-destruct i.
-inversion_clear H1.
-exact (IH x beta p (H x) H2).
+destruct i as [[] | i]; simpl in H2.
+apply (embed_not_cons (embed_trans H1 H2)).
+exact (IH u v q i (embed_cons_left H1) H2).
+destruct i as [n i]; simpl in H2.
+dependent destruction H1.
+exact (IH n u v q i (H n) H2).
 Qed.
 
-(* TODO: move this lemma too *)
-Lemma ord'_le_not_pred_right :
-  forall alpha i, ~ alpha <=' pred alpha i.
+Lemma embed_not_pref_right :
+  forall `(r : s ->> t, i : pref_type r),
+    ~ r <= fst (|pref r i|).
 Proof.
 intros.
-apply ord'_le_not_pred_right_strong.
-apply ord'_le_refl.
+apply embed_not_pref_right_strong.
+apply embed_refl.
 Qed.
-*)
 
 Lemma embed_strict_cons_right :
   forall `(r : s ->> t, q : u ->> v, p : v [>] w),
@@ -1159,7 +1174,15 @@ Lemma sdfsfsdf :
 
   term_eq_up_to d (fst ($ pref (append r q) i $)) v.
 Proof.
-induction q as [u | t u q w p IH | t u f IH]; simpl; intros v i H1 H2.
+intros d s t r u q v i H1 H2.
+induction q as [u | t u q w p IH | t u f IH].
+contradict H2.
+apply embed_not_pref_right.
+destruct i as [[] | i].
+simpl in H2 |- *.
+clear H1.
+
+
 Admitted.
 
 Lemma append_weakly_convergent :
