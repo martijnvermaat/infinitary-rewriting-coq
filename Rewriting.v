@@ -782,6 +782,18 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
       term_eq_up_to d (fst ($ pref r j $)) t
   end.
 
+Fixpoint weakly_convergent' `(r : s ->> t) : Prop :=
+(*  good r /\ *)
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => weakly_convergent' q
+  | Lim _ t f      =>
+    (forall n, weakly_convergent' (|f n|)) /\
+    forall d, exists i, forall j,
+      fst (|pref r i|) <= fst (|pref r j|) ->
+      term_eq_up_to d (fst ($ pref r j $)) t
+  end.
+
 Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   weakly_convergent r /\
   match r with
@@ -1005,6 +1017,40 @@ apply snoc_embed_strict.
 apply H2.
 assumption.
 Qed.
+
+Lemma snoc_weakly_convergent :
+  forall `(p : s [>] t, r : t ->> u),
+    weakly_convergent r ->
+    weakly_convergent (snoc p r).
+Proof.
+induction r as [u | t u r v o IH | t u f IH]; simpl.
+trivial.
+apply IH.
+intros [H1 H2].
+split.
+intro n.
+apply IH.
+apply H1.
+Admitted.
+
+Lemma snoc_weakly_convergent' :
+  forall `(p : s [>] t, r : t ->> u),
+    weakly_convergent' r ->
+    weakly_convergent' (snoc p r).
+Proof.
+induction r as [u | t u r v o IH | t u f IH]; simpl.
+trivial.
+apply IH.
+intros [H1 H2].
+split.
+intro n.
+apply IH.
+apply H1.
+intro d.
+specialize H2 with d.
+destruct H2 as [i H2].
+
+Admitted.
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
 (*
