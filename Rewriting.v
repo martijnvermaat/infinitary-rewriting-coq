@@ -526,20 +526,7 @@ apply embed_not_cons_nil.
 apply IH with w o.
 apply embed_cons_elim with u p w o.
 assumption.
-assert (M : forall Cons (Lim t f) p <= Lim t f
-
-Admitted.
-
-Lemma embed_not_cons' :
-  forall `(r : s ->> t, p : t [>] u),
-    ~ Cons r p <= r.
-Proof.
-induction r as [t | s t r w o IH | s t f IH]; intros u p H.
-contradict H.
-apply embed_not_cons_nil.
-apply IH with w o.
-apply embed_cons_elim with u p w o.
-assumption.
+(* this is embed_not_cons_lim_case *)
 Admitted.
 
 (*
