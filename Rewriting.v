@@ -782,18 +782,6 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
       term_eq_up_to d (fst ($ pref r j $)) t
   end.
 
-Fixpoint weakly_convergent' `(r : s ->> t) : Prop :=
-(*  good r /\ *)
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => weakly_convergent' q
-  | Lim _ t f      =>
-    (forall n, weakly_convergent' (|f n|)) /\
-    forall d, exists i, forall j,
-      fst (|pref r i|) <= fst (|pref r j|) ->
-      term_eq_up_to d (fst ($ pref r j $)) t
-  end.
-
 Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   weakly_convergent r /\
   match r with
@@ -999,6 +987,29 @@ exists (existT (fun n => pref_type (snoc p (|f n|))) n j).
 assumption.
 Qed.
 
+Lemma embed_not_snoc_nil :
+  forall `(p : s [>] t, r : t ->> u) v,
+    ~ snoc p r <= Nil v.
+Proof.
+induction r as [u | t u r w o IH | t u f IH]; simpl; intros v H.
+dependent destruction H.
+elim i.
+dependent destruction H.
+elim i.
+dependent destruction H.
+specialize H with 0.
+contradict H.
+apply IH.
+Qed.
+
+Lemma embed_snoc_elim :
+  forall `(p : s [>] t, r : t ->> u, o : v [>] w, q : w ->> z),
+    snoc p r <= snoc o q ->
+    r <= q.
+Proof.
+(* TODO: not sure if this can be proved, but it is important! *)
+Admitted.
+
 Lemma snoc_good :
   forall `(p : s [>] t, r : t ->> u),
     good r ->
@@ -1018,39 +1029,69 @@ apply H2.
 assumption.
 Qed.
 
+Lemma snoc_weakly_convergent_helper :
+  forall d x `(p : s [>] t, r : t ->> u, q : t ->> v, j : pref_type (snoc p q)),
+    snoc p r <= fst (|pref (snoc p q) j |) ->
+    exists i : pref_type q,
+      r <= fst (|pref q i|) /\
+      (term_eq_up_to d (fst ($ pref q i $)) x ->
+        term_eq_up_to d (fst ($ pref (snoc p q) j $)) x).
+Proof.
+induction q as [v | t v q w o IH | t v f IH]; simpl; intros j H.
+destruct j as [[] | []].
+contradict H.
+apply embed_not_snoc_nil.
+destruct j as [[] | j].
+simpl in H.
+exists (inl _ tt). simpl.
+split.
+apply embed_snoc_elim with p s p.
+assumption.
+trivial.
+specialize IH with p r j.
+destruct IH as [i H1].
+assumption.
+exists (inr _ i).
+assumption.
+destruct j as [n j].
+specialize IH with n p r j.
+destruct IH as [i H1].
+assumption.
+exists (existT _ n i).
+assumption.
+Qed.
+
 Lemma snoc_weakly_convergent :
   forall `(p : s [>] t, r : t ->> u),
     weakly_convergent r ->
     weakly_convergent (snoc p r).
 Proof.
-induction r as [u | t u r v o IH | t u f IH]; simpl.
+intros s t p u r H.
+induction r.
 trivial.
-apply IH.
-intros [H1 H2].
-split.
+simpl.
+apply IHr.
+apply H.
+split; simpl.
 intro n.
-apply IH.
-apply H1.
-Admitted.
-
-Lemma snoc_weakly_convergent' :
-  forall `(p : s [>] t, r : t ->> u),
-    weakly_convergent' r ->
-    weakly_convergent' (snoc p r).
-Proof.
-induction r as [u | t u r v o IH | t u f IH]; simpl.
-trivial.
-apply IH.
-intros [H1 H2].
-split.
-intro n.
-apply IH.
-apply H1.
+apply H0.
+apply H.
 intro d.
-specialize H2 with d.
-destruct H2 as [i H2].
-
-Admitted.
+simpl in H.
+destruct H as [_ H].
+specialize H with d.
+destruct H as [n H].
+exists n.
+intros [m j] H1.
+(* this seems a rather strange way of proving *)
+destruct (snoc_weakly_convergent_helper d t p (|f n|) (|f m|) j) as [i M].
+assumption.
+specialize H with (existT (fun n => pref_type (|f n|)) m i).
+simpl in H.
+apply M.
+apply H.
+apply M.
+Qed.
 
 (* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
 (*
@@ -1099,6 +1140,7 @@ apply IH.
 Qed.
 
 (* TODO: is there a better way to formulate this? *)
+(* but we might not really need this anyway *)
 Lemma embed_strict_append_notnil :
   forall `(r : s ->> t, q : t ->> u),
     match q with
@@ -1209,6 +1251,7 @@ apply H2.
 assumption.
 Qed.
 
+(* can we use this in append_weakly_convergent? *)
 Lemma sdfsfsdf :
   forall d `(r : s ->> t, q : t ->> u) v (i : pref_type (append r q)),
 
