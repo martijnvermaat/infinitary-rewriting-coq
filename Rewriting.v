@@ -98,12 +98,12 @@ exact (term_eq_up_to_trans
     ((term_bis_implies_term_eq Ht) n))).
 Qed.
 
-(* TODO: c' has hole at same position as c *)
 Lemma project_match :
   forall (t : term) (c : context) (u : substitution) (f : fterm),
     term_eq_up_to (hole_depth c + pattern_depth f) t (fill c (substitute u f)) ->
     exists c' : context, exists u' : substitution,
-      t [=] fill c' (substitute u' f).
+      t [=] fill c' (substitute u' f) /\
+      hole_position c = hole_position c'.
 Proof.
 intros t c u f H.
 (* exists (dig t (hole_position c)). *)
@@ -497,11 +497,37 @@ intro n.
 exact (IH n w z x H2).
 Qed.
 
+(* we can prove this with embed_not_pref_right, but at the moment, we
+   prove embed_not_pref_right using embed_not_cons_lim_case... *)
+(* i don't think it helps to assume 'good (Lim t f)'... *)
+Lemma embed_not_cons_lim_case :
+  forall `(f : nat -> {t' : term & s ->> t'}, p : t [>] u) v,
+(*    (forall (n : nat) (u : term) (p : ($ f n $)[>]u),
+       ~ Cons (|f n |) p <= (|f n |)) ->*)
+    ~ Cons (Lim t f) p <= Lim v f.
+Proof.
+intros s f t u p v H.
+dependent destruction H.
+destruct i as [n i].
+simpl in H.
+dependent destruction H.
+admit.
+admit.
+Admitted.
+
 Lemma embed_not_cons :
   forall `(r : s ->> t, p : t [>] u),
     ~ Cons r p <= r.
 Proof.
 (* TODO: this seems very hard to prove... *)
+induction r as [t | s t r w o IH | s t f IH]; intros u p H.
+contradict H.
+apply embed_not_cons_nil.
+apply IH with w o.
+apply embed_cons_elim with u p w o.
+assumption.
+assert (M : forall Cons (Lim t f) p <= Lim t f
+
 Admitted.
 
 Lemma embed_not_cons' :
