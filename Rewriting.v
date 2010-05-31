@@ -890,6 +890,50 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   end.
 *)
 
+(* This might be usefull sometimes *)
+Fixpoint finite `(r : s ->> t) : Prop :=
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => finite q
+  | Lim _ t f      => False
+  end.
+
+Lemma good_finite :
+  forall `(r : s ->> t),
+    finite r ->
+    good r.
+Proof.
+induction r as [t | s t r u p IH | s t f IH]; intro H.
+exact I.
+apply IH.
+assumption.
+elim H.
+Qed.
+
+Lemma wf_finite :
+  forall `(r : s ->> t),
+    finite r ->
+    wf r.
+Proof.
+induction r as [t | s t r u p IH | s t f IH]; intro H.
+exact I.
+apply IH.
+assumption.
+elim H.
+Qed.
+
+Lemma weakly_convergent_finite :
+  forall `(r : s ->> t),
+    finite r ->
+    weakly_convergent r.
+Proof.
+induction r as [t | s t r u p IH | s t f IH]; intro H.
+exact I.
+apply IH.
+assumption.
+elim H.
+Qed.
+
 Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
   match r in t ->> u return s [>] t -> s ->> u with
   | Nil _          => fun p => Cons (Nil s) p
@@ -1048,6 +1092,18 @@ Proof.
 (* TODO: not sure if this can be proved, but it is important! *)
 (* Not even sure if it is true... *)
 Admitted.
+
+Lemma snoc_finite :
+  forall `(p : s [>] t, r : t ->> u),
+    finite r ->
+    finite (snoc p r).
+Proof.
+induction r as [u | t u r v o IH | t u f IH]; simpl; intro H.
+exact I.
+apply IH.
+assumption.
+elim H.
+Qed.
 
 Lemma snoc_good :
   forall `(p : s [>] t, r : t ->> u),
@@ -1267,6 +1323,18 @@ destruct IH as [j IH].
 assumption.
 exists (existT (fun n => pref_type (append r (|f n|))) n j).
 assumption.
+Qed.
+
+Lemma append_finite :
+  forall `(r : s ->> t, q : t ->> u),
+    finite r ->
+    finite q ->
+    finite (append r q).
+Proof.
+induction q as [u | t u q v p IH | t u f IH]; simpl; intros H1 H2.
+assumption.
+apply IH; assumption.
+elim H2.
 Qed.
 
 Lemma append_good :

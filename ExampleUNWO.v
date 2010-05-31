@@ -1655,24 +1655,33 @@ Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 *)
 
-Lemma good_s_UmDnUnt_Umt :
-  forall m n t, good (s_UmDnUnt_Umt m n t).
+Lemma finite_s_UmDnUnt_Umt :
+  forall m n t, finite (s_UmDnUnt_Umt m n t).
 Proof.
-induction n as [| n IH]; simpl.
-trivial.
-intro t.
-apply snoc_good.
+induction n as [| n IH]; intro t; simpl.
+exact I.
+apply snoc_finite.
 apply IH.
 Qed.
 
-Lemma good_s_Unpsin_USnpsiSn :
-  forall n, good (s_Unpsin_USnpsiSn n).
+Lemma finite_s_Unpsin_USnpsiSn :
+  forall n, finite (s_Unpsin_USnpsiSn n).
 Proof.
 intro n.
 unfold s_Unpsin_USnpsiSn; simpl.
 (* http://www.lix.polytechnique.fr/coq/stdlib/Coq.Program.Equality.html *)
 unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-apply good_s_UmDnUnt_Umt.
+apply finite_s_UmDnUnt_Umt.
+Qed.
+
+Lemma finite_s_psi_Unpsin :
+  forall n : nat, finite (s_psi_Unpsin n).
+Proof.
+induction n as [| n IH]; simpl.
+exact I.
+apply append_finite.
+exact IH.
+apply finite_s_Unpsin_USnpsiSn.
 Qed.
 
 Lemma s_UmDSnUSnt_Umt_is_cons :
@@ -1728,11 +1737,9 @@ Qed.
 Lemma good_s_psi_Unpsin :
   forall n : nat, good (s_psi_Unpsin n).
 Proof.
-induction n as [| n IH]; simpl.
-trivial.
-apply append_good.
-exact IH.
-apply good_s_Unpsin_USnpsiSn.
+intro n.
+apply good_finite.
+apply finite_s_psi_Unpsin.
 Qed.
 
 (* This reduction is 'good' *)
@@ -1752,7 +1759,10 @@ Qed.
 Lemma wf_s_psi_Unpsin :
   forall n : nat, wf (s_psi_Unpsin n).
 Proof.
-Admitted.
+intro n.
+apply wf_finite.
+apply finite_s_psi_Unpsin.
+Qed.
 
 (* This reduction is well-formed *)
 Lemma wf_s_psi_repeat_U :
@@ -1772,11 +1782,10 @@ Qed.
 Lemma weakly_convergent_s_psi_Unpsin :
   forall n : nat, weakly_convergent (s_psi_Unpsin n).
 Proof.
-induction n as [| n IH].
-split; simpl; trivial.
-simpl.
-
-Admitted.
+intro n.
+apply weakly_convergent_finite.
+apply finite_s_psi_Unpsin.
+Qed.
 
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
@@ -1814,28 +1823,4 @@ exact nf_D.
 exact nf_U.
 Qed.
 
-(* I think we don't need the norm function *)
-
-Require Import ZArith.
-Delimit Scope Int_scope with I.
-
-Fixpoint sum (n : nat) (t : term) : Z :=
-  match n with
-  | 0   => Z0
-  | S n => match t with
-           | Var _      => Z0
-           | Fun D args => vfold (-1)%Z Zplus (vmap (sum n) args)
-           | Fun U args => vfold (1)%Z  Zplus (vmap (sum n) args)
-           end
-  end.
-
-(*
-Fixpoint fsum (t : fterm) : Z :=
-  match t with
-  | FVar _      => Z0
-  | FFun D args => vfold (-1)%Z Zplus (vmap fsum args)
-  | FFun U args => vfold (1)%Z  Zplus (vmap fsum args)
-  end.
-*)
-
-(* I have no idea how to implement the norm functions *)
+(* TODO: generalize the result *)
