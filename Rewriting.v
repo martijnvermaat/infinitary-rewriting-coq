@@ -1021,6 +1021,7 @@ Lemma embed_snoc_elim :
     r <= q.
 Proof.
 (* TODO: not sure if this can be proved, but it is important! *)
+(* Not even sure if it is true... *)
 Admitted.
 
 Lemma snoc_good :
@@ -1266,25 +1267,77 @@ Qed.
 
 (* can we use this in append_weakly_convergent? *)
 Lemma sdfsfsdf :
-  forall d `(r : s ->> t, q : t ->> u) v (i : pref_type (append r q)),
+  forall d x `(r : s ->> t, q : t ->> u) (i : pref_type (append r q)),
 
   (forall j : pref_type q,
     q <= fst (|pref q j|) ->
-    term_eq_up_to d (fst ($ pref q j $)) v) ->
+    term_eq_up_to d (fst ($ pref q j $)) x) ->
 
   append r q <= fst (|pref (append r q) i|) ->
 
-  term_eq_up_to d (fst ($ pref (append r q) i $)) v.
+  term_eq_up_to d (fst ($ pref (append r q) i $)) x.
 Proof.
-intros d s t r u q v i H1 H2.
+intros d x s t r u q i H1 H2.
 induction q as [u | t u q w p IH | t u f IH].
 contradict H2.
 apply embed_not_pref_right.
 destruct i as [[] | i].
 simpl in H2 |- *.
 clear H1.
+Admitted.
 
 
+Lemma embed_not_append_pref_left :
+  forall `(r : s ->> t, q : t ->> u, j : pref_type r),
+    ~ append r q <= fst (|pref r j |).
+Proof.
+induction q; simpl; intros i H1.
+contradict H1.
+apply embed_not_pref_right.
+dependent destruction H1.
+destruct (pref_trans i i0) as [j H].
+specialize IHq with r j.
+apply IHq.
+rewrite H.
+assumption.
+dependent destruction H1.
+specialize H0 with 0.
+contradict H0.
+apply H.
+Qed.
+
+Lemma append_weakly_convergent_helper :
+  forall d x `(r : s ->> t, q : t ->> u, y : t ->> v, j : pref_type (append r y)),
+    append r q <= fst (|pref (append r y) j |) ->
+    exists i : pref_type y,
+      q <= fst (|pref y i|) /\
+      (term_eq_up_to d (fst ($ pref y i $)) x ->
+        term_eq_up_to d (fst ($ pref (append r y) j $)) x).
+Proof.
+induction y as [v | t v y w o IH | t v f IH]; simpl; intros j H.
+contradict H.
+apply embed_not_append_pref_left.
+destruct j as [[] | j]; simpl in H.
+exists (inl _ tt). simpl.
+split.
+(* TODO: hm this doesn't seem to hold *)
+
+(*
+apply append_snoc_elim with p s p.
+assumption.
+trivial.
+specialize IH with p r j.
+destruct IH as [i H1].
+assumption.
+exists (inr _ i).
+assumption.
+destruct j as [n j].
+specialize IH with n p r j.
+destruct IH as [i H1].
+assumption.
+exists (existT _ n i).
+assumption.
+*)
 Admitted.
 
 Lemma append_weakly_convergent :
@@ -1296,8 +1349,7 @@ Proof.
 induction q as [u | t u q v p IH | t u f IH]; simpl.
 trivial.
 apply IH.
-intro H1.
-intros [H2 H3].
+intros H1 [H2 H3].
 split.
 intro n.
 apply IH.
@@ -1308,7 +1360,15 @@ specialize H3 with d.
 destruct H3 as [n H3].
 exists n.
 intros [m j] H.
-Admitted.
+(* TODO: this depends on the helper lemma, which is probably not correct *)
+destruct (append_weakly_convergent_helper d u r (|f n|) (|f m|) j) as [i M].
+assumption.
+specialize H3 with (existT (fun n => pref_type (|f n|)) m i).
+simpl in H3.
+apply M.
+apply H3.
+apply M.
+Qed.
 
 Lemma compression :
   trs_left_linear system ->
