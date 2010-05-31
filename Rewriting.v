@@ -769,6 +769,31 @@ Fixpoint good `(r : s ->> t) : Prop :=
   end.
 
 (*
+   Some kind of weaker variant of weak convergence that i call
+   well-formedness for now.
+   This does not imply weak convergence because f n and f Sn
+   might differ in length more than one step.
+   The idea is that, while not implying convergence, wf says
+   that at least limits are well-defined.
+*)
+Fixpoint wf `(r : s ->> t) : Prop :=
+(*  good r /\ *)
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => wf q
+  | Lim _ t f      =>
+    (forall n, wf (|f n|)) /\
+    forall d, exists n, forall m,
+      (n <= m)%nat ->
+      term_eq_up_to d ($ f m $) t
+  end.
+
+(*
+   TODO: with a bit of thinking there is prabably a lot of
+   room for generalizing good and wf in some way...
+*)
+
+(*
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
 (*  good r /\ *)
   match r with

@@ -151,6 +151,34 @@ intro i; dependent destruction i; [idtac | inversion i].
 assumption.
 Qed.
 
+Lemma term_eq_up_to_n_Unt_repeat_U :
+  forall n t,
+    term_eq_up_to n (Unt n t) repeat_U.
+Proof.
+induction n as [| n IH]; simpl; intro t.
+constructor.
+rewrite (peek_eq repeat_U); simpl.
+constructor.
+intro i.
+dependent destruction i.
+apply IH.
+dependent destruction i.
+Qed.
+
+Lemma term_eq_up_to_n_Dnt_repeat_D :
+  forall n t,
+    term_eq_up_to n (Dnt n t) repeat_D.
+Proof.
+induction n as [| n IH]; simpl; intro t.
+constructor.
+rewrite (peek_eq repeat_D); simpl.
+constructor.
+intro i.
+dependent destruction i.
+apply IH.
+dependent destruction i.
+Qed.
+
 Lemma term_bis_Unt :
   forall n t s,
     t [~] s -> Unt n t [~] Unt n s.
@@ -1668,7 +1696,7 @@ exists p.
 reflexivity.
 Qed.
 
-Lemma a_lemma :
+Lemma plus_SnO :
   forall n,
     n + S (n + 0) = S (n + n).
 Proof.
@@ -1688,7 +1716,7 @@ unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl)
 exists (inl _ tt).
 apply embed_refl.
 revert r.
-rewrite (a_lemma n).
+rewrite (plus_SnO n).
 intro r.
 destruct (s_UmDSnUSnt_Umt_is_cons (S n) (n + n) (U @ psi' (S (S n)))) as [s [q [p H]]].
 rewrite H.
@@ -1719,6 +1747,26 @@ apply embed_strict_append_Unpsin_USnpsiSn.
 apply embed_strict_trans with psi (Unt m (psi' m)) (s_psi_Unpsin m).
 apply IHle.
 apply embed_strict_append_Unpsin_USnpsiSn.
+Qed.
+
+Lemma wf_s_psi_Unpsin :
+  forall n : nat, wf (s_psi_Unpsin n).
+Proof.
+Admitted.
+
+(* This reduction is well-formed *)
+Lemma wf_s_psi_repeat_U :
+  wf s_psi_repeat_U.
+Proof.
+split.
+apply wf_s_psi_Unpsin.
+intro d.
+exists d.
+intros m H.
+simpl.
+apply term_eq_up_to_weaken_generalized with m.
+assumption.
+apply term_eq_up_to_n_Unt_repeat_U.
 Qed.
 
 Lemma weakly_convergent_s_psi_Unpsin :

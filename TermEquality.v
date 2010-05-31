@@ -207,6 +207,19 @@ apply IHn.
 apply H0.
 Qed.
 
+Lemma term_eq_up_to_weaken_generalized :
+  forall t u n m,
+    n <= m ->
+    term_eq_up_to m t u ->
+    term_eq_up_to n t u.
+Proof.
+induction 1 as [| m H IH]; intro.
+assumption.
+apply IH.
+apply term_eq_up_to_weaken.
+assumption.
+Qed.
+
 End TermEquality.
 
 
