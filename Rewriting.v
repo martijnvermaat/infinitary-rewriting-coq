@@ -204,7 +204,8 @@ Fixpoint pref `(r : s ->> t) :
   match r in s ->> t return pref_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } with
   | Nil _           => !
   | Cons s t' q u p => fun i => match i with
-                                | inl tt => existT (fun ts => (s ->> fst ts) * (fst ts [>] snd ts))%type (t', u) (q, p) (* TODO: i would like t instead of u here *)
+                                  (* TODO: i would like t instead of u here *)
+                                | inl tt => existT (fun ts => (s ->> fst ts) * (fst ts [>] snd ts))%type (t', u) (q, p)
                                 | inr j  => pref q j
                                 end
   | Lim _ _ f       => fun i => match i with
@@ -447,7 +448,6 @@ Proof.
 induction r as [t | s t r w p _ | s t f IH]; intros u g v n H.
 constructor.
 dependent destruction H.
-(*apply Embed_Cons with (q := Lim v g) (i := existT (fun n => pref_type (|g n|)) n i).*)
 apply (@Embed_Cons u v (Lim v g) s (existT (fun n => pref_type (|g n|)) n i) r).
 assumption.
 constructor.
@@ -498,23 +498,7 @@ exact (IH n w z x H2).
 Qed.
 
 (* we can prove this with embed_not_pref_right, but at the moment, we
-   prove embed_not_pref_right using embed_not_cons_lim_case... *)
-(* i don't think it helps to assume 'good (Lim t f)'... *)
-Lemma embed_not_cons_lim_case :
-  forall `(f : nat -> {t' : term & s ->> t'}, p : t [>] u) v,
-(*    (forall (n : nat) (u : term) (p : ($ f n $)[>]u),
-       ~ Cons (|f n |) p <= (|f n |)) ->*)
-    ~ Cons (Lim t f) p <= Lim v f.
-Proof.
-intros s f t u p v H.
-dependent destruction H.
-destruct i as [n i].
-simpl in H.
-dependent destruction H.
-admit.
-admit.
-Admitted.
-
+   prove embed_not_pref_right using embed_not_cons... *)
 Lemma embed_not_cons :
   forall `(r : s ->> t, p : t [>] u),
     ~ Cons r p <= r.
@@ -526,11 +510,10 @@ apply embed_not_cons_nil.
 apply IH with w o.
 apply embed_cons_elim with u p w o.
 assumption.
-(* this is embed_not_cons_lim_case *)
+(* Lim case *)
 Admitted.
 
-(*
-Lemma embed_not_cons :
+Lemma embed_not_cons' :
   forall `(r : s ->> t, p : t [>] u),
     ~ Cons r p <= r.
 Proof.
@@ -540,6 +523,8 @@ apply embed_not_cons_nil.
 apply IH with w o.
 apply embed_cons_elim with u p w o.
 assumption.
+(* Here dependent destruction on H fails (see DependentDestructionTest.v)
+   and we do it manually. *)
 generalize_eqs H.
 destruct H.
 discriminate.
@@ -547,6 +532,7 @@ destruct q.
 destruct i.
 destruct i as [[] |].
 simpl in *|-*.
+(* why does 'do 50 simplify_one_dep_elim.' not work? *)
 simplify_one_dep_elim.
 simplify_one_dep_elim.
 simplify_one_dep_elim.
@@ -599,35 +585,7 @@ simplify_one_dep_elim.
 simplify_one_dep_elim.
 destruct i as [n i].
 simpl in *|-*.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-(* do 73 simplify_one_dep_elim. *)
+do 28 simplify_one_dep_elim.
 generalize_eqs H.
 destruct H.
 intros.
@@ -636,37 +594,14 @@ discriminate.
 intros.
 rewrite <- H0 in H1.
 discriminate.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
+do 20 simplify_one_dep_elim.
 assert (p := snd (|pref (|f n|) i|)).
-
 specialize H with n.
-
-
 
 assert (H' := embed_pref_right (|f n|) i H).
 
-
 (* uhm this of course fails, left term of p does not match *)
-specialize IH with n (snd ($ pref (|f n|) i $)) (snd (| pref (|f n|) i |)).
+(* specialize IH with n (snd ($ pref (|f n|) i $)) (snd (| pref (|f n|) i |)). *)
 (*
 apply IH with n.
 apply Ord'_le_Succ with i.
@@ -675,7 +610,6 @@ apply H.
 admit.
 discriminate.
 Qed.
-*)
 
 Lemma embed_not_pref_right_strong :
   forall `(r : s ->> t, q : u ->> v, i : pref_type r),
@@ -769,7 +703,7 @@ Fixpoint good `(r : s ->> t) : Prop :=
   end.
 
 (*
-   Some kind of weaker variant of weak convergence that i call
+   Some kind of weaker variant of weak convergence that we call
    well-formedness for now.
    This does not imply weak convergence because f n and f Sn
    might differ in length more than one step.
@@ -777,7 +711,6 @@ Fixpoint good `(r : s ->> t) : Prop :=
    that at least limits are well-defined.
 *)
 Fixpoint wf `(r : s ->> t) : Prop :=
-(*  good r /\ *)
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => wf q
@@ -788,37 +721,15 @@ Fixpoint wf `(r : s ->> t) : Prop :=
       term_eq_up_to d ($ f m $) t
   end.
 
-(*
-   TODO: with a bit of thinking there is prabably a lot of
-   room for generalizing good and wf in some way...
-*)
+(* TODO: with a bit of thinking there might room for generalizing
+   good and wf in some way... *)
 
 (*
-   Another idea worth checking: define an order on pref
-   indices ('i' is included in 'inr i' etc) and define
-   weak convergence using this order instead of <= on the
-   sequences.
-   This might be closer to what we would do if the indices
-   were natural numbers.
+   Weakly convergent sequences have limit functions f where for
+   any depth d, from some n, the end term of r is equal up to
+   depth d where (|f n|) <= r and r is contained in the limit.
 *)
-
-(*
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
-(*  good r /\ *)
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => weakly_convergent q
-  | Lim _ t f      =>
-    (forall n, weakly_convergent (|f n|)) /\
-    forall d, exists i, forall j,
-      fst (|pref r i|) <= fst (|pref r j|) ->
-      term_eq_up_to d (fst ($ pref r j $)) t
-  end.
-*)
-
-(* TODO: is is quite important that this definition is correct... *)
-Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
-(*  good r /\ *)
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => weakly_convergent q
@@ -840,6 +751,38 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
       fst (|pref r i|) <= fst (|pref r j|) ->
       (depth (snd (| pref r j |)) > d)%nat
   end.
+
+(*
+   Another idea worth checking: define an order on pref
+   indices ('i' is included in 'inr i' etc) and define
+   weak convergence using this order instead of <= on the
+   sequences.
+   This might be closer to what we would do if the indices
+   were natural numbers.
+*)
+
+(*
+   TODO: increasing in strength, should these properties on sequences also
+   include the weaker properties?
+   Now we always have to state all of them, e.g.
+
+     good r /\ wf r /\ weakly_convergent r /\ strongly_convergent r
+
+   (Note that weak convergence does not imply strong convergence.)
+*)
+
+(*
+Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
+  match r with
+  | Nil _          => True
+  | Cons _ _ q _ _ => weakly_convergent q
+  | Lim _ t f      =>
+    (forall n, weakly_convergent (|f n|)) /\
+    forall d, exists i, forall j,
+      fst (|pref r i|) <= fst (|pref r j|) ->
+      term_eq_up_to d (fst ($ pref r j $)) t
+  end.
+*)
 
 (*
    Weakly convergent sequences have limit functions f where for
@@ -875,7 +818,7 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   | Lim _ t f      =>
     (forall n, weakly_convergent (|f n|)) /\
     forall d, exists i, forall j,
-      (|pref r i|) <= (|pref r j|) ->   (* prefix (|pref r i|) (|pref r j|) -> *)
+      (|pref r i|) <= (|pref r j|) ->
       term_eq_up_to d ($ pref r j $) t
   end.
 
@@ -952,25 +895,6 @@ Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
 
 Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
 
-(* This lemma of course does not hold! *)
-(*
-Lemma snoc_length :
-  forall `(p : s [>] t, r : t ->> u),
-    length (snoc p r) ==' Succ (length r).
-Proof.
-induction r as [u | t u r v o IH | t u f IH]; simpl.
-apply ord'_eq_refl.
-split.
-apply Ord'_le_Succ with (inl (pred_type (Succ (length r))) tt).
-apply (IH p).
-apply Ord'_le_Succ with (inl (pred_type (length (snoc p r))) tt).
-apply (IH p).
-split.
-constructor.
-intro n.
-Admitted.
-*)
-
 Lemma pref_snoc :
   forall `(p : s [>] t, r : t ->> u),
     exists i, pref (snoc p r) i = pref (Cons (Nil s) p) (inl _ tt).
@@ -1000,17 +924,6 @@ intro n.
 apply embed_lim_right with n.
 apply IH.
 Qed.
-
-(* of course this is not true *)
-(*
-Lemma embed_strict_snoc_right :
-  forall `(r : s ->> t, p : u [>] s),
-    r < snoc p r.
-Proof.
-induction r as [s | s t r v o IH | s t f IH]; intros u p; simpl.
-exists (inl _ tt).
-constructor.
-*)
 
 (* This proof is quite hairy and ad-hoc *)
 Lemma snoc_embed :
@@ -1242,28 +1155,6 @@ apply IH.
 apply embed_lim_right with 0.
 apply IH.
 Qed.
-
-(* TODO: is there a better way to formulate this? *)
-(* but we might not really need this anyway *)
-Lemma embed_strict_append_notnil :
-  forall `(r : s ->> t, q : t ->> u),
-    match q with
-    | Nil _          => True
-    | Cons _ _ _ _ _ => r < append r q
-    | Lim _ _ _      => r < append r q
-    end.
-Proof.
-induction q as [u | t u q v p IH | t u f IH]; simpl.
-trivial.
-destruct q; simpl.
-exists (inl _ tt).
-apply embed_refl.
-apply embed_strict_cons_right.
-apply IH.
-apply embed_strict_cons_right.
-apply IH.
-(* TODO *)
-Admitted.
 
 (* TODO: So this proof is a verbatim copy of snoc_embed an thus is
    also quite hairy and ad-hoc
