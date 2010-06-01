@@ -10,6 +10,8 @@ Set Implicit Arguments.
     SP : S(P(x)) -> x
 
   and show it is a counterexample to UN-inf.
+
+  Because we have X for variables, we use D and U instead of P and S.
 *)
 
 (* Signature *)
@@ -74,60 +76,60 @@ Notation "x !" := (@FVar F X x) (at level 75).
 Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
 Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
 
-(* U(U(U(...))) *)
+(* UUU... *)
 CoFixpoint repeat_U : term :=
   U @ repeat_U.
 
-(* D(D(D(...))) *)
+(* DDD... *)
 CoFixpoint repeat_D : term :=
   D @ repeat_D.
 
-(* D(U(D(U(...)))) *)
+(* DUDU... *)
 (* TODO: better to define repeat_DU and repeat_UD together? *)
 CoFixpoint repeat_DU : term :=
   D @ U @ repeat_DU.
 
-(* U(U(U(...t...))) *)
+(* U^n t *)
 Fixpoint Unt (n : nat) t :=
   match n with
   | O   => t
   | S n => U @ (Unt n t)
   end.
 
-(* D(D(D(...t...))) *)
+(* D^n t *)
 Fixpoint Dnt (n : nat) t :=
   match n with
   | O   => t
   | S n => D @ (Dnt n t)
   end.
 
-(* U(U(U(...t...))) *)
+(* U^2n t *)
 Fixpoint U2nt (n : nat) t :=
   match n with
   | O   => t
   | S n => U @ U @ (U2nt n t)
   end.
 
-(* D(D(D(...t...))) *)
+(* D^2n t *)
 Fixpoint D2nt (n : nat) t :=
   match n with
   | O   => t
   | S n => D @ D @ (D2nt n t)
   end.
 
-(* D^n @ U^n @ t *)
+(* D^n U^n t *)
 Definition DnUnt n t : term :=
   Dnt n (Unt n t).
 
-(* U^n @ D^n @ t *)
+(* U^n D^n t *)
 Definition UnDnt n t : term :=
   Unt n (Dnt n t).
 
-(* D^2n @ U^2n @ t *)
+(* D^2n U^2n t *)
 Definition D2nU2nt n t : term :=
   D2nt n (U2nt n t).
 
-(* U^2n @ D^2n @ t *)
+(* U^2n D^2n t *)
 Definition U2nD2nt n t : term :=
   U2nt n (D2nt n t).
 
@@ -336,7 +338,7 @@ Qed.
    but unfortunately this is not guarded.
 *)
 
-(* D(U(U(D(D(D(U(U(U(U(...)))))))))) *)
+(* D^n U^Sn D^SSn U^SSSn ... *)
 CoFixpoint psi' n : term :=
   (cofix D2nDt (d : nat) :=
     match d with
@@ -348,18 +350,8 @@ CoFixpoint psi' n : term :=
     | S d => D @ D @ (D2nDt d)
     end) n.
 
+(* DUUDDDUUUU... *)
 Definition psi := psi' 0.
-
-CoFixpoint oldpsi' n : term :=
-  (cofix Dnt (d : nat) :=
-    match d with
-    | O   => (cofix USnt (u : nat) :=
-               match u with
-               | O   => U @ oldpsi' (S (S n))
-               | S u => U @ (USnt u)
-               end) (S n)
-    | S d => D @ (Dnt d)
-    end) (S n).
 
 Lemma UU2nt_eq_U2nUt_unfolded :
   forall n t,
@@ -400,249 +392,6 @@ rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
       end) (S n))).
 simpl.
 rewrite IHn with t.
-reflexivity.
-Qed.
-
-Lemma UUSnt_eq_USnUt :
-  forall n t,
-    (U @ (cofix USnt (u : nat) : term :=
-            match u with
-            | 0 => t
-            | S u0 => U @ USnt u0
-            end) n)
-    =
-    (cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => U @ t
-       | S u0 => U @ USnt u0
-       end) n.
-Proof.
-induction n; intro t.
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-      match u with
-      | 0 => U @ t
-      | S u0 => U @ USnt u0
-      end) 0)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ USnt u0
-       end) 0)).
-simpl.
-destruct t; reflexivity.
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ USnt u0
-       end) (S n))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-      match u with
-      | 0 => U @ t
-      | S u0 => U @ USnt u0
-      end) (S n))).
-simpl.
-rewrite IHn with t.
-reflexivity.
-Qed.
-
-Lemma zo :
-  forall n t,
-    (cofix D2nDt (d : nat) :=
-      match d with
-      | O   => D @ (cofix U2nt (u : nat) :=
-                 match u with
-                 | O   => t
-                 | S u => U @ U @ (U2nt u)
-                 end) (S n)
-      | S d => D @ D @ (D2nDt d)
-      end) n
-    =
-    (cofix Dnt (d : nat) :=
-      match d with
-      | O   => (cofix USnt (u : nat) :=
-                 match u with
-                 | O   => U @ t
-                 | S u => U @ (USnt u)
-                 end) (S (n + n))
-      | S d => D @ (Dnt d)
-      end) (S (2 * n)).
-Proof.
-induction n; intro t; simpl.
-rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
-      match d with
-      | 0 =>
-          D @
-          (cofix U2nt (u : nat) : term :=
-             match u with
-             | 0 => t
-             | S u0 => U @ U @ U2nt u0
-             end) 1
-      | S d0 => D @ D @ D2nDt d0
-      end) 0)).
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-                match u with
-                | 0 => t
-                | S u0 => U @ U @ U2nt u0
-                end) 1)).
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-      match d with
-      | 0 =>
-          (cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) 1
-      | S d0 => D @ Dnt d0
-      end) 1)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) 1)).
-simpl.
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ U @ U2nt u0
-       end) 0)).
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-      match d with
-      | 0 =>
-          U @
-          (cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) 0
-      | S d0 => D @ Dnt d0
-      end) 0)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                match u with
-                | 0 => U @ t
-                | S u0 => U @ USnt u0
-                end) 0)).
-simpl.
-destruct t; reflexivity.
-rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
-      match d with
-      | 0 =>
-          D @
-          (cofix U2nt (u : nat) : term :=
-             match u with
-             | 0 => t
-             | S u0 => U @ U @ U2nt u0
-             end) (S (S n))
-      | S d0 => D @ D @ D2nDt d0
-      end) (S n))).
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-             match u with
-             | 0 => t
-             | S u0 => U @ U @ U2nt u0
-             end) (S (S n)))).
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-      match d with
-      | 0 =>
-          (cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) (S (S (n + S n)))
-      | S d0 => D @ Dnt d0
-      end) (S (S (n + S (n + 0)))))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                match u with
-                | 0 => U @ t
-                | S u0 => U @ USnt u0
-                end) (S (S (n + S n))))).
-simpl.
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-       match d with
-       | 0 =>
-           U @
-           (cofix USnt (u : nat) : term :=
-              match u with
-              | 0 => U @ t
-              | S u0 => U @ USnt u0
-              end) (S (n + S n))
-       | S d0 => D @ Dnt d0
-       end) (S (n + S (n + 0))))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                 match u with
-                 | 0 => U @ t
-                 | S u0 => U @ USnt u0
-                 end) (S (n + S n)))).
-simpl.
-rewrite UU2nt_eq_U2nUt_unfolded with (S n) t.
-rewrite UU2nt_eq_U2nUt_unfolded with (S n) (U @ t).
-rewrite IHn with (U @ U @ t).
-rewrite UUSnt_eq_USnUt with (n + S n) (U @ t).
-rewrite UUSnt_eq_USnUt with (n + S n) (U @ U @ t).
-simpl.
-rewrite (eq_sym (plus_n_Sm n n)).
-rewrite (eq_sym (plus_n_Sm n (n + 0))).
-reflexivity.
-Qed.
-
-Lemma hmmmm :
-  forall n,
-    psi' n [~] oldpsi' (2 * n).
-Proof.
-(* should be somehow possible to show, using lemma zo *)
-Admitted.
-
-Lemma oldpsin_eq_DSnUSnUoldpsiSSn :
-  forall n,
-    oldpsi' n = DnUnt (S n) (U @ (oldpsi' (S (S n)))).
-Proof.
-intro n.
-rewrite (peek_eq (oldpsi' n)).
-simpl.
-generalize (oldpsi' (S (S n))).
-induction n; intro t.
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-       match d with
-       | 0 =>
-           (cofix USnt (u : nat) : term :=
-              match u with
-              | 0 => U @ t
-              | S u0 => U @ USnt u0
-              end) 1
-       | S d0 => D @ Dnt d0
-       end) 0)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                 match u with
-                 | 0 => U @ t
-                 | S u0 => U @ USnt u0
-                 end) 1)).
-rewrite DSnUSnt_eq_DDnUnUt.
-unfold DnUnt.
-simpl.
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => U @ t
-       | S u0 => U @ USnt u0
-       end) 0)).
-simpl.
-reflexivity.
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-       match d with
-       | 0 =>
-           (cofix USnt (u : nat) : term :=
-              match u with
-              | 0 => U @ t
-              | S u0 => U @ USnt u0
-              end) (S (S n))
-       | S d0 => D @ Dnt d0
-       end) (S n))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                 match u with
-                 | 0 => U @ t
-                 | S u0 => U @ USnt u0
-                 end) (S (S n)))).
-rewrite DSnUSnt_eq_DDnUnUt.
-simpl.
-rewrite UUSnt_eq_USnUt with (S n) (U @ t).
-rewrite IHn with (U @ t).
 reflexivity.
 Qed.
 
@@ -834,7 +583,9 @@ intro; assumption.
 constructor.
 Qed.
 
-(* D(D(D(...))) is infinite *)
+(* TODO: prove UNWO_trs weakly orthogonal *)
+
+(* DDD... is infinite *)
 Lemma infinite_D :
   infinite repeat_D.
 Proof.
@@ -857,7 +608,7 @@ rewrite (proj2 S).
 discriminate.
 Qed.
 
-(* D(D(D(...))) is a normal form *)
+(* DDD... is a normal form *)
 Lemma nf_D :
   normal_form (system := UNWO_trs) repeat_D.
 Proof.
@@ -960,29 +711,31 @@ intro e.
 constructor.
 constructor.
 
-admit. (* same argument as above for r=UD instead of r=DU *)
+(* TODO: almost the same argument as above for r=UD instead of r=DU *)
+admit.
 Admitted.
 
-(* U(U(U(...))) is a normal form *)
+(* UUU... is a normal form *)
 Lemma nf_U :
   normal_form (system := UNWO_trs) repeat_U.
 Proof.
+(* TODO: same as nf_D *)
 Admitted.
 
-(* D(D(D(...))) is an infinite normal form *)
+(* DDD... is an infinite normal form *)
 Lemma infinite_nf_D :
   infinite repeat_D /\ normal_form (system := UNWO_trs) repeat_D.
 Proof.
 exact (conj infinite_D nf_D).
 Qed.
 
-(* U(U(U(...))) is an infinite normal form *)
+(* UUU... is an infinite normal form *)
 Lemma infinite_nf_U :
   infinite repeat_U /\ normal_form (system := UNWO_trs) repeat_U.
 Proof.
 Admitted.
 
-(* D(D(D(...))) and U(U(U(...))) are different *)
+(* DDD... and UUU... are different *)
 Lemma neq_D_U :
   ~ repeat_D [~] repeat_U.
 Proof.
@@ -991,7 +744,8 @@ rewrite (peek_eq repeat_D), (peek_eq repeat_U) in H.
 inversion H.
 Qed.
 
-(* D(D(D(...))) and U(U(U(...))) are the only infinite normal forms *)
+(* DDD... and UUU are the only infinite normal forms *)
+(* TODO: we don't really need this *)
 Lemma only_infinite_nf_D_U :
   forall t,
     infinite t /\ normal_form (system := UNWO_trs) t ->
@@ -1033,11 +787,10 @@ Proof.
 right; left; reflexivity.
 Qed.
 
-Generalizable All Variables.
-
-(* D(U(D(U(...)))) rewrites only to itself *)
+(* DUDU... rewrites only to itself *)
+(* TODO: we don't really need this *)
 Lemma rewrites_to_itself_DU :
-  forall `(p : repeat_DU [>] t),
+  forall t (p : repeat_DU [>] t),
     t [~] repeat_DU.
 Proof.
 intros s p.
@@ -1081,62 +834,19 @@ contradict H.
 Qed.
 
 (* Zero-step reduction psi ->> psi *)
-Definition s_oldpsi0_oldpsi0 : oldpsi' 0 ->> oldpsi' 0 := Nil (oldpsi' 0).
-Definition s_psi0_psi0 : psi' 0 ->> psi' 0 := Nil (psi' 0).
+Definition s_psi_psi : psi ->> psi := Nil psi.
 
-(* Substitution for step psi' 0 -> U @ psi' 2 *)
-Definition sub_oldpsi0_Uoldpsi2 (x : X) : term :=
-  match x with
-  | 1 => U @ oldpsi' 2
-  | _ => Var x
-  end.
-
-Definition sub_psi0_Upsi1 (x : X) : term :=
+(* Substitution for step psi -> U @ psi' 1 *)
+Definition sub_psi_Upsi1 (x : X) : term :=
   match x with
   | 1 => U @ psi' 1
   | _ => Var x
   end.
 
-Lemma fact_term_bis_oldpsi0 :
-  fill Hole (substitute sub_oldpsi0_Uoldpsi2 (lhs DU)) [~] oldpsi' 0.
+Lemma fact_term_bis_psi :
+  fill Hole (substitute sub_psi_Upsi1 (lhs DU)) [~] psi.
 Proof.
-rewrite (peek_eq (oldpsi' 0)).
-simpl.
-constructor.
-intro i; simpl in i.
-dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-(* this is really annoying, but i guess there's no way around it... *)
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-         match d with
-         | 0 =>
-             (cofix USnt (u : nat) : term :=
-               match u with
-                 | 0 => U @ oldpsi' 2
-                   | S u0 => U @ USnt u0
-                     end) 1
-         | S d0 => D @ Dnt d0
-         end) 0)).
-simpl.
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-         match u with
-         | 0 => U @ oldpsi' 2
-            | S u0 => U @ USnt u0
-               end) 0)).
-simpl.
-constructor.
-unfold vmap.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-apply term_bis_refl.
-Qed.
-
-Lemma fact_term_bis_psi0 :
-  fill Hole (substitute sub_psi0_Upsi1 (lhs DU)) [~] psi' 0.
-Proof.
-rewrite (peek_eq (psi' 0)).
+rewrite (peek_eq psi).
 simpl.
 constructor.
 intro i; simpl in i.
@@ -1165,125 +875,21 @@ rewrite (peek_eq (psi' 1)).
 apply term_bis_refl.
 Qed.
 
-(* Step psi' 0 -> U @ psi' 2 *)
-Definition p_oldpsi0_Uoldpsi2 : oldpsi' 0 [>] (U @ oldpsi' 2) :=
-  Step DU Hole sub_oldpsi0_Uoldpsi2 DU_in fact_term_bis_oldpsi0 (term_bis_refl (U @ oldpsi' 2)).
+(* Step psi -> U @ psi' 1 *)
+Definition p_psi_Upsi1 : psi [>] (U @ psi' 1) :=
+  Step DU Hole sub_psi_Upsi1 DU_in fact_term_bis_psi (term_bis_refl (U @ psi' 1)).
 
-Definition p_psi0_Upsi1 : psi' 0 [>] (U @ psi' 1) :=
-  Step DU Hole sub_psi0_Upsi1 DU_in fact_term_bis_psi0 (term_bis_refl (U @ psi' 1)).
+(* Single-step reduction psi ->> U @ psi' 1 *)
+Definition s_psi_Upsi1 : psi ->> (U @ psi' 1) :=
+  Cons s_psi_psi p_psi_Upsi1.
 
-(* Single-step reduction psi' 0 ->> U @ psi' 2 *)
-Definition s_oldpsi0_Uoldpsi2 : oldpsi' 0 ->> (U @ oldpsi' 2) :=
-  Cons s_oldpsi0_oldpsi0 p_oldpsi0_Uoldpsi2.
-
-Definition s_psi0_Upsi1 : psi' 0 ->> (U @ psi' 1) :=
-  Cons s_psi0_psi0 p_psi0_Upsi1.
-
-(* Substitution for step U @ psi' 2 -> U D D U U U @ psi' 4 *)
-Definition sub_Uoldpsi2_UDDUUUoldpsi4 (x : X) : term :=
-  match x with
-  | 1 => U @ U @ U @ oldpsi' 4
-  | _ => Var x
-  end.
-
+(* Substitution for step U @ psi' 1 -> U D D U U U @ psi' 2 *)
 Definition sub_Upsi1_UDDUUUpsi2 (x : X) : term :=
   match x with
   | 1 => U @ U @ U @ psi' 2
   | _ => Var x
   end.
 
-Lemma fact_term_bis_Uoldpsi2 :
-  fill (U @@@ D @@@ D @@@ Hole) (substitute sub_Uoldpsi2_UDDUUUoldpsi4 (lhs DU))
-  [~]
-  (U @ oldpsi' 2).
-Proof.
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-rewrite (peek_eq (oldpsi' 2)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-rewrite (peek_eq ((cofix SnD (d : nat) : term :=
-         match d with
-         | 0 =>
-             (cofix SnU (u : nat) : term :=
-                match u with
-                | 0 => U @ oldpsi' 4
-                | S u0 => U @ SnU u0
-                end) 3
-         | S d0 => D @ SnD d0
-         end) 2)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-rewrite (peek_eq ((cofix SnD (d : nat) : term :=
-         match d with
-         | 0 =>
-             (cofix SnU (u : nat) : term :=
-                match u with
-                | 0 => U @ oldpsi' 4
-                | S u0 => U @ SnU u0
-                end) 3
-         | S d0 => D @ SnD d0
-         end) 1)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-rewrite (peek_eq ((cofix SnD (d : nat) : term :=
-         match d with
-         | 0 =>
-             (cofix SnU (u : nat) : term :=
-                match u with
-                | 0 => U @ oldpsi' 4
-                | S u0 => U @ SnU u0
-                end) 3
-         | S d0 => D @ SnD d0
-         end) 0)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-         match u with
-         | 0 => U @ oldpsi' 4
-         | S u0 => U @ SnU u0
-         end) 2)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-         match u with
-         | 0 => U @ oldpsi' 4
-         | S u0 => U @ SnU u0
-         end) 1)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-rewrite (peek_eq ((cofix SnU (u : nat) : term :=
-         match u with
-         | 0 => U @ oldpsi' 4
-         | S u0 => U @ SnU u0
-         end) 0)).
-simpl.
-apply term_bis_refl.
-Qed.
-
-(* TODO: rewrite this for new psi' *)
 Lemma fact_term_bis_Upsi1 :
   fill (U @@@ D @@@ D @@@ Hole) (substitute sub_Upsi1_UDDUUUpsi2 (lhs DU))
   [~]
@@ -1356,38 +962,19 @@ simpl.
 destruct t; apply term_bis_U; apply term_bis_refl.
 Qed.
 
-(* Step U @ psi' 2 -> U D D U U U @ psi' 4 *)
-Definition p_Uoldpsi2_UDDUUUoldpsi4 : (U @ oldpsi' 2) [>] (U @ D @ D @ U @ U @ U @ oldpsi' 4) :=
-  Step DU (U @@@ D @@@ D @@@ Hole) sub_Uoldpsi2_UDDUUUoldpsi4 DU_in fact_term_bis_Uoldpsi2 (term_bis_refl (U @ D @ D @ U @ U @ U @ oldpsi' 4)).
-
+(* Step U @ psi' 1 -> U D D U U U @ psi' 2 *)
 Definition p_Upsi1_UDDUUUpsi2 : (U @ psi' 1) [>] (U @ D @ D @ U @ U @ U @ psi' 2) :=
   Step DU (U @@@ D @@@ D @@@ Hole) sub_Upsi1_UDDUUUpsi2 DU_in fact_term_bis_Upsi1 (term_bis_refl (U @ D @ D @ U @ U @ U @ psi' 2)).
 
-(* Two-step reduction psi' 0 ->> U D D U U U @ psi' 4 *)
-Definition s_oldpsi0_UDDUUUoldpsi4 : oldpsi' 0 ->> (U @ D @ D @ U @ U @ U @ oldpsi' 4) := Cons s_oldpsi0_Uoldpsi2 p_Uoldpsi2_UDDUUUoldpsi4.
+(* Two-step reduction psi ->> U D D U U U @ psi' 2 *)
+Definition s_psi_UDDUUUpsi2 : psi ->> (U @ D @ D @ U @ U @ U @ psi' 2) := Cons s_psi_Upsi1 p_Upsi1_UDDUUUpsi2.
 
-Definition s_psi0_UDDUUUpsi2 : psi' 0 ->> (U @ D @ D @ U @ U @ U @ psi' 2) := Cons s_psi0_Upsi1 p_Upsi1_UDDUUUpsi2.
-
-(* Substitution for step U D D U U U @ psi' 4 -> U D U U @ psi' 4 *)
-Definition sub_UDDUUUoldpsi4_UDUUoldpsi4 (x : X) : term :=
-  match x with
-  | 1 => U @ U @ oldpsi' 4
-  | _ => Var x
-  end.
-
+(* Substitution for step U D D U U U @ psi' 2 -> U D U U @ psi' 2 *)
 Definition sub_UDDUUUpsi2_UDUUpsi2 (x : X) : term :=
   match x with
   | 1 => U @ U @ psi' 2
   | _ => Var x
   end.
-
-Lemma fact_term_bis_UDDUUUoldpsi4 :
-  fill (U @@@ D @@@ Hole) (substitute sub_UDDUUUoldpsi4_UDUUoldpsi4 (lhs DU))
-  [~]
-  (U @ D @ D @ U @ U @ U @ oldpsi' 4).
-Proof.
-(* more of the same *)
-Admitted.
 
 Lemma fact_term_bis_UDDUUUpsi2 :
   fill (U @@@ D @@@ Hole) (substitute sub_UDDUUUpsi2_UDUUpsi2 (lhs DU))
@@ -1397,38 +984,19 @@ Proof.
 (* more of the same *)
 Admitted.
 
-(* Step U D D U U U @ psi' 4 -> U D U U @ psi' 4*)
-Definition p_UDDUUUoldpsi4_UDUUoldpsi4 : (U @ D @ D @ U @ U @ U @ oldpsi' 4) [>] (U @ D @ U @ U @ oldpsi' 4) :=
-  Step DU (U @@@ D @@@ Hole) sub_UDDUUUoldpsi4_UDUUoldpsi4 DU_in fact_term_bis_UDDUUUoldpsi4 (term_bis_refl (U @ D @ U @ U @ oldpsi' 4)).
-
+(* Step U D D U U U @ psi' 2 -> U D U U @ psi' 2 *)
 Definition p_UDDUUUpsi2_UDUUpsi2 : (U @ D @ D @ U @ U @ U @ psi' 2) [>] (U @ D @ U @ U @ psi' 2) :=
   Step DU (U @@@ D @@@ Hole) sub_UDDUUUpsi2_UDUUpsi2 DU_in fact_term_bis_UDDUUUpsi2 (term_bis_refl (U @ D @ U @ U @ psi' 2)).
 
-(* Three-step reduction psi' 0 ->> U D U U @ psi' 4 *)
-Definition s_oldpsi0_UDUUoldpsi4 : oldpsi' 0 ->> (U @ D @ U @ U @ oldpsi' 4) := Cons s_oldpsi0_UDDUUUoldpsi4 p_UDDUUUoldpsi4_UDUUoldpsi4.
+(* Three-step reduction psi ->> U D U U @ psi' 2 *)
+Definition s_psi_UDUUpsi2 : psi ->> (U @ D @ U @ U @ psi' 2) := Cons s_psi_UDDUUUpsi2 p_UDDUUUpsi2_UDUUpsi2.
 
-Definition s_psi0_UDUUpsi2 : psi' 0 ->> (U @ D @ U @ U @ psi' 2) := Cons s_psi0_UDDUUUpsi2 p_UDDUUUpsi2_UDUUpsi2.
-
-(* Substitution for step U D U U @ psi' 4 -> U U @ psi' 4 *)
-Definition sub_UDUUoldpsi4_UUoldpsi4 (x : X) : term :=
-  match x with
-  | 1 => U @ oldpsi' 4
-  | _ => Var x
-  end.
-
+(* Substitution for step U D U U @ psi' 2 -> U U @ psi' 2 *)
 Definition sub_UDUUpsi2_UUpsi2 (x : X) : term :=
   match x with
   | 1 => U @ psi' 2
   | _ => Var x
   end.
-
-Lemma fact_term_bis_UDUUoldpsi4 :
-  fill (U @@@ Hole) (substitute sub_UDUUoldpsi4_UUoldpsi4 (lhs DU))
-  [~]
-  (U @ D @ U @ U @ oldpsi' 4).
-Proof.
-(* more of the same *)
-Admitted.
 
 Lemma fact_term_bis_UDUUpsi2 :
   fill (U @@@ Hole) (substitute sub_UDUUpsi2_UUpsi2 (lhs DU))
@@ -1438,18 +1006,23 @@ Proof.
 (* more of the same *)
 Admitted.
 
-(* Step U D U U @ psi' 4 -> U U @ psi' 4*)
-Definition p_UDUUoldpsi4_UUoldpsi4 : (U @ D @ U @ U @ oldpsi' 4) [>] (U @ U @ oldpsi' 4) :=
-  Step DU (U @@@ Hole) sub_UDUUoldpsi4_UUoldpsi4 DU_in fact_term_bis_UDUUoldpsi4 (term_bis_refl (U @ U @ oldpsi' 4)).
-
+(* Step U D U U @ psi' 2 -> U U @ psi' 2 *)
 Definition p_UDUUpsi2_UUpsi2 : (U @ D @ U @ U @ psi' 2) [>] (U @ U @ psi' 2) :=
   Step DU (U @@@ Hole) sub_UDUUpsi2_UUpsi2 DU_in fact_term_bis_UDUUpsi2 (term_bis_refl (U @ U @ psi' 2)).
 
-(* Four-step reduction psi' 0 ->> U U @ psi' 4 *)
-Definition s_oldpsi0_UUoldpsi4 : oldpsi' 0 ->> (U @ U @ oldpsi' 4) := Cons s_oldpsi0_UDUUoldpsi4 p_UDUUoldpsi4_UUoldpsi4.
+(* Four-step reduction psi ->> U U @ psi' 2 *)
+Definition s_psi_UUpsi2 : psi ->> (U @ U @ psi' 2) := Cons s_psi_UDUUpsi2 p_UDUUpsi2_UUpsi2.
 
-Definition s_psi0_UUpsi2 : psi' 0 ->> (U @ U @ psi' 2) := Cons s_psi0_UDUUpsi2 p_UDUUpsi2_UUpsi2.
+(*
+   All reductions defined so far are really just examples and we now turn
+   to parameterized reductions and eventually build up to an infinite
+   reduction.
 
+   TODO: complete the above examples, or get rid of the incomplete ones, or
+   maybe even add a few.
+*)
+
+(* Substitution for step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
 Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
   match x with
   | 1 => Unt n t
@@ -1510,31 +1083,14 @@ Qed.
 Definition p_DSnUSnt_DnUnt n t : DnUnt (S n) t [>] DnUnt n t :=
   Step DU (Dnc n Hole) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
 
-(* n-step reduction D^n @ U^n @ t -> t *)
+(* n-step reduction D^n @ U^n @ t ->> t *)
 Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
   match n return DnUnt n t ->> t with
   | O   => Nil t
   | S n => snoc (p_DSnUSnt_DnUnt n t) (s_DnUnt_t n t)
   end.
 
-(*
- psin_eq_DD2nU2nUUpsiSn :
- forall n, psi' n = (D @ D2nU2nt n (U @ U @ psi' (S n)))
-
-Lemma psin_eq_DS2nUS2nUpsiSn :
-  forall n,
-    psi' n = DnUnt (S (2 * n)) (U @ (psi' (S n))).
-*)
-
-(* n-step reduction psi n -> U @ psi (S n) *)
-(* TODO: would it be better to write this without program? *)
-Program Definition s_oldpsin_UoldpsiSSn n : oldpsi' n ->> (U @ (oldpsi' (S (S n)))) :=
-  s_DnUnt_t (S n) (U @ oldpsi' (S (S n))).
-Next Obligation.
-symmetry.
-apply oldpsin_eq_DSnUSnUoldpsiSSn.
-Defined.
-
+(* n-step reduction psi n ->> U @ psi (S n) *)
 Program Definition s_psin_UpsiSn n : psi' n ->> (U @ (psi' (S n))) :=
   s_DnUnt_t (S (2 * n)) (U @ psi' (S n)).
 Next Obligation.
@@ -1542,7 +1098,11 @@ symmetry.
 apply psin_eq_DS2nUS2nUpsiSn.
 Defined.
 
-(* Now we slightly adjust these sequences to take place under U^m *)
+(*
+   Now we slightly adjust these sequences to take place under U^m.
+
+   (So the above were still examples.)
+*)
 
 Lemma fact_term_bis_UmDSnUSnt :
   forall (m n : nat) (t : term),
@@ -1596,7 +1156,7 @@ Qed.
 Definition p_UmDSnUSnt_UmDnUnt m n t : Unt m (DnUnt (S n) t) [>] Unt m (DnUnt n t) :=
   Step DU (Unc m (Dnc n Hole)) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
 
-(* n-step reduction U^m @ D^n @ U^n @ t -> U^m t *)
+(* n-step reduction U^m @ D^n @ U^n @ t ->> U^m t *)
 Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
   match n return Unt m (DnUnt n t) ->> Unt m t with
   | O   => Nil (Unt m t)
@@ -1642,12 +1202,23 @@ Fixpoint s_psi_Unpsin n : psi ->> Unt n (psi' n) :=
   end.
 
 (* psi ->> U^n @ psi' n but with Sigma return type including right-most term *)
-Definition limit_s_psi_Unpsin n : {t : term & psi ->> t} :=
+Definition s_psi_Unpsin_sig n : {t : term & psi ->> t} :=
   existT (fun (t : term) => psi ->> t) (Unt n (psi' n)) (s_psi_Unpsin n).
 
-(* Omega-step reduction psi --> UUU... *)
+(* Omega-step reduction psi ->> UUU... *)
 Definition s_psi_repeat_U : psi ->> repeat_U :=
-  Lim repeat_U limit_s_psi_Unpsin.
+  Lim repeat_U s_psi_Unpsin_sig.
+
+(*
+   It should be noted that at this point, nothing has been said yet about
+   well-formedness properties of s_psi_repeat_U. More specifically,
+
+   1) s_psi_Unpsin might not have a well-defined limit
+   2) this limit might have nothing to do with repeat_U
+
+   We address 1 by proving the 'good' property and 2 by proving the 'wf'
+   and convergence properties.
+*)
 
 (* Ugly notation *)
 (*
@@ -1716,7 +1287,7 @@ reflexivity.
 Qed.
 
 Lemma embed_strict_append_Unpsin_USnpsiSn :
-  forall `(r : t ->> Unt n (psi' n)),
+  forall t n (r : t ->> Unt n (psi' n)),
     embed_strict r (append r (s_Unpsin_USnpsiSn n)).
 Proof.
 intro t.
@@ -1801,8 +1372,10 @@ Admitted.
 
 (* psi rewrites to repeat_D *)
 Definition s_psi_repeat_D : psi ->> repeat_D.
+(* TODO: same construction as psi ->> repeat_U *)
 Admitted.
 
+(* TODO: also include wf properties of the reductions *)
 Definition unique_normal_forms :=
   forall t u v,
     t ->> u ->
@@ -1823,4 +1396,221 @@ exact nf_D.
 exact nf_U.
 Qed.
 
-(* TODO: generalize the result *)
+(* TODO: generalize the result, also using weak orthogonality *)
+
+(*
+   What follows is an alternative (actually the original) definition of psi
+   and a proof that it is equal to the new psi used above.
+
+   Indeed, the remaining is only for 'fun'.
+*)
+
+(* D^n U^Sn D^SSn U^SSSn ... *)
+CoFixpoint oldpsi' n : term :=
+  (cofix Dnt (d : nat) :=
+    match d with
+    | O   => (cofix USnt (u : nat) :=
+               match u with
+               | O   => U @ oldpsi' (S (S n))
+               | S u => U @ (USnt u)
+               end) (S n)
+    | S d => D @ (Dnt d)
+    end) (S n).
+
+(* DUUDDDUUUU... *)
+Definition oldpsi := oldpsi' 0.
+
+Lemma UUSnt_eq_USnUt :
+  forall n t,
+    (U @ (cofix USnt (u : nat) : term :=
+            match u with
+            | 0 => t
+            | S u0 => U @ USnt u0
+            end) n)
+    =
+    (cofix USnt (u : nat) : term :=
+       match u with
+       | 0 => U @ t
+       | S u0 => U @ USnt u0
+       end) n.
+Proof.
+induction n; intro t.
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ USnt u0
+      end) 0)).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ USnt u0
+       end) 0)).
+simpl.
+destruct t; reflexivity.
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ USnt u0
+       end) (S n))).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+      match u with
+      | 0 => U @ t
+      | S u0 => U @ USnt u0
+      end) (S n))).
+simpl.
+rewrite IHn with t.
+reflexivity.
+Qed.
+
+(* Terrible lemma that should help proving psi n and oldpsi 2n equal *)
+Lemma zo :
+  forall n t,
+    (cofix D2nDt (d : nat) :=
+      match d with
+      | O   => D @ (cofix U2nt (u : nat) :=
+                 match u with
+                 | O   => t
+                 | S u => U @ U @ (U2nt u)
+                 end) (S n)
+      | S d => D @ D @ (D2nDt d)
+      end) n
+    =
+    (cofix Dnt (d : nat) :=
+      match d with
+      | O   => (cofix USnt (u : nat) :=
+                 match u with
+                 | O   => U @ t
+                 | S u => U @ (USnt u)
+                 end) (S (n + n))
+      | S d => D @ (Dnt d)
+      end) (S (2 * n)).
+Proof.
+induction n; intro t; simpl.
+rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
+      match d with
+      | 0 =>
+          D @
+          (cofix U2nt (u : nat) : term :=
+             match u with
+             | 0 => t
+             | S u0 => U @ U @ U2nt u0
+             end) 1
+      | S d0 => D @ D @ D2nDt d0
+      end) 0)).
+rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
+                match u with
+                | 0 => t
+                | S u0 => U @ U @ U2nt u0
+                end) 1)).
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
+      match d with
+      | 0 =>
+          (cofix USnt (u : nat) : term :=
+             match u with
+             | 0 => U @ t
+             | S u0 => U @ USnt u0
+             end) 1
+      | S d0 => D @ Dnt d0
+      end) 1)).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+             match u with
+             | 0 => U @ t
+             | S u0 => U @ USnt u0
+             end) 1)).
+simpl.
+rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
+       match u with
+       | 0 => t
+       | S u0 => U @ U @ U2nt u0
+       end) 0)).
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
+      match d with
+      | 0 =>
+          U @
+          (cofix USnt (u : nat) : term :=
+             match u with
+             | 0 => U @ t
+             | S u0 => U @ USnt u0
+             end) 0
+      | S d0 => D @ Dnt d0
+      end) 0)).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+                match u with
+                | 0 => U @ t
+                | S u0 => U @ USnt u0
+                end) 0)).
+simpl.
+destruct t; reflexivity.
+rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
+      match d with
+      | 0 =>
+          D @
+          (cofix U2nt (u : nat) : term :=
+             match u with
+             | 0 => t
+             | S u0 => U @ U @ U2nt u0
+             end) (S (S n))
+      | S d0 => D @ D @ D2nDt d0
+      end) (S n))).
+rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
+             match u with
+             | 0 => t
+             | S u0 => U @ U @ U2nt u0
+             end) (S (S n)))).
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
+      match d with
+      | 0 =>
+          (cofix USnt (u : nat) : term :=
+             match u with
+             | 0 => U @ t
+             | S u0 => U @ USnt u0
+             end) (S (S (n + S n)))
+      | S d0 => D @ Dnt d0
+      end) (S (S (n + S (n + 0)))))).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+                match u with
+                | 0 => U @ t
+                | S u0 => U @ USnt u0
+                end) (S (S (n + S n))))).
+simpl.
+rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
+       match d with
+       | 0 =>
+           U @
+           (cofix USnt (u : nat) : term :=
+              match u with
+              | 0 => U @ t
+              | S u0 => U @ USnt u0
+              end) (S (n + S n))
+       | S d0 => D @ Dnt d0
+       end) (S (n + S (n + 0))))).
+rewrite (peek_eq ((cofix USnt (u : nat) : term :=
+                 match u with
+                 | 0 => U @ t
+                 | S u0 => U @ USnt u0
+                 end) (S (n + S n)))).
+simpl.
+rewrite UU2nt_eq_U2nUt_unfolded with (S n) t.
+rewrite UU2nt_eq_U2nUt_unfolded with (S n) (U @ t).
+rewrite IHn with (U @ U @ t).
+rewrite UUSnt_eq_USnUt with (n + S n) (U @ t).
+rewrite UUSnt_eq_USnUt with (n + S n) (U @ U @ t).
+simpl.
+rewrite (eq_sym (plus_n_Sm n n)).
+rewrite (eq_sym (plus_n_Sm n (n + 0))).
+reflexivity.
+Qed.
+
+Lemma psin_eq_oldpsi2n :
+  forall n,
+    psi' n [~] oldpsi' (2 * n).
+Proof.
+(* TODO: should be somehow possible to show, using lemma zo *)
+Admitted.
+
+(* This increases confidence in correctness of psi :) *)
+Lemma psi_eq_oldpsi :
+  psi [~] oldpsi.
+Proof.
+apply psin_eq_oldpsi2n.
+Qed.

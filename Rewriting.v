@@ -794,6 +794,15 @@ Fixpoint wf `(r : s ->> t) : Prop :=
 *)
 
 (*
+   Another idea worth checking: define an order on pref
+   indices ('i' is included in 'inr i' etc) and define
+   weak convergence using this order instead of <= on the
+   sequences.
+   This might be closer to what we would do if the indices
+   were natural numbers.
+*)
+
+(*
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
 (*  good r /\ *)
   match r with
