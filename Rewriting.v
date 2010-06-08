@@ -795,6 +795,7 @@ Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
 
 Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
 
+(* i don't think this is a meaningfull lemma *)
 Lemma pref_snoc :
   forall `(p : s [>] t, r : t ->> u),
     exists i, pref (snoc p r) i = pref (Cons (Nil s) p) (inl _ tt).
@@ -906,6 +907,57 @@ contradict H.
 apply IH.
 Qed.
 
+Lemma snoc_not_nil :
+  forall `(p : s [>] t, r : t ->> s),
+    ~ snoc p r = Nil s.
+Proof.
+destruct r; simpl; discriminate.
+Qed.
+
+Lemma embed_cons_intro' :
+  forall `(r : s ->> t, q : u ->> v, p : t [>] w, o : v [>] z),
+    r <= q ->
+    Cons r p <= Cons q o.
+Proof.
+(* TODO: we need this *)
+Admitted.
+
+(* TODO: tidy *)
+Lemma embed_snoc_elim_weak :
+  forall `(p : s [>] t, r : t ->> u, q : t ->> v),
+    snoc p r <= snoc p q ->
+    r <= q.
+Proof.
+induction r as [u | t u r w o IH | t u f IH]; simpl; intros v q H.
+constructor.
+dependent destruction H.
+induction q.
+destruct i as [[] | []].
+contradict H.
+apply embed_not_snoc_nil.
+destruct i as [[] | i]; simpl in * |- *.
+apply embed_cons_intro.
+apply IH with p.
+assumption.
+apply embed_cons_intro'. (* TODO: this is not proved yet *)
+apply IH with p.
+apply embed_trans with s (fst ($ pref (snoc p q) i $)) (fst (|pref (snoc p q) i|)).
+assumption.
+apply embed_pref_left.
+apply embed_refl.
+destruct i as [n i].
+apply embed_lim_right with n.
+simpl.
+apply H0.
+assumption.
+assumption.
+constructor.
+intro n.
+apply IH with p.
+dependent destruction H.
+apply H.
+Qed.
+
 Lemma embed_snoc_elim :
   forall `(p : s [>] t, r : t ->> u, o : v [>] w, q : w ->> z),
     snoc p r <= snoc o q ->
@@ -962,7 +1014,7 @@ destruct j as [[] | j].
 simpl in H.
 exists (inl _ tt). simpl.
 split.
-apply embed_snoc_elim with p s p.
+apply embed_snoc_elim_weak with p.
 assumption.
 trivial.
 specialize IH with p r j.
