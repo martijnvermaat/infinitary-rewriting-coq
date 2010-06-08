@@ -497,118 +497,18 @@ intro n.
 exact (IH n w z x H2).
 Qed.
 
-(* we can prove this with embed_not_pref_right, but at the moment, we
-   prove embed_not_pref_right using embed_not_cons... *)
+(*
+   This lemma seems very hard to prove directly, but fortunately we can use
+   our results on ordinals with the length of sequences.
+*)
 Lemma embed_not_cons :
   forall `(r : s ->> t, p : t [>] u),
     ~ Cons r p <= r.
 Proof.
-(* TODO: this seems very hard to prove... *)
-induction r as [t | s t r w o IH | s t f IH]; intros u p H.
-contradict H.
-apply embed_not_cons_nil.
-apply IH with w o.
-apply embed_cons_elim with u p w o.
-assumption.
-(* Lim case *)
-Admitted.
-
-Lemma embed_not_cons' :
-  forall `(r : s ->> t, p : t [>] u),
-    ~ Cons r p <= r.
-Proof.
-induction r as [t | s t r w o IH | s t f IH]; intros u p H.
-contradict H.
-apply embed_not_cons_nil.
-apply IH with w o.
-apply embed_cons_elim with u p w o.
-assumption.
-(* Here dependent destruction on H fails (see DependentDestructionTest.v)
-   and we do it manually. *)
-generalize_eqs H.
-destruct H.
-discriminate.
-destruct q.
-destruct i.
-destruct i as [[] |].
-simpl in *|-*.
-(* why does 'do 50 simplify_one_dep_elim.' not work? *)
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-destruct i as [n i].
-simpl in *|-*.
-do 28 simplify_one_dep_elim.
-generalize_eqs H.
-destruct H.
-intros.
-rewrite <- H in H0.
-discriminate.
-intros.
-rewrite <- H0 in H1.
-discriminate.
-do 20 simplify_one_dep_elim.
-assert (p := snd (|pref (|f n|) i|)).
-specialize H with n.
-
-assert (H' := embed_pref_right (|f n|) i H).
-
-(* uhm this of course fails, left term of p does not match *)
-(* specialize IH with n (snd ($ pref (|f n|) i $)) (snd (| pref (|f n|) i |)). *)
-(*
-apply IH with n.
-apply Ord'_le_Succ with i.
-apply H.
-*)
-admit.
-discriminate.
+intros s t r u p H.
+assert (H1 := embed_length H).
+contradict H1.
+apply ord'_le_not_succ.
 Qed.
 
 Lemma embed_not_pref_right_strong :

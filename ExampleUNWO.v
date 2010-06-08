@@ -1365,6 +1365,15 @@ Proof.
 split.
 apply weakly_convergent_s_psi_Unpsin.
 intro d.
+exists d.
+intro j.
+intro H.
+simpl in H.
+simpl.
+destruct j as [m j].
+simpl in j.
+
+
 (*
 exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) (inl _ tt)).
 *)
