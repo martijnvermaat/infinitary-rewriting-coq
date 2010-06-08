@@ -907,23 +907,16 @@ contradict H.
 apply IH.
 Qed.
 
-Lemma snoc_not_nil :
-  forall `(p : s [>] t, r : t ->> s),
-    ~ snoc p r = Nil s.
+Lemma embed_snoc_elim_strong :
+  forall `(p : s [>] t, r : t ->> u, o : v [>] w, q : w ->> z),
+    snoc p r <= snoc o q ->
+    r <= q.
 Proof.
-destruct r; simpl; discriminate.
-Qed.
-
-Lemma embed_cons_intro' :
-  forall `(r : s ->> t, q : u ->> v, p : t [>] w, o : v [>] z),
-    r <= q ->
-    Cons r p <= Cons q o.
-Proof.
-(* TODO: we need this *)
+(* TODO: not sure if this can be proved, not even sure if it is true... *)
 Admitted.
 
 (* TODO: tidy *)
-Lemma embed_snoc_elim_weak :
+Lemma embed_snoc_elim :
   forall `(p : s [>] t, r : t ->> u, q : t ->> v),
     snoc p r <= snoc p q ->
     r <= q.
@@ -939,12 +932,11 @@ destruct i as [[] | i]; simpl in * |- *.
 apply embed_cons_intro.
 apply IH with p.
 assumption.
-apply embed_cons_intro'. (* TODO: this is not proved yet *)
-apply IH with p.
-apply embed_trans with s (fst ($ pref (snoc p q) i $)) (fst (|pref (snoc p q) i|)).
+fold snoc_rec in i.
+apply embed_cons_right.
+apply IHq.
 assumption.
-apply embed_pref_left.
-apply embed_refl.
+assumption.
 destruct i as [n i].
 apply embed_lim_right with n.
 simpl.
@@ -957,15 +949,6 @@ apply IH with p.
 dependent destruction H.
 apply H.
 Qed.
-
-Lemma embed_snoc_elim :
-  forall `(p : s [>] t, r : t ->> u, o : v [>] w, q : w ->> z),
-    snoc p r <= snoc o q ->
-    r <= q.
-Proof.
-(* TODO: not sure if this can be proved, but it is important! *)
-(* Not even sure if it is true... *)
-Admitted.
 
 Lemma snoc_finite :
   forall `(p : s [>] t, r : t ->> u),
@@ -1014,7 +997,7 @@ destruct j as [[] | j].
 simpl in H.
 exists (inl _ tt). simpl.
 split.
-apply embed_snoc_elim_weak with p.
+apply embed_snoc_elim with p.
 assumption.
 trivial.
 specialize IH with p r j.
