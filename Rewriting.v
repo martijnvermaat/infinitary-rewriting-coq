@@ -1193,6 +1193,22 @@ apply H2.
 assumption.
 Qed.
 
+Lemma pref_append :
+  forall `(r : s ->> t, q : t ->> u, i : pref_type r),
+    exists j : pref_type (append r q),
+     pref (append r q) j = pref r i.
+Proof.
+induction q as [u | t u q v p IH | t u f IH]; simpl; intro i.
+exists i.
+reflexivity.
+destruct (IH r i) as [j H].
+exists (inr _ j).
+assumption.
+destruct (IH 0 r i) as [j H].
+exists (existT (fun n => pref_type (append r (|f n|))) 0 j).
+assumption.
+Qed.
+
 (* can we use this in append_weakly_convergent? *)
 Lemma sdfsfsdf :
   forall d x `(r : s ->> t, q : t ->> u) (i : pref_type (append r q)),
