@@ -1376,6 +1376,18 @@ rewrite <- H1.
 reflexivity.
 Qed.
 
+Lemma sfddsf :
+  forall n m,
+    m < n ->
+    exists i,
+      JMeq (fst (projT2 (pref (s_psi_Unpsin n) i))) (s_psi_Unpsin m).
+Proof.
+intros n m H.
+induction H as [| n H IH].
+Admitted.
+
+Require Import Lt.
+
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
@@ -1386,20 +1398,35 @@ intro d.
 exists d.
 intros [n i] H.
 simpl in * |- *.
+destruct (le_or_lt n d) as [N | N].
+destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
+assumption.
+rewrite <- H1 in H.
+contradict H.
+apply embed_not_pref_right.
+
+
+(*
+split.
+apply weakly_convergent_s_psi_Unpsin.
+intro d.
+exists d.
+intros [n i] H.
+simpl in * |- *.
 induction d as [| d IH].
 constructor.
 simpl in * |- *.
-assert (M : ~ n <= d). (* TODO: some sort of test, this should be the absurd case *)
-intro M.
+destruct (le_or_lt n d) as [N | N].
 destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
 assumption.
 rewrite <- H1 in H.
 contradict H.
 apply embed_not_append_pref_left.
-
-
-(*
-exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) (inl _ tt)).
+unfold lt in N.
+induction N as [| n N IHn].
+contradict H.
+apply embed_not_pref_right.
+simpl in *|-*.
 *)
 Admitted.
 
