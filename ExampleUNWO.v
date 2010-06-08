@@ -1358,6 +1358,24 @@ apply weakly_convergent_finite.
 apply finite_s_psi_Unpsin.
 Qed.
 
+Lemma pref_s_psi_Unpsin :
+  forall n m i,
+    n <= m ->
+    exists j,
+      pref (s_psi_Unpsin m) j = pref (s_psi_Unpsin n) i.
+Proof.
+intros n m i H.
+induction H as [| m H IH].
+exists i.
+reflexivity.
+destruct IH as [j IH].
+destruct (pref_append (s_psi_Unpsin m) (s_Unpsin_USnpsiSn m) j) as [k H1].
+exists k.
+rewrite <- IH.
+rewrite <- H1.
+reflexivity.
+Qed.
+
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
@@ -1366,12 +1384,18 @@ split.
 apply weakly_convergent_s_psi_Unpsin.
 intro d.
 exists d.
-intro j.
-intro H.
-simpl in H.
-simpl.
-destruct j as [m j].
-simpl in j.
+intros [n i] H.
+simpl in * |- *.
+induction d as [| d IH].
+constructor.
+simpl in * |- *.
+assert (M : ~ n <= d). (* TODO: some sort of test, this should be the absurd case *)
+intro M.
+destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
+assumption.
+rewrite <- H1 in H.
+contradict H.
+apply embed_not_append_pref_left.
 
 
 (*
