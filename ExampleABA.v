@@ -279,61 +279,33 @@ Lemma sfdsf :
     ($ pref (s_A_nBA (S n)) i $) = (B @ ($ pref (s_A_nBA n) i $)).
 *)
 
+Lemma finite_s_A_nBA :
+  forall n : nat, finite (s_A_nBA n).
+Proof.
+intro n.
+induction n as [| n IH]; simpl; trivial.
+Qed.
+
+Lemma weakly_convergent_s_A_nBA :
+  forall n : nat, weakly_convergent (s_A_nBA n).
+Proof.
+intro n.
+simpl.
+apply weakly_convergent_finite.
+apply finite_s_A_nBA.
+Qed.
+
 (* This reduction is weakly convergent *)
 (* TODO: generalize proofs like these as much as possible in the general theory *)
 Lemma weakly_convergent_s_A_repeat_B :
   weakly_convergent s_A_repeat_B.
 Proof.
-(*
 split.
-exact good_s_A_repeat_B.
-split; simpl.
-induction n.
-simpl; split; constructor.
-split.
-simpl.
-admit. (* by IHn *)
-assumption.
-
+exact weakly_convergent_s_A_nBA.
 intro d.
-exists (existT (fun n:nat => pref_type (s_A_nBA n)) (S d) (inl _ tt)); simpl.
-
-induction d.
-constructor.
-intros [n i] H.
-(* we have to look one step further back than i here *)
-assert (IH := IHd (existT (fun n:nat => pref_type (s_A_nBA n)) n i) (embed_cons_left H)); clear IHd.
-admit.
-*)
-(*
-split.
-exact good_s_A_repeat_B.
-split; simpl.
-admit. (* by induction on n *)
-intro d.
-exists (existT (fun n:nat => pref_type (s_A_nBA n)) (S d) (inl _ tt)).
-intros j H.
-*)
-(*
-induction H.
-induction d.
-apply teut_0.
-assert (A1 : repeat_B = (B @ repeat_B)).
-admit. (* Rewrite term_bis equality *)
-rewrite A1.
-assert (j : pref_type (s_A_nBA (S d))).
-admit. (* Assume we have the 'right' one, i.e. equivalent of i *)
-assert (A2 : ($ pref (s_A_nBA (S (S d))) i $) = (B @ ($ pref (s_A_nBA (S d)) j $))).
-admit. (* This should be easy, assuming the right j *)
-rewrite A2.
-apply teut_fun.
-intro i0.
-dependent destruction i0.
-apply IHd.
-admit. (* This should somehow follow from what j is *)
-dependent destruction i0.
-admit. (* Maybe induction H1; induction d was not the right choice *)
-*)
+exists d.
+intros [n j] H.
+simpl in * |- *.
 Admitted.
 
 (* This reduction is weakly convergent *)

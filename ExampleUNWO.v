@@ -770,7 +770,7 @@ Admitted.
 
 (* Reductions *)
 Notation Step := (Step UNWO_trs).
-Notation Nil := (Nil UNWO_trs).
+Notation Nil' := (Nil UNWO_trs).
 
 Notation "s [>] t" := (step UNWO_trs s t) (at level 40).
 Notation "s ->> t" := (sequence UNWO_trs s t) (at level 40).
@@ -834,7 +834,7 @@ contradict H.
 Qed.
 
 (* Zero-step reduction psi ->> psi *)
-Definition s_psi_psi : psi ->> psi := Nil psi.
+Definition s_psi_psi : psi ->> psi := Nil' psi.
 
 (* Substitution for step psi -> U @ psi' 1 *)
 Definition sub_psi_Upsi1 (x : X) : term :=
@@ -1086,7 +1086,7 @@ Definition p_DSnUSnt_DnUnt n t : DnUnt (S n) t [>] DnUnt n t :=
 (* n-step reduction D^n @ U^n @ t ->> t *)
 Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
   match n return DnUnt n t ->> t with
-  | O   => Nil t
+  | O   => Nil' t
   | S n => snoc (p_DSnUSnt_DnUnt n t) (s_DnUnt_t n t)
   end.
 
@@ -1159,7 +1159,7 @@ Definition p_UmDSnUSnt_UmDnUnt m n t : Unt m (DnUnt (S n) t) [>] Unt m (DnUnt n 
 (* n-step reduction U^m @ D^n @ U^n @ t ->> U^m t *)
 Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
   match n return Unt m (DnUnt n t) ->> Unt m t with
-  | O   => Nil (Unt m t)
+  | O   => Nil' (Unt m t)
   | S n => snoc (p_UmDSnUSnt_UmDnUnt m n t) (s_UmDnUnt_Umt m n t)
   end.
 
@@ -1197,7 +1197,7 @@ Defined.
 (* psi ->> U^n @ psi' n *)
 Fixpoint s_psi_Unpsin n : psi ->> Unt n (psi' n) :=
   match n return psi ->> Unt n (psi' n) with
-  | O   => Nil psi
+  | O   => Nil' psi
   | S n => append (s_psi_Unpsin n) (s_Unpsin_USnpsiSn n)
   end.
 
@@ -1262,7 +1262,7 @@ Lemma s_UmDSnUSnt_Umt_is_cons :
 Proof.
 induction n; intro t; simpl.
 exists (Unt m (DnUnt 1 t)).
-exists (Nil (Unt m (DnUnt 1 t))).
+exists (Nil' (Unt m (DnUnt 1 t))).
 exists (p_UmDSnUSnt_UmDnUnt m 0 t).
 reflexivity.
 simpl in IHn.
@@ -1376,15 +1376,90 @@ rewrite <- H1.
 reflexivity.
 Qed.
 
-Lemma sfddsf :
-  forall n m,
-    m < n ->
-    exists i,
-      JMeq (fst (projT2 (pref (s_psi_Unpsin n) i))) (s_psi_Unpsin m).
-Proof.
-intros n m H.
-induction H as [| n H IH].
-Admitted.
+(* this is just ridiculous *)
+Lemma diei : forall d, exists i : pref_type (s_psi_Unpsin (S d)), exists t, JMeq i (inl t tt).
+intro d.
+simpl.
+generalize (s_psi_Unpsin d).
+induction d as [| d IH]; simpl;
+unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
+exists (inl _ tt).
+exists (pref_type r).
+reflexivity.
+revert r.
+rewrite (plus_SnO d).
+intro r.
+destruct (s_UmDSnUSnt_Umt_is_cons (S d) (d + d) (U @ psi' (S (S d)))) as [s [q [p H]]].
+rewrite H.
+exists (inl _ tt).
+simpl.
+exists ((fix pref_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
+         Type :=
+           match r0 with
+           | Nil _ => False
+           | Cons s1 t1 r1 _ _ => (unit + pref_type s1 t1 r1)%type
+           | Lim s1 _ f =>
+               {n : nat & pref_type s1 (projT1 (f n)) (projT2 (f n))}
+           end) psi s
+          ((fix append_rec (s0 t0 : term) (u : term) (q0 : t0 ->> u) {struct q0} :
+              s0 ->> t0 -> s0 ->> u :=
+              match
+                q0 in (sequence _ t1 u0) return (s0 ->> t1 -> s0 ->> u0)
+              with
+              | Nil t1 => fun r0 : s0 ->> t1 => r0
+              | Cons s1 t1 q1 u0 p0 =>
+                  fun r0 : s0 ->> s1 => Cons (append_rec s0 s1 t1 q1 r0) p0
+              | Lim s1 u0 f =>
+                  fun r0 : s0 ->> s1 =>
+                  Lim u0
+                    (fun o : nat =>
+                     existT (fun u1 : term => s0 ->> u1)
+                       (projT1 (f o))
+                       (append_rec s0 s1 (projT1 (f o)) (projT2 (f o)) r0))
+              end) psi
+             (U @ Unt d (DnUnt (S (S (S (d + d)))) (U @ psi' (S (S d))))) s
+             ((fix snoc_rec (s0 t0 : term) (u : term) (r0 : t0 ->> u) {struct r0} :
+                 s0[>]t0 -> s0 ->> u :=
+                 match
+                   r0 in (sequence _ t1 u0) return (s0[>]t1 -> s0 ->> u0)
+                 with
+                 | Nil t1 => fun p0 : s0[>]t1 => Cons (Nil' s0) p0
+                 | Cons s1 t1 q0 u0 o =>
+                     fun p0 : s0[>]s1 => Cons (snoc_rec s0 s1 t1 q0 p0) o
+                 | Lim s1 u0 f =>
+                     fun p0 : s0[>]s1 =>
+                     Lim u0
+                       (fun o : nat =>
+                        existT (fun u1 : term => s0 ->> u1)
+                          (projT1 (f o))
+                          (snoc_rec s0 s1 (projT1 (f o)) (projT2 (f o)) p0))
+                 end)
+                (U @ Unt d (DnUnt (S (S (S (d + d)))) (U @ psi' (S (S d)))))
+                (U @ Unt d (DnUnt (S (S (d + d))) (U @ psi' (S (S d))))) s
+                ((fix snoc_rec (s0 t0 : term) (u : term) (r0 : t0 ->> u) {struct r0} :
+                    s0[>]t0 -> s0 ->> u :=
+                    match
+                      r0 in (sequence _ t1 u0) return (s0[>]t1 -> s0 ->> u0)
+                    with
+                    | Nil t1 => fun p0 : s0[>]t1 => Cons (Nil' s0) p0
+                    | Cons s1 t1 q0 u0 o =>
+                        fun p0 : s0[>]s1 => Cons (snoc_rec s0 s1 t1 q0 p0) o
+                    | Lim s1 u0 f =>
+                        fun p0 : s0[>]s1 =>
+                        Lim u0
+                          (fun o : nat =>
+                           existT (fun u1 : term => s0 ->> u1)
+                             (projT1 (f o))
+                             (snoc_rec s0 s1 (projT1 (f o)) (projT2 (f o)) p0))
+                    end)
+                   (U @ Unt d (DnUnt (S (S (d + d))) (U @ psi' (S (S d)))))
+                   (U @ Unt d (DnUnt (S (d + d)) (U @ psi' (S (S d))))) s q
+                   (p_UmDSnUSnt_UmDnUnt (S d) (S (d + d))
+                      (U @ psi' (S (S d)))))
+                (p_UmDSnUSnt_UmDnUnt (S d) (S (S (d + d)))
+                   (U @ psi' (S (S d))))) r)).
+reflexivity.
+Qed.
 
 Require Import Lt.
 
@@ -1392,21 +1467,6 @@ Require Import Lt.
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
 Proof.
-split.
-apply weakly_convergent_s_psi_Unpsin.
-intro d.
-exists d.
-intros [n i] H.
-simpl in * |- *.
-destruct (le_or_lt n d) as [N | N].
-destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
-assumption.
-rewrite <- H1 in H.
-contradict H.
-apply embed_not_pref_right.
-
-
-(*
 split.
 apply weakly_convergent_s_psi_Unpsin.
 intro d.
@@ -1427,8 +1487,99 @@ induction N as [| n N IHn].
 contradict H.
 apply embed_not_pref_right.
 simpl in *|-*.
+
+(*
+exists d.
+intros [n i] H.
+simpl in * |- *.
+destruct (le_or_lt n d) as [N | N].
+destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
+assumption.
+rewrite <- H1 in H.
+contradict H.
+apply embed_not_pref_right.
 *)
 Admitted.
+
+(* This reduction is weakly convergent *)
+(* Version for pref_type lim instead of nat *)
+(*
+Lemma weakly_convergent_s_psi_repeat_U :
+  weakly_convergent s_psi_repeat_U.
+Proof.
+split.
+apply weakly_convergent_s_psi_Unpsin.
+intro d.
+simpl.
+destruct (diei d) as [i [t Ht]].
+exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) i).
+intros [n j] H.
+simpl in * |- *.
+
+
+split.
+apply weakly_convergent_s_psi_Unpsin.
+intro d.
+simpl.
+assert (M : finite (s_psi_Unpsin (S d))).
+apply finite_s_psi_Unpsin.
+generalize_eqs M.
+destruct r.
+admit. (* TODO: absurd case *)
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+simplify_one_dep_elim.
+
+(* TODO: how can we insert inl_tt here and show it has the right type later??? *)
+(* maybe use refine? have a look at a proof term for 'exist' tactic... *)
+
+assert (i : pref_type (s_psi_Unpsin (S d))).
+simpl.
+rewrite <- x.
+exact (inl (pref_type r) tt).
+
+
+simpl.
+unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+
+exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) (inl _ tt)).
+*)
 
 (* psi rewrites to repeat_D *)
 Definition s_psi_repeat_D : psi ->> repeat_D.
