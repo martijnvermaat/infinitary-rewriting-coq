@@ -1489,6 +1489,8 @@ exists d.
 intros [n i] H1.
 simpl in * |- *.
 assert (H2 := embed_s_psi_Unpsin_pref_lt d n i H1).
+induction n as [| n IHn].
+inversion H2.
 (*Require Import Compare.
 destruct (discrete_nat d n N) as [N1 | [m N1]].*)
 assert (H3 : exists m, S (d + m) = n).
@@ -1499,16 +1501,19 @@ revert i H1.
 rewrite <- H3.
 clear H3.
 intros i H1.
-induction d as [| d IHd].
-constructor.
 induction m as [| m IHm].
 simpl in * |- *.
 assert (J : forall n, n + 0 = n).
 admit. (* TODO *)
-revert i H1 IHd.
+revert i H1.
 rewrite (J d).
 clear J.
-intros i H1 IHd.
+intros i H1.
+induction d as [| d IHd].
+constructor.
+simpl.
+
+
 
 
 (*
