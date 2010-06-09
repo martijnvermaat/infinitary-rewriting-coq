@@ -1478,6 +1478,31 @@ apply embed_not_pref_right.
 assumption.
 Qed.
 
+Lemma kkk :
+  forall d n i,
+    term_eq_up_to d (Unt n (psi' n)) repeat_U ->
+    embed (s_psi_Unpsin n) (fst (projT2 (pref (s_psi_Unpsin (S n)) i))) ->
+    term_eq_up_to d (fst (projT1 (pref (s_psi_Unpsin (S n)) i))) repeat_U.
+Proof.
+induction n as [| n IH]; simpl; intros i H1 H2.
+clear H2.
+unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+Admitted.
+
+Program Definition sdfds :
+  forall d n i,
+    embed (s_psi_Unpsin d) (fst (projT2 (pref (s_psi_Unpsin n) i))) ->
+    exists j, fst (projT2 (pref (fst (projT2 (pref (s_psi_Unpsin n) i))) j)) = s_psi_Unpsin d := _.
+Next Obligation.
+destruct (pref_trans (s_psi_Unpsin n) i j) as [k H1].
+rewrite <- H1.
+(* This cannot be proved from this context *)
+admit.
+Defined.
+Next Obligation.
+admit.
+Defined.
+
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
@@ -1489,17 +1514,20 @@ exists d.
 intros [n i] H1.
 simpl in * |- *.
 assert (H2 := embed_s_psi_Unpsin_pref_lt d n i H1).
+assert (H3 := term_eq_up_to_n_Unt_repeat_U d (psi' d)). (* right side of s_psi_Unpsin d *)
+
+
 induction n as [| n IHn].
 inversion H2.
 (*Require Import Compare.
 destruct (discrete_nat d n N) as [N1 | [m N1]].*)
-assert (H3 : exists m, S (d + m) = n).
+assert (H4 : exists m, S (d + m) = n).
 admit. (* TODO *)
 clear H2.
-destruct H3 as [m H3].
+destruct H4 as [m H4].
 revert i H1.
-rewrite <- H3.
-clear H3.
+rewrite <- H4.
+clear H4.
 intros i H1.
 induction m as [| m IHm].
 simpl in * |- *.
