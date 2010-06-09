@@ -1463,6 +1463,21 @@ Qed.
 
 Require Import Lt.
 
+Lemma embed_s_psi_Unpsin_pref_lt :
+  forall d n i,
+    embed (s_psi_Unpsin d) (fst (projT2 (pref (s_psi_Unpsin n) i))) ->
+    d < n.
+Proof.
+intros d n i H.
+destruct (le_or_lt n d) as [N | N].
+destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
+assumption.
+rewrite <- H1 in H.
+contradict H.
+apply embed_not_pref_right.
+assumption.
+Qed.
+
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
@@ -1471,22 +1486,30 @@ split.
 apply weakly_convergent_s_psi_Unpsin.
 intro d.
 exists d.
-intros [n i] H.
+intros [n i] H1.
 simpl in * |- *.
-induction d as [| d IH].
+assert (H2 := embed_s_psi_Unpsin_pref_lt d n i H1).
+(*Require Import Compare.
+destruct (discrete_nat d n N) as [N1 | [m N1]].*)
+assert (H3 : exists m, S (d + m) = n).
+admit. (* TODO *)
+clear H2.
+destruct H3 as [m H3].
+revert i H1.
+rewrite <- H3.
+clear H3.
+intros i H1.
+induction d as [| d IHd].
 constructor.
+induction m as [| m IHm].
 simpl in * |- *.
-destruct (le_or_lt n d) as [N | N].
-destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
-assumption.
-rewrite <- H1 in H.
-contradict H.
-apply embed_not_append_pref_left.
-unfold lt in N.
-induction N as [| n N IHn].
-contradict H.
-apply embed_not_pref_right.
-simpl in *|-*.
+assert (J : forall n, n + 0 = n).
+admit. (* TODO *)
+revert i H1 IHd.
+rewrite (J d).
+clear J.
+intros i H1 IHd.
+
 
 (*
 exists d.
