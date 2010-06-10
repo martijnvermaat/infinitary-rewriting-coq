@@ -652,6 +652,28 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
       (depth (snd (| pref r j |)) > d)%nat
   end.
 
+Fixpoint all_terms_eq_up_to d `(r : s ->> t) u : Prop :=
+  match r with
+  | Nil s          => term_eq_up_to d s u
+  | Cons _ _ q t _ => all_terms_eq_up_to d q u /\ term_eq_up_to d t u
+  | Lim _ t f      =>
+    (forall n, all_terms_eq_up_to d (|f n|) u) /\ term_eq_up_to d t u
+  end.
+
+Lemma all_terms_eq_up_to_0 :
+  forall `(r : s ->> t, u : term),
+    all_terms_eq_up_to 0 r u.
+Proof.
+induction r as [t | s t r v p IH | s t f IH]; simpl; intro q.
+constructor.
+split.
+apply IH.
+constructor.
+split.
+intro n; apply IH.
+constructor.
+Qed.
+
 (*
    Another idea worth checking: define an order on pref
    indices ('i' is included in 'inr i' etc) and define
@@ -794,6 +816,27 @@ Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
   end.
 
 Definition snoc `(p : s [>] t, r : t ->> u) : s ->> u := snoc_rec r p.
+
+Lemma all_terms_eq_up_to_snoc :
+  forall d `(p : s [>] t, r : t ->> u, v : term),
+    term_eq_up_to d s v ->
+    all_terms_eq_up_to d r v ->
+    all_terms_eq_up_to d (snoc p r) v.
+Proof.
+induction r as [u | t u r w o IH | t u f IH]; simpl; intros v Hs Hr.
+split; assumption.
+split.
+apply IH.
+assumption.
+apply Hr.
+apply Hr.
+split.
+intro n.
+apply IH.
+assumption.
+apply Hr.
+apply Hr.
+Qed.
 
 (* i don't think this is a meaningfull lemma *)
 Lemma pref_snoc :

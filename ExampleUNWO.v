@@ -1503,6 +1503,29 @@ Next Obligation.
 admit.
 Defined.
 
+Lemma all_terms_eq_up_to_d_s_UdDnUnt_Udt_repeat_U :
+  forall d n t,
+    all_terms_eq_up_to d (s_UmDnUnt_Umt d n t) repeat_U.
+Proof.
+intros d n t.
+induction n as [| n IH]; simpl.
+apply term_eq_up_to_n_Unt_repeat_U.
+apply all_terms_eq_up_to_snoc.
+apply term_eq_up_to_n_Unt_repeat_U.
+apply IH.
+Qed.
+
+Lemma all_terms_eq_up_to_d_s_Udpsid_USdpsiSd_repeat_U :
+  forall d,
+    all_terms_eq_up_to d (s_Unpsin_USnpsiSn d) repeat_U.
+Proof.
+intro d.
+unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+apply all_terms_eq_up_to_snoc.
+apply term_eq_up_to_n_Unt_repeat_U.
+apply all_terms_eq_up_to_d_s_UdDnUnt_Udt_repeat_U.
+Qed.
+
 (* This reduction is weakly convergent *)
 Lemma weakly_convergent_s_psi_repeat_U :
   weakly_convergent s_psi_repeat_U.
