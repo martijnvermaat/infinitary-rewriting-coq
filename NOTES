@@ -3,6 +3,8 @@ COMPILATION
 coq_makefile -no-install -I . *.v -o Makefile
 make
 
+coqdoc --latex -s -g --coqlib http://coq.inria.fr/stdlib/ -d coqdoc *.v
+
 
 CODING
 
