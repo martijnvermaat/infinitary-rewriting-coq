@@ -7,7 +7,7 @@ Require Export FiniteTerm.
 Require Export Term.
 Require Export Substitution.
 Require Export Context.
-Require Export PreOrdinal.
+Require Export Ordinal.
 Require Export TermEquality.
 
 (* TODO: figure out what to import exactly (Equality imports PI axiom) *)
@@ -156,6 +156,8 @@ Hypothesis H3 :
     (forall n, P (|f n|) ) ->
     P (Lim t f).
 
+(* TODO: scope for notations *)
+(* TODO: is Lim the best constructor name (compare Limit in ord)? *)
 Fixpoint sequence_rect `(r : s ->> t) : P r :=
   match r return P r with
   | Nil t          => H1 t
@@ -174,7 +176,7 @@ Definition cons_term_bis `(r : s ->> t, p : u [>] v) : u [~] t -> s ->> v :=
       fun H => Cons r (Step rul c sub Hr (term_bis_trans Hs H) Ht)
   end.
 
-Fixpoint length `(r : s ->> t) : ord' :=
+Fixpoint length `(r : s ->> t) : ord :=
   match r with
   | Nil _          => Zero
   | Cons _ _ r _ _ => Succ (length r)
@@ -320,16 +322,14 @@ where "r <= q" := (embed r q).
 Definition embed_strict `(r : s ->> t, q : u ->> v) := exists i, r <= fst (| pref q i |).
 Infix " < " := embed_strict (no associativity, at level 70).
 
-Open Scope ord'_scope.
-
 Lemma embed_length :
   forall `(r : s ->> t, q : u ->> v),
-    r <= q -> length r <=' length q.
+    r <= q -> (length r <= length q)%ord.
 Proof.
 induction r as [t | s t r w p IH | s t f IH]; simpl; intros u v q H.
 constructor.
 dependent destruction H.
-apply Ord'_le_Succ with (pref_type_as_pred_type i).
+apply Ord_le_Succ with (pref_type_as_pred_type i).
 rewrite <- pref_type_as_pred_type_ok.
 apply (IH u (fst ($ pref q i $)) (fst (| pref q i |))).
 assumption.
@@ -508,7 +508,7 @@ Proof.
 intros s t r u p H.
 assert (H1 := embed_length H).
 contradict H1.
-apply ord'_le_not_succ.
+apply ord_le_not_succ.
 Qed.
 
 Lemma embed_not_pref_right_strong :
@@ -764,7 +764,7 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   end.
 *)
 
-(* This might be usefull sometimes *)
+(* TODO: maybe it's cleaner to define this via ordinal length *)
 Fixpoint finite `(r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
@@ -838,7 +838,7 @@ apply Hr.
 apply Hr.
 Qed.
 
-(* i don't think this is a meaningfull lemma *)
+(* TODO: i don't think this is a meaningfull lemma *)
 Lemma pref_snoc :
   forall `(p : s [>] t, r : t ->> u),
     exists i, pref (snoc p r) i = pref (Cons (Nil s) p) (inl _ tt).
@@ -1110,16 +1110,16 @@ Definition append `(r : s ->> t, q : t ->> u) : s ->> u := append_rec q r.
 
 Lemma append_length :
   forall `(r : s ->> t, q : t ->> u),
-    length (append r q) ==' add (length r) (length q).
+    (length (append r q) == add (length r) (length q)) % ord.
 Proof.
 induction q as [u | t u q v p IH | t u f IH]; simpl.
-apply ord'_eq_refl.
+apply ord_eq_refl.
 split.
-apply Ord'_le_Succ with (inl (pred_type (add (length r) (length q))) tt).
+apply Ord_le_Succ with (inl (pred_type (add (length r) (length q))) tt).
 apply (IH r).
-apply Ord'_le_Succ with (inl (pred_type (length (append r q))) tt).
+apply Ord_le_Succ with (inl (pred_type (length (append r q))) tt).
 apply (IH r).
-split; constructor; intro n; apply ord'_le_limit_right with n; apply (IH n r).
+split; constructor; intro n; apply ord_le_limit_right with n; apply (IH n r).
 Qed.
 
 Lemma embed_append_right :
@@ -1363,7 +1363,7 @@ Lemma compression :
     strongly_convergent r ->
     exists r' : s ->> t,
       strongly_convergent r' /\
-      length r' <=' Omega.
+      (length r' <= omega)%ord.
 Proof.
 intros LL s t r SC.
 induction r as [t | s t r u p IH | s t f IH].
@@ -1372,16 +1372,16 @@ induction r as [t | s t r u p IH | s t f IH].
 exists (Nil t).
 split.
 trivial.
-apply Ord'_le_Zero.
+apply Ord_le_Zero.
 
 (* Case (Cons r p) *)
 assert (IH' := (IH (proj2 SC))); clear r SC IH.
 destruct IH' as [r [SC IH]].
-destruct (ord'_le_omega_elim IH) as [[i H] | H]; clear IH.
+destruct (ord_le_omega_elim IH) as [[i H] | H]; clear IH.
 exists (Cons r p).
 split.
 admit. (* apply SCr'. *)
-apply Ord'_le_Succ with i.
+apply Ord_le_Succ with i.
 assumption.
 admit.
 

@@ -314,51 +314,53 @@ Lemma strongly_convergent_s_A_repeat_B :
 Proof.
 Admitted.
 
-Open Scope ord'_scope.
+Open Scope ord_scope.
 
 (* Compression lemma is meaningless for this reduction, but
    maybe we should show just that. *)
 Lemma length_s_A_repeat_B_le_omega :
-  length s_A_repeat_B <=' Omega.
+  length s_A_repeat_B <= omega.
 Proof.
 simpl.
 constructor.
 intro n.
-apply ord'_le_pred_right with (existT (fun (n : nat) => pred_type n) (S n) (inl _ tt)).
+apply ord_le_pred_right with (existT (fun (n : nat) => pred_type n) (S n) (inl _ tt)).
 simpl.
 induction n as [| n IH]; simpl.
 constructor.
-apply Ord'_le_Succ with (inl (pred_type n) tt).
+apply Ord_le_Succ with (inl (pred_type n) tt).
 assumption.
 Qed.
 
 (* Let's also show the other direction *)
 Lemma omega_le_length_s_A_repeat_B :
-  Omega <=' length s_A_repeat_B.
+  omega <= length s_A_repeat_B.
 Proof.
 simpl.
 constructor.
 intro n.
-apply ord'_le_pred_right with (existT (fun (n : nat) => pred_type (length (s_A_nBA n))) (S n) (inl _ tt)).
+apply ord_le_pred_right with (existT (fun (n : nat) => pred_type (length (s_A_nBA n))) (S n) (inl _ tt)).
 simpl.
 induction n as [| n IH]; simpl.
 constructor.
-apply Ord'_le_Succ with (inl (pred_type (length (s_A_nBA n))) tt).
+apply Ord_le_Succ with (inl (pred_type (length (s_A_nBA n))) tt).
 assumption.
 Qed.
 
 (* Just because both directions are so similar *)
 Lemma length_s_A_repeat_B_eq_omega :
-  length s_A_repeat_B ==' Omega.
+  length s_A_repeat_B == omega.
 Proof.
 split; simpl;
   constructor;
   intro n;
-  [ apply ord'_le_pred_right with (existT (fun (n : nat) => pred_type n) (S n) (inl _ tt))
-  | apply ord'_le_pred_right with (existT (fun (n : nat) => pred_type (length (s_A_nBA n))) (S n) (inl _ tt)) ];
+  [ apply ord_le_pred_right with (existT (fun (n : nat) => pred_type n) (S n) (inl _ tt))
+  | apply ord_le_pred_right with (existT (fun (n : nat) => pred_type (length (s_A_nBA n))) (S n) (inl _ tt)) ];
   induction n as [| n IH]; simpl;
   [ constructor
-  | apply Ord'_le_Succ with (inl (pred_type n) tt); assumption
+  | apply Ord_le_Succ with (inl (pred_type n) tt); assumption
   | constructor
-  | apply Ord'_le_Succ with (inl (pred_type (length (s_A_nBA n))) tt); assumption ].
+  | apply Ord_le_Succ with (inl (pred_type (length (s_A_nBA n))) tt); assumption ].
 Qed.
+
+Close Scope ord_scope.
