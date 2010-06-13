@@ -38,23 +38,26 @@ Fixpoint pred_type (alpha : ord) : Set :=
   | Limit f    => { n : nat & pred_type (f n) }
   end.
 
+Reserved Notation "alpha [ i ]" (at level 60).
+
 Fixpoint pred (alpha : ord) : pred_type alpha -> ord :=
   match alpha with
   | Zero       => False_rect _
   | Succ alpha => fun i => match i with
                            | inl tt => alpha
-                           | inr t  => pred alpha t
+                           | inr t  => alpha[t]
                            end
   | Limit f    => fun i => match i with
-                           | existT n t => pred (f n) t
+                           | existT n t => (f n)[t]
                            end
-  end.
+  end
+where "alpha [ i ]" := (pred alpha i) : ord_scope.
 
 Inductive ord_le : ord -> ord -> Prop :=
   | Ord_le_Zero  : forall alpha,
                       Zero <= alpha
   | Ord_le_Succ  : forall alpha beta i,
-                      alpha <= pred beta i ->
+                      alpha <= beta[i] ->
                       Succ alpha <= beta
   | Ord_le_Limit : forall f beta,
                       (forall n, f n <= beta) ->
@@ -63,7 +66,7 @@ where "alpha <= beta" := (ord_le alpha beta) : ord_scope.
 
 (*Definition ord_lt (alpha beta : ord) := { t : pred_type beta & ord_le alpha (pred beta t) }.*)
 (*Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.*)
-Definition ord_lt (alpha beta : ord) := exists i, alpha <= (pred beta i).
+Definition ord_lt (alpha beta : ord) := exists i, alpha <= beta[i].
 Infix " < " := ord_lt : ord_scope.
 
 (* Should we use this as our ordinal equality? Then <= is trivially
@@ -75,7 +78,7 @@ Infix " == " := ord_eq (no associativity, at level 75) : ord_scope.
 
 (* First predecessor of a successor is the original ordinal. *)
 Lemma first_pred_after_succ_id :
-  forall alpha, alpha = pred (Succ alpha) (inl (pred_type alpha) tt).
+  forall alpha, alpha = Succ alpha [inl (pred_type alpha) tt].
 Proof.
 trivial.
 Qed.
@@ -122,7 +125,7 @@ Qed.
 (* If alpha <= a predecessor of beta, alpha <= beta *)
 Lemma ord_le_pred_right :
   forall alpha beta (i : pred_type beta),
-    alpha <= pred beta i ->
+    alpha <= beta[i] ->
     alpha <= beta.
 Proof.
 induction alpha as [| alpha IH | f IH]; intros beta i H.
@@ -142,7 +145,7 @@ Qed.
 Lemma ord_le_pred_left :
   forall alpha beta (i : pred_type alpha),
     alpha <= beta ->
-    pred alpha i <= beta.
+    alpha[i] <= beta.
 Proof.
 intros alpha beta i H.
 induction H as [| alpha beta j H IH | f beta H IH].
@@ -362,7 +365,7 @@ Qed.
 Lemma ord_le_not_pred_right_strong :
   forall alpha beta i,
     alpha <= beta ->
-    ~ beta <= pred alpha i.
+    ~ beta <= alpha[i].
 Proof.
 induction alpha as [| alpha IH | f IH]; intros beta i H1 H2.
 destruct i.
@@ -378,7 +381,7 @@ Qed.
 
 (* TODO: move this lemma too *)
 Lemma ord_le_not_pred_right :
-  forall alpha i, ~ alpha <= pred alpha i.
+  forall alpha i, ~ alpha <= alpha[i].
 Proof.
 intros.
 apply ord_le_not_pred_right_strong.
@@ -458,7 +461,7 @@ Qed.
 (* TODO: move *)
 Lemma ord_lt_pred_right :
   forall alpha beta (i : pred_type beta),
-    alpha < pred beta i ->
+    alpha < beta[i] ->
     alpha < beta.
 Proof.
 (* TODO *)
@@ -477,7 +480,7 @@ Qed.
 (* TODO: this needs cleanup *)
 Lemma sdfsdf :
   forall alpha beta i,
-    alpha <= pred (Succ beta) i ->
+    alpha <= Succ beta [i] ->
     alpha <= beta.
 Proof.
 induction alpha; intros.
@@ -531,7 +534,7 @@ Proof.
 intros.
 destruct H.
 destruct gamma.
-assert (H1 := ord_le_zero_all (pred beta x) H0).
+assert (H1 := ord_le_zero_all (beta[x]) H0).
 destruct (ord_le_not_pred_right x H1).
 destruct H0.
 destruct x.
