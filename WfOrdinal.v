@@ -1,5 +1,5 @@
 (*
-   Below we try to separate the good from the bad
+   Below we try to separate the wf from the bad
 *)
 
 (* We would like to Import this, but then we need to copy a lot of
@@ -15,62 +15,59 @@ Open Scope ord_scope.
 Open Scope wf_ord_scope.
 
 
-(* Good ordinals are those where the limit functions are increasing *)
-Fixpoint good alpha : Prop :=
+(* Wf ordinals are those where the limit functions are increasing *)
+Fixpoint wf alpha : Prop :=
   match alpha with
   | Zero      => True
-  | Succ beta => good beta
-  | Limit f   => forall n, good (f n) /\ forall m, (n < m)%nat -> (f n) < (f m)
+  | Succ beta => wf beta
+  | Limit f   => forall n, wf (f n) /\ forall m, (n < m)%nat -> (f n) < (f m)
   end.
 
-Lemma nat_good :
-  forall (n : nat), good n.
+Lemma nat_wf :
+  forall (n : nat), wf n.
 Proof.
 induction n.
 exact I.
 assumption.
 Qed.
 
-(*
-Axiom good_pi : forall alpha (H H' : good alpha), H = H'.
-*)
+Definition wf_ord : Set := sig wf.
 
-(*
-Lemma good_pi : forall alpha (H H' : good alpha), H = H'.
-induction alpha as [|alpha' IH|f IH]; simpl; intros H H'.
-case H; case H'; reflexivity.
-apply IH.
+(* Image of wf ordinals in ordinals. *)
+Definition wf_ord_as_ord (alpha : wf_ord) : ord :=
+  proj1_sig alpha.
 
-(*
+Coercion wf_ord_as_ord : wf_ord >-> ord.
 
-H : forall n, P n /\ Q n
-
-p : forall n, P n
-
-H = fun n => conj (p n) (q n)
-
-*)
-*)
-
-(*
-Lemma aa :
-  forall p q : Prop, forall H H' : p -> True, H = H'.
-intros.
-
-replace H with (fun H : p => I).
-Focus 2.
+(* For any wf alpha <= zero, alpha = zero *)
+(* We would like to leave out the explicit coercion here *)
+Lemma wf_ord_le_zero_right :
+  forall alpha : wf_ord,
+    alpha <= Zero ->
+    wf_ord_as_ord alpha = Zero.
+Proof.
+intros alpha H.
+destruct alpha as [alpha' G].
+simpl in H.
+induction alpha' as [| | f IH].
 reflexivity.
-*)
+elim (ord_le_not_succ_zero H).
+elimtype False.
+apply ord_lt_zero_zero.
+simpl in G.
+destruct (G 1) as [G1 Gnm].
+destruct (G 2) as [G2 _].
+inversion_clear H.
+pattern Zero at 1.
+rewrite <- (IH 1) with G1.
+rewrite <- (IH 2) with G2.
+apply Gnm.
+constructor.
+apply H0.
+apply H0.
+Qed.
 
-Definition wf_ord : Set := sig good.
-
-Axiom ord_pi :
-  forall alpha (H H' : good alpha),
-    exist good alpha H = exist good alpha H'.
-
-Implicit Arguments ord_pi [alpha].
-
-Definition zero : wf_ord := exist good Zero I.
+Definition zero : wf_ord := exist wf Zero I.
 
 (*
 (* TODO: the let bindings don't play nice with alpha conversion *)
@@ -80,11 +77,11 @@ Definition succ (alpha : wf_ord) : ord :=
 *)
 Definition succ (alpha : wf_ord) : wf_ord :=
 (*  let (alpha', H) := alpha in
-    exist good (Succ alpha') H.*)
-  exist good (Succ (proj1_sig alpha)) (proj2_sig alpha).
+    exist wf (Succ alpha') H.*)
+  exist wf (Succ (proj1_sig alpha)) (proj2_sig alpha).
 
 Definition limit (f : nat -> wf_ord) H : wf_ord :=
-  exist good
+  exist wf
     (Limit (fun n => proj1_sig (f n)))
     (fun n => conj (proj2_sig (f n)) (H n)).
 
@@ -122,52 +119,9 @@ rewrite H.
 reflexivity.
 Qed.
 
-Lemma ord_eq_wf_ord_eq :
-  forall (alpha beta : ord) Ha Hb,
-    alpha = beta ->
-    (exist good alpha Ha) = (exist good beta Hb).
-Proof.
-intros alpha beta Ha Hb H.
-generalize Ha.
-rewrite H.
-intro Hb'.
-apply ord_pi.
-Qed.
-
-(* For any good alpha <= zero, alpha = zero *)
-Lemma wf_ord_le_zero_good :
-  forall alpha,
-    alpha <wf= zero ->
-    alpha = zero.
-Proof.
-intros alpha H.
-destruct alpha as [alpha' G].
-apply ord_eq_wf_ord_eq.
-unfold wf_ord_le in H.
-simpl in H.
-induction alpha' as [| | f IH].
-reflexivity.
-elim (ord_le_not_succ_zero H).
-elimtype False.
-apply ord_lt_zero_zero.
-simpl in G.
-destruct (G 1) as [G1 Gnm].
-destruct (G 2) as [G2 _].
-inversion_clear H.
-pattern Zero at 1.
-rewrite <- (IH 1).
-rewrite <- (IH 2).
-apply Gnm.
-constructor.
-assumption.
-apply H0.
-assumption.
-apply H0.
-Qed.
-
 (* Image of naturals in ordinals *)
 Definition nat_as_wf_ord (n : nat) : wf_ord :=
-  exist good n (nat_good n).
+  exist wf n (nat_wf n).
 
 Coercion nat_as_wf_ord : nat >-> wf_ord.
 

@@ -54,8 +54,8 @@ Fixpoint pred (alpha : ord) : pred_type alpha -> ord :=
 where "alpha [ i ]" := (pred alpha i) : ord_scope.
 
 Inductive ord_le : ord -> ord -> Prop :=
-  | Ord_le_Zero  : forall alpha,
-                      Zero <= alpha
+  | Ord_le_Zero  : forall beta,
+                      Zero <= beta
   | Ord_le_Succ  : forall alpha beta i,
                       alpha <= beta[i] ->
                       Succ alpha <= beta
@@ -106,7 +106,7 @@ assumption.
 Qed.
 
 (* If alpha <= zero, alpha <= any ordinal *)
-Lemma ord_le_zero_all :
+Lemma ord_le_zero_right :
   forall alpha beta,
     alpha <= Zero ->
     alpha <= beta.
@@ -534,7 +534,7 @@ Proof.
 intros.
 destruct H.
 destruct gamma.
-assert (H1 := ord_le_zero_all (beta[x]) H0).
+assert (H1 := ord_le_zero_right (beta[x]) H0).
 destruct (ord_le_not_pred_right x H1).
 destruct H0.
 destruct x.
