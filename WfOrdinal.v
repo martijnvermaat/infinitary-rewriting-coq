@@ -131,14 +131,14 @@ Lemma n_le_omega : forall (n : nat), n <wf= wf_omega.
 Proof.
 destruct n as [| n]; unfold wf_ord_le; simpl.
 constructor.
-apply Ord_le_Succ with (i := existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
+apply Ord_le_Succ with (i := existT (fun (n:nat) => pd_type n) (S n) (inl (pd_type n) tt)).
 apply ord_le_refl.
 Qed.
 
 Lemma n_lt_omega : forall (n : nat), n <wf wf_omega.
 Proof.
 intro n.
-exists (existT (fun (n:nat) => pred_type n) (S n) (inl (pred_type n) tt)).
+exists (existT (fun (n:nat) => pd_type n) (S n) (inl (pd_type n) tt)).
 apply ord_le_refl.
 Qed.
 

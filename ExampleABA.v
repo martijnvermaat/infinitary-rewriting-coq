@@ -325,11 +325,11 @@ Proof.
 simpl.
 constructor.
 intro n.
-apply ord_le_pred_right with (existT (fun (n : nat) => pred_type n) (S n) (inl _ tt)).
+apply ord_le_pd_right with (existT (fun (n : nat) => pd_type n) (S n) (inl _ tt)).
 simpl.
 induction n as [| n IH]; simpl.
 constructor.
-apply Ord_le_Succ with (inl (pred_type n) tt).
+apply Ord_le_Succ with (inl (pd_type n) tt).
 assumption.
 Qed.
 
@@ -340,11 +340,11 @@ Proof.
 simpl.
 constructor.
 intro n.
-apply ord_le_pred_right with (existT (fun (n : nat) => pred_type (length (s_A_nBA n))) (S n) (inl _ tt)).
+apply ord_le_pd_right with (existT (fun (n : nat) => pd_type (length (s_A_nBA n))) (S n) (inl _ tt)).
 simpl.
 induction n as [| n IH]; simpl.
 constructor.
-apply Ord_le_Succ with (inl (pred_type (length (s_A_nBA n))) tt).
+apply Ord_le_Succ with (inl (pd_type (length (s_A_nBA n))) tt).
 assumption.
 Qed.
 
@@ -355,13 +355,13 @@ Proof.
 split; simpl;
   constructor;
   intro n;
-  [ apply ord_le_pred_right with (existT (fun (n : nat) => pred_type n) (S n) (inl _ tt))
-  | apply ord_le_pred_right with (existT (fun (n : nat) => pred_type (length (s_A_nBA n))) (S n) (inl _ tt)) ];
+  [ apply ord_le_pd_right with (existT (fun (n : nat) => pd_type n) (S n) (inl _ tt))
+  | apply ord_le_pd_right with (existT (fun (n : nat) => pd_type (length (s_A_nBA n))) (S n) (inl _ tt)) ];
   induction n as [| n IH]; simpl;
   [ constructor
-  | apply Ord_le_Succ with (inl (pred_type n) tt); assumption
+  | apply Ord_le_Succ with (inl (pd_type n) tt); assumption
   | constructor
-  | apply Ord_le_Succ with (inl (pred_type (length (s_A_nBA n))) tt); assumption ].
+  | apply Ord_le_Succ with (inl (pd_type (length (s_A_nBA n))) tt); assumption ].
 Qed.
 
 Close Scope ord_scope.

@@ -775,11 +775,11 @@ Notation Nil' := (Nil UNWO_trs).
 Notation "s [>] t" := (step UNWO_trs s t) (at level 40).
 Notation "s ->> t" := (sequence UNWO_trs s t) (at level 40).
 
-Notation "r [ i ]" := (prd r i) (at level 60).
-Notation "r [1 i ]" := (fst (projT1 (prd r i))) (at level 60).
-Notation "r [2 i ]" := (snd (projT1 (prd r i))) (at level 60).
-Notation "r [seq i ]" := (fst (projT2 (prd r i))) (at level 60).
-Notation "r [stp i ]" := (snd (projT2 (prd r i))) (at level 60).
+Notation "r [ i ]" := (pred r i) (at level 60).
+Notation "r [1 i ]" := (fst (projT1 (pred r i))) (at level 60).
+Notation "r [2 i ]" := (snd (projT1 (pred r i))) (at level 60).
+Notation "r [seq i ]" := (fst (projT2 (pred r i))) (at level 60).
+Notation "r [stp i ]" := (snd (projT2 (pred r i))) (at level 60).
 
 Lemma DU_in :
   In DU UNWO_trs.
@@ -1342,7 +1342,7 @@ apply weakly_convergent_finite.
 apply finite_s_psi_Unpsin.
 Qed.
 
-Lemma prd_s_psi_Unpsin :
+Lemma pred_s_psi_Unpsin :
   forall n m i,
     n <= m ->
     exists j,
@@ -1353,7 +1353,7 @@ induction H as [| m H IH].
 exists i.
 reflexivity.
 destruct IH as [j IH].
-destruct (prd_append (s_psi_Unpsin m) (s_Unpsin_USnpsiSn m) j) as [k H1].
+destruct (pred_append (s_psi_Unpsin m) (s_Unpsin_USnpsiSn m) j) as [k H1].
 exists k.
 rewrite <- IH.
 rewrite <- H1.
@@ -1361,14 +1361,14 @@ reflexivity.
 Qed.
 
 (* this is just ridiculous *)
-Lemma diei : forall d, exists i : prd_type (s_psi_Unpsin (S d)), exists t, JMeq i (inl t tt).
+Lemma diei : forall d, exists i : pred_type (s_psi_Unpsin (S d)), exists t, JMeq i (inl t tt).
 intro d.
 simpl.
 generalize (s_psi_Unpsin d).
 induction d as [| d IH]; simpl;
 unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
 exists (inl _ tt).
-exists (prd_type r).
+exists (pred_type r).
 reflexivity.
 revert r.
 rewrite (plus_SnO d).
@@ -1377,13 +1377,13 @@ destruct (s_UmDSnUSnt_Umt_is_cons (S d) (d + d) (U @ psi' (S (S d)))) as [s [q [
 rewrite H.
 exists (inl _ tt).
 simpl.
-exists ((fix prd_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
+exists ((fix pred_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
          Type :=
            match r0 with
            | Nil _ => False
-           | Cons s1 t1 r1 _ _ => (unit + prd_type s1 t1 r1)%type
+           | Cons s1 t1 r1 _ _ => (unit + pred_type s1 t1 r1)%type
            | Lim s1 ts f _ _ =>
-               {n : nat & prd_type s1 (ts n) (f n)}
+               {n : nat & pred_type s1 (ts n) (f n)}
            end) psi s
           ((fix append_rec (s0 t0 : term) (u : term) (q0 : t0 ->> u) {struct q0} :
               s0 ->> t0 -> s0 ->> u :=
@@ -1444,18 +1444,18 @@ Qed.
 
 Require Import Lt.
 
-Lemma embed_s_psi_Unpsin_prd_lt :
+Lemma embed_s_psi_Unpsin_pred_lt :
   forall d n i,
     embed (s_psi_Unpsin d) ((s_psi_Unpsin n)[seq i]) ->
     d < n.
 Proof.
 intros d n i H.
 destruct (le_or_lt n d) as [N | N].
-destruct (prd_s_psi_Unpsin (m := d) i) as [j H1].
+destruct (pred_s_psi_Unpsin (m := d) i) as [j H1].
 assumption.
 rewrite <- H1 in H.
 contradict H.
-apply embed_not_prd_right.
+apply embed_not_pred_right.
 assumption.
 Qed.
 
@@ -1475,7 +1475,7 @@ Program Definition sdfds :
     embed (s_psi_Unpsin d) ((s_psi_Unpsin n)[seq i]) ->
     exists j, ((s_psi_Unpsin n)[seq i])[seq j] = s_psi_Unpsin d := _.
 Next Obligation.
-destruct (prd_trans (s_psi_Unpsin n) i j) as [k H1].
+destruct (pred_trans (s_psi_Unpsin n) i j) as [k H1].
 rewrite <- H1.
 (* This cannot be proved from this context *)
 admit.
@@ -1517,7 +1517,7 @@ intro d.
 exists d.
 intros [n i] H1.
 simpl in * |- *.
-assert (H2 := embed_s_psi_Unpsin_prd_lt d n i H1).
+assert (H2 := embed_s_psi_Unpsin_pred_lt d n i H1).
 assert (H3 := term_eq_up_to_n_Unt_repeat_U d (psi' d)). (* right side of s_psi_Unpsin d *)
 
 

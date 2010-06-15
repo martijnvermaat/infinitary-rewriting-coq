@@ -206,18 +206,18 @@ discriminate H.
 exists v; exists g; exists c; reflexivity.
 Qed.
 
-Fixpoint prd_type `(r : s ->> t) : Type :=
+Fixpoint pred_type `(r : s ->> t) : Type :=
   match r with
   | Nil _          => False
-  | Cons _ _ r _ _ => (unit + prd_type r) % type
-  | Lim _ _ f _ _  => { n : nat & prd_type (f n) }
+  | Cons _ _ r _ _ => (unit + pred_type r) % type
+  | Lim _ _ f _ _  => { n : nat & pred_type (f n) }
   end.
 
 Reserved Notation "r [ i ]" (at level 60).
 
-Fixpoint prd `(r : s ->> t) :
-  prd_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } :=
-  match r in s ->> t return prd_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } with
+Fixpoint pred `(r : s ->> t) :
+  pred_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } :=
+  match r in s ->> t return pred_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } with
   | Nil _           => !
   | Cons s t' q u p => fun i => match i with
                                   (* TODO: i would like t instead of u here *)
@@ -228,16 +228,16 @@ Fixpoint prd `(r : s ->> t) :
                                 | existT n j => (f n)[j]
                                 end
   end
-where "r [ i ]" := (prd r i).
+where "r [ i ]" := (pred r i).
 
-Notation "r [1 i ]" := (fst (projT1 (prd r i))) (at level 60).
-Notation "r [2 i ]" := (snd (projT1 (prd r i))) (at level 60).
-Notation "r [seq i ]" := (fst (projT2 (prd r i))) (at level 60).
-Notation "r [stp i ]" := (snd (projT2 (prd r i))) (at level 60).
+Notation "r [1 i ]" := (fst (projT1 (pred r i))) (at level 60).
+Notation "r [2 i ]" := (snd (projT1 (pred r i))) (at level 60).
+Notation "r [seq i ]" := (fst (projT2 (pred r i))) (at level 60).
+Notation "r [stp i ]" := (snd (projT2 (pred r i))) (at level 60).
 
-Lemma prd_trans :
-  forall `(r : s ->> t, i : prd_type r, j : prd_type (r[seq i])),
-    exists k : prd_type r, r[k] = r[seq i][j].
+Lemma pred_trans :
+  forall `(r : s ->> t, i : pred_type r, j : pred_type (r[seq i])),
+    exists k : pred_type r, r[k] = r[seq i][j].
 Proof.
 induction r; intros.
 elim i.
@@ -249,30 +249,30 @@ exists (inr _ k).
 assumption.
 destruct i as [n i]; simpl in j |- *.
 destruct (H n i j) as [k H1].
-exists (existT (fun n => prd_type (f n)) n k).
+exists (existT (fun n => pred_type (f n)) n k).
 assumption.
 Qed.
 
-Implicit Arguments prd_trans [s t r].
+Implicit Arguments pred_trans [s t r].
 
 (* maybe this could be a coercion *)
-Fixpoint prd_type_as_pred_type `(r : s ->> t) : prd_type r -> pred_type (length r) :=
-  match r in s ->> t return prd_type r -> pred_type (length r) with
+Fixpoint pred_type_as_pd_type `(r : s ->> t) : pred_type r -> pd_type (length r) :=
+  match r in s ->> t return pred_type r -> pd_type (length r) with
   | Nil _          => !
   | Cons _ _ q _ _ => fun i => match i with
                                | inl tt => inl _ tt
-                               | inr j  => inr _ (prd_type_as_pred_type q j)
+                               | inr j  => inr _ (pred_type_as_pd_type q j)
                                end
   | Lim _ _ f _ _  => fun i => match i with
-                               | existT n j => existT _ n (prd_type_as_pred_type (f n) j)
+                               | existT n j => existT _ n (pred_type_as_pd_type (f n) j)
                                end
   end.
 
-Implicit Arguments prd_type_as_pred_type [s t r].
+Implicit Arguments pred_type_as_pd_type [s t r].
 
-Lemma prd_type_as_pred_type_ok :
-  forall `(r : s ->> t, i : prd_type r),
-    length (r[seq i]) = pred (length r) (prd_type_as_pred_type i).
+Lemma pred_type_as_pd_type_ok :
+  forall `(r : s ->> t, i : pred_type r),
+    length (r[seq i]) = pd (length r) (pred_type_as_pd_type i).
 Proof.
 intros s t r i.
 induction r as [t| s t r u p IH | s ts f t c IH].
@@ -284,23 +284,23 @@ destruct i as [n i].
 apply IH.
 Qed.
 
-Fixpoint pred_type_as_prd_type `(r : s ->> t) : pred_type (length r) -> prd_type r :=
-  match r in s ->> t return pred_type (length r) -> prd_type r with
+Fixpoint pd_type_as_pred_type `(r : s ->> t) : pd_type (length r) -> pred_type r :=
+  match r in s ->> t return pd_type (length r) -> pred_type r with
   | Nil _          => !
   | Cons _ _ q _ _ => fun i => match i with
                                | inl tt => inl _ tt
-                               | inr j  => inr _ (pred_type_as_prd_type q j)
+                               | inr j  => inr _ (pd_type_as_pred_type q j)
                                end
   | Lim _ _ f _ _  => fun i => match i with
-                               | existT n j => existT _ n (pred_type_as_prd_type (f n) j)
+                               | existT n j => existT _ n (pd_type_as_pred_type (f n) j)
                                end
   end.
 
-Implicit Arguments pred_type_as_prd_type [s t r].
+Implicit Arguments pd_type_as_pred_type [s t r].
 
-Lemma pred_type_as_prd_type_ok :
-  forall `(r : s ->> t, i : pred_type (length r)),
-    length (r[seq pred_type_as_prd_type i]) = ((length r)[i])%ord.
+Lemma pd_type_as_pred_type_ok :
+  forall `(r : s ->> t, i : pd_type (length r)),
+    length (r[seq pd_type_as_pred_type i]) = ((length r)[i])%ord.
 Proof.
 intros s t r i.
 induction r as [t| s t r u p IH | s ts f t c IH].
@@ -312,9 +312,9 @@ destruct i as [n i]; simpl.
 apply IH.
 Qed.
 
-Lemma pred_type_prd_type_inv :
-  forall `(r : s ->> t, i : prd_type r),
-    i = pred_type_as_prd_type (prd_type_as_pred_type i).
+Lemma pd_type_pred_type_inv :
+  forall `(r : s ->> t, i : pred_type r),
+    i = pd_type_as_pred_type (pred_type_as_pd_type i).
 Proof.
 intros s t r i.
 induction r as [t| s t r u p IH | s ts f t c IH].
@@ -349,8 +349,8 @@ Proof.
 induction r as [t | s t r w p IH | s ts f t c IH]; simpl; intros u v q H.
 constructor.
 dependent destruction H.
-apply Ord_le_Succ with (prd_type_as_pred_type i).
-rewrite <- prd_type_as_pred_type_ok.
+apply Ord_le_Succ with (pred_type_as_pd_type i).
+rewrite <- pred_type_as_pd_type_ok.
 apply IH.
 assumption.
 dependent destruction H.
@@ -360,15 +360,15 @@ apply IH.
 apply H.
 Qed.
 
-Lemma embed_prd_right :
-  forall `(r : s ->> t, q : u ->> v, i : prd_type q),
+Lemma embed_pred_right :
+  forall `(r : s ->> t, q : u ->> v, i : pred_type q),
     r <= q[seq i] ->
     r <= q.
 Proof.
 induction r as [t | s t r w p IH | s ts f t c IH]; intros u v q i H.
 constructor.
 dependent destruction H.
-destruct (prd_trans i i0) as [k T].
+destruct (pred_trans i i0) as [k T].
 revert r IH H.
 rewrite <- T.
 intros r IH H.
@@ -381,15 +381,15 @@ apply IH with i.
 trivial.
 Qed.
 
-Lemma embed_prd_left :
-  forall `(r : s ->> t, q : u ->> v, i : prd_type r),
+Lemma embed_pred_left :
+  forall `(r : s ->> t, q : u ->> v, i : pred_type r),
     r <= q ->
     r[seq i] <= q.
 Proof.
 intros s t r u v q i H.
 induction H as [s u v q | u v q s j r H IH | s ts f t c u v q H IH].
 elim i.
-destruct i as [[] | i]; apply embed_prd_right with j.
+destruct i as [[] | i]; apply embed_pred_right with j.
 apply H.
 apply IH.
 destruct i.
@@ -412,12 +412,12 @@ Lemma embed_cons_elim :
 Proof.
 intros s t r u v q w p x o H.
 dependent destruction H.
-destruct i as [[] |]; [| apply embed_prd_right with p]; assumption.
+destruct i as [[] |]; [| apply embed_pred_right with p]; assumption.
 Qed.
 
-Lemma first_prd_after_cons_id :
+Lemma first_pred_after_cons_id :
   forall `(r : s ->> t, p : t [>] u),
-    r = (Cons r p)[seq (inl (prd_type r) tt)].
+    r = (Cons r p)[seq (inl (pred_type r) tt)].
 Proof.
 trivial.
 Qed.
@@ -428,8 +428,8 @@ Lemma embed_cons_left :
     r <= q.
 Proof.
 intros s t r v w q u p H.
-rewrite (first_prd_after_cons_id r) with p.
-apply (@embed_prd_left s u (Cons r p) v w q (inl (prd_type r) tt)).
+rewrite (first_pred_after_cons_id r) with p.
+apply (@embed_pred_left s u (Cons r p) v w q (inl (pred_type r) tt)).
 assumption.
 Qed.
 
@@ -468,7 +468,7 @@ Proof.
 induction r as [t | s t r w p _ | s ts f t c IH]; intros u ts' g v c' n H.
 constructor.
 dependent destruction H.
-apply (@Embed_Cons u v (Lim g c') s (existT (fun n => prd_type (g n)) n i) r).
+apply (@Embed_Cons u v (Lim g c') s (existT (fun n => pred_type (g n)) n i) r).
 assumption.
 constructor.
 intro m.
@@ -482,7 +482,7 @@ Lemma embed_refl :
 Proof.
 induction r as [t | s t r u p IH | s ts f t c IH].
 constructor.
-apply Embed_Cons with (q := Cons r p) (i := inl (prd_type r) tt).
+apply Embed_Cons with (q := Cons r p) (i := inl (pred_type r) tt).
 assumption.
 constructor.
 intro n.
@@ -506,7 +506,7 @@ destruct i as [[] | i']; simpl in * |- *.
 apply Embed_Cons.
 apply IH.
 assumption.
-apply embed_prd_right with j.
+apply embed_pred_right with j.
 apply IH'.
 assumption.
 assumption.
@@ -531,8 +531,8 @@ contradict H1.
 apply ord_le_not_succ.
 Qed.
 
-Lemma embed_not_prd_right_strong :
-  forall `(r : s ->> t, q : u ->> v, i : prd_type r),
+Lemma embed_not_pred_right_strong :
+  forall `(r : s ->> t, q : u ->> v, i : pred_type r),
     r <= q ->
     ~ q <= r[seq i].
 Proof.
@@ -546,12 +546,12 @@ dependent destruction H1.
 exact (IH n u v q i (H n) H2).
 Qed.
 
-Lemma embed_not_prd_right :
-  forall `(r : s ->> t, i : prd_type r),
+Lemma embed_not_pred_right :
+  forall `(r : s ->> t, i : pred_type r),
     ~ r <= r[seq i].
 Proof.
 intros.
-apply embed_not_prd_right_strong.
+apply embed_not_pred_right_strong.
 apply embed_refl.
 Qed.
 
@@ -562,8 +562,8 @@ Lemma embed_strict_cons_right :
 Proof.
 intros s t r u v q w p.
 destruct 1 as [i H].
-exists (inl (prd_type q) tt).
-apply embed_prd_right with i.
+exists (inl (pred_type q) tt).
+apply embed_pred_right with i.
 assumption.
 Qed.
 
@@ -574,7 +574,7 @@ Lemma embed_strict_embed :
 Proof.
 intros s t r u v q.
 destruct 1 as [i H].
-apply embed_prd_right with i.
+apply embed_pred_right with i.
 assumption.
 Qed.
 
@@ -588,13 +588,13 @@ intros s t r u v q w z x.
 destruct 1 as [i Hi].
 destruct 1 as [j Hj].
 exists j.
-apply embed_trans with u v q; [apply embed_prd_right with i |]; assumption.
+apply embed_trans with u v q; [apply embed_pred_right with i |]; assumption.
 Qed.
 
 (* TODO: move to Ordinal *)
-Lemma pred_trans :
+Lemma pd_trans :
   forall alpha i j,
-    exists k, pred alpha k = pred (pred alpha i) j.
+    exists k, pd alpha k = pd (pd alpha i) j.
 Proof.
 induction alpha as [| alpha IH | f IH]; intros.
 elim i.
@@ -606,7 +606,7 @@ exists (inr _ k).
 assumption.
 destruct i as [n i]; simpl in j |- *.
 destruct (IH n i j) as [k H].
-exists (existT (fun n => pred_type (f n)) n k).
+exists (existT (fun n => pd_type (f n)) n k).
 assumption.
 Qed.
 
@@ -674,7 +674,7 @@ constructor.
 Qed.
 
 (*
-   Another idea worth checking: define an order on prd
+   Another idea worth checking: define an order on pred
    indices ('i' is included in 'inr i' etc) and define
    weak convergence using this order instead of <= on the
    sequences.
@@ -700,8 +700,8 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   | Lim _ t f      =>
     (forall n, weakly_convergent (|f n|)) /\
     forall d, exists i, forall j,
-      fst (|prd r i|) <= fst (|prd r j|) ->
-      term_eq_up_to d (fst ($ prd r j $)) t
+      fst (|pred r i|) <= fst (|pred r j|) ->
+      term_eq_up_to d (fst ($ pred r j $)) t
   end.
 *)
 
@@ -727,7 +727,7 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
    not done by just checking the end terms for all (f m).
 
    In the alternative definition below, it is stated that the end terms
-   of all prdixes of such an (f m) having at leas length (f n) should be
+   of all predixes of such an (f m) having at leas length (f n) should be
    equal to t up to depth d.
 *)
 (*
@@ -739,8 +739,8 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   | Lim _ t f      =>
     (forall n, weakly_convergent (|f n|)) /\
     forall d, exists i, forall j,
-      (|prd r i|) <= (|prd r j|) ->
-      term_eq_up_to d ($ prd r j $) t
+      (|pred r i|) <= (|pred r j|) ->
+      term_eq_up_to d ($ pred r j $) t
   end.
 
 Definition step_below d `(r : s ->> t) : Prop :=
@@ -758,8 +758,8 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   | Lim _ t f      =>
     (forall n, strongly_convergent (|f n|)) /\
     forall d, exists i, forall j,
-      (|prd r i|) <= (|prd r j|) ->
-      step_below d (|prd r j|)
+      (|pred r i|) <= (|pred r j|) ->
+      step_below d (|pred r j|)
   end.
 *)
 
@@ -826,7 +826,7 @@ apply Hr.
 Qed.
 
 (* TODO: i don't think this is a meaningfull lemma *)
-Lemma prd_snoc :
+Lemma pred_snoc :
   forall `(p : s [>] t, r : t ->> u),
     exists i, (snoc p r)[i] = Cons (Nil s) p [(inl _ tt)].
 Proof.
@@ -838,7 +838,7 @@ exists (inr _ i); simpl.
 rewrite IH; reflexivity.
 specialize IH with 0 p.
 destruct IH as [i IH].
-exists (existT (fun n => prd_type (snoc p (f n))) 0 i); simpl.
+exists (existT (fun n => pred_type (snoc p (f n))) 0 i); simpl.
 rewrite IH; reflexivity.
 Qed.
 
@@ -879,7 +879,7 @@ apply (@Embed_Cons s w (Cons (snoc p q) o) s (inl _ tt) (snoc p r)).
 simpl. simpl in IH. simpl in IHembed.
 apply IHembed.
 assumption.
-simpl in H. simpl in IH. simpl in IHembed. fold (@prd_type t v) in i.
+simpl in H. simpl in IH. simpl in IHembed. fold (@pred_type t v) in i.
 apply embed_cons_right.
 apply IH.
 assumption.
@@ -887,7 +887,7 @@ trivial.
 destruct i as [n i].
 simpl.
 apply embed_lim_right with n.
-simpl. simpl in IHembed. simpl in H. simpl in r. fold (prd_type (f n)) in i.
+simpl. simpl in IHembed. simpl in H. simpl in r. fold (pred_type (f n)) in i.
 apply IH.
 assumption.
 assumption.
@@ -912,13 +912,13 @@ exists (inl _ tt); simpl.
 apply snoc_embed.
 destruct i as [[] | i]; simpl in H.
 assumption.
-apply embed_prd_right with i.
+apply embed_pred_right with i.
 assumption.
-destruct i as [n i]; simpl in H; fold (prd_type (f n)) in i.
+destruct i as [n i]; simpl in H; fold (pred_type (f n)) in i.
 specialize IH with n p r i.
 destruct IH as [j IH].
 assumption.
-exists (existT (fun n => prd_type (snoc p (f n))) n j).
+exists (existT (fun n => pred_type (snoc p (f n))) n j).
 assumption.
 Qed.
 
@@ -1012,9 +1012,9 @@ assumption.
 Qed.
 
 Lemma snoc_weakly_convergent_helper :
-  forall d x `(p : s [>] t, r : t ->> u, q : t ->> v, j : prd_type (snoc p q)),
+  forall d x `(p : s [>] t, r : t ->> u, q : t ->> v, j : pred_type (snoc p q)),
     snoc p r <= snoc p q [seq j] ->
-    exists i : prd_type q,
+    exists i : pred_type q,
       r <= q[seq i] /\
       (term_eq_up_to d (q[1 i]) x ->
         term_eq_up_to d (snoc p q [1 j]) x).
@@ -1068,7 +1068,7 @@ intros [m j] H1.
 (* this seems a rather strange way of proving *)
 destruct (snoc_weakly_convergent_helper d t p (f n) (f m) j) as [i M].
 assumption.
-specialize H with (existT (fun n => prd_type (f n)) m i).
+specialize H with (existT (fun n => pred_type (f n)) m i).
 simpl in H.
 apply M.
 apply H.
@@ -1102,9 +1102,9 @@ Proof.
 induction q as [u | t u q v p IH | t us f u c IH]; simpl.
 apply ord_eq_refl.
 split.
-apply Ord_le_Succ with (inl (pred_type (add (length r) (length q))) tt).
+apply Ord_le_Succ with (inl (pd_type (add (length r) (length q))) tt).
 apply (IH r).
-apply Ord_le_Succ with (inl (pred_type (length (append r q))) tt).
+apply Ord_le_Succ with (inl (pd_type (length (append r q))) tt).
 apply (IH r).
 split; constructor; intro n; apply ord_le_limit_right with n; apply (IH n r).
 Qed.
@@ -1147,7 +1147,7 @@ apply (@Embed_Cons s w (Cons (append r z) o) s (inl _ tt) (append r r0)).
 simpl. simpl in IH. simpl in IHembed.
 apply IHembed.
 assumption.
-simpl in H. simpl in IH. simpl in IHembed. fold (@prd_type t v) in i.
+simpl in H. simpl in IH. simpl in IHembed. fold (@pred_type t v) in i.
 apply embed_cons_right.
 apply IH.
 assumption.
@@ -1155,7 +1155,7 @@ trivial.
 destruct i as [n i].
 simpl.
 apply embed_lim_right with n.
-simpl. simpl in IHembed. simpl in H. simpl in r. fold (prd_type (f n)) in i.
+simpl. simpl in IHembed. simpl in H. simpl in r. fold (pred_type (f n)) in i.
 apply IH.
 assumption.
 assumption.
@@ -1180,13 +1180,13 @@ exists (inl _ tt); simpl.
 apply append_embed.
 destruct i as [[] | i]; simpl in H.
 assumption.
-apply embed_prd_right with i.
+apply embed_pred_right with i.
 assumption.
-destruct i as [n i]; simpl in H; fold (prd_type (f n)) in i.
+destruct i as [n i]; simpl in H; fold (pred_type (f n)) in i.
 specialize IH with n r q i.
 destruct IH as [j IH].
 assumption.
-exists (existT (fun n => prd_type (append r (f n))) n j).
+exists (existT (fun n => pred_type (append r (f n))) n j).
 assumption.
 Qed.
 
@@ -1223,9 +1223,9 @@ apply H2.
 assumption.
 Qed.
 
-Lemma prd_append :
-  forall `(r : s ->> t, q : t ->> u, i : prd_type r),
-    exists j : prd_type (append r q),
+Lemma pred_append :
+  forall `(r : s ->> t, q : t ->> u, i : pred_type r),
+    exists j : pred_type (append r q),
       append r q [j] = r[i].
 Proof.
 induction q as [u | t u q v p IH | t us f u c IH]; simpl; intro i.
@@ -1235,15 +1235,15 @@ destruct (IH r i) as [j H].
 exists (inr _ j).
 assumption.
 destruct (IH 0 r i) as [j H].
-exists (existT (fun n => prd_type (append r (f n))) 0 j).
+exists (existT (fun n => pred_type (append r (f n))) 0 j).
 assumption.
 Qed.
 
 (* can we use this in append_weakly_convergent? *)
 Lemma sdfsfsdf :
-  forall d x `(r : s ->> t, q : t ->> u) (i : prd_type (append r q)),
+  forall d x `(r : s ->> t, q : t ->> u) (i : pred_type (append r q)),
 
-  (forall j : prd_type q,
+  (forall j : pred_type q,
     q <= q[seq j] ->
     term_eq_up_to d (q[1 j]) x) ->
 
@@ -1254,22 +1254,22 @@ Proof.
 intros d x s t r u q i H1 H2.
 induction q as [u | t u q w p IH | t us f u c IH].
 contradict H2.
-apply embed_not_prd_right.
+apply embed_not_pred_right.
 destruct i as [[] | i].
 simpl in H2 |- *.
 clear H1.
 Admitted.
 
 
-Lemma embed_not_append_prd_left :
-  forall `(r : s ->> t, q : t ->> u, j : prd_type r),
+Lemma embed_not_append_pred_left :
+  forall `(r : s ->> t, q : t ->> u, j : pred_type r),
     ~ append r q <= r[seq j].
 Proof.
 induction q; simpl; intros i H1.
 contradict H1.
-apply embed_not_prd_right.
+apply embed_not_pred_right.
 dependent destruction H1.
-destruct (prd_trans i i0) as [j H].
+destruct (pred_trans i i0) as [j H].
 specialize IHq with r j.
 apply IHq.
 rewrite H.
@@ -1281,16 +1281,16 @@ apply H.
 Qed.
 
 Lemma append_weakly_convergent_helper :
-  forall d x `(r : s ->> t, q : t ->> u, y : t ->> v, j : prd_type (append r y)),
+  forall d x `(r : s ->> t, q : t ->> u, y : t ->> v, j : pred_type (append r y)),
     append r q <= (append r y)[seq j] ->
-    exists i : prd_type y,
+    exists i : pred_type y,
       q <= y[seq i] /\
       (term_eq_up_to d (y[1 i]) x ->
         term_eq_up_to d ((append r y)[1 j]) x).
 Proof.
 induction y as [v | t v y w o IH | t vs f v c IH]; simpl; intros j H.
 contradict H.
-apply embed_not_append_prd_left.
+apply embed_not_append_pred_left.
 destruct j as [[] | j]; simpl in H.
 exists (inl _ tt). simpl.
 split.
@@ -1337,7 +1337,7 @@ intros [m j] H.
 (* TODO: this depends on the helper lemma, which is probably not correct *)
 destruct (append_weakly_convergent_helper d u r (f n) (f m) j) as [i M].
 assumption.
-specialize H3 with (existT (fun n => prd_type (f n)) m i).
+specialize H3 with (existT (fun n => pred_type (f n)) m i).
 simpl in H3.
 apply M.
 apply H3.
