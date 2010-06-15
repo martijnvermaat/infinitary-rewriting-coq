@@ -246,13 +246,14 @@ Fixpoint s_A_nBA (n : nat) : (A!) ->> (nB_A n) :=
   | S n => Cons (s_A_nBA n) (p_nBA_nBBA n)
   end.
 
-(* s_A_nBA but with Sigma return type including right-most term *)
-Definition limit_s_A_nBA (n : nat) : {t : term & (A!) ->> t} :=
-  existT (fun (t : term) => (A!) ->> t) (nB_A n) (s_A_nBA n).
+Lemma converges_nB_A : converges nB_A repeat_B.
+Proof.
+(* TODO *)
+Admitted.
 
 (* Omega-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... B(B(B(...))) *)
 Definition s_A_repeat_B : (A!) ->> repeat_B :=
-  Lim repeat_B limit_s_A_nBA.
+  Lim s_A_nBA converges_nB_A.
 
 (* Ugly notation *)
 Notation "| s |" := (projT2 s) (no associativity, at level 75).

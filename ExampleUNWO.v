@@ -775,6 +775,12 @@ Notation Nil' := (Nil UNWO_trs).
 Notation "s [>] t" := (step UNWO_trs s t) (at level 40).
 Notation "s ->> t" := (sequence UNWO_trs s t) (at level 40).
 
+Notation "r [ i ]" := (prd r i) (at level 60).
+Notation "r [1 i ]" := (fst (projT1 (prd r i))) (at level 60).
+Notation "r [2 i ]" := (snd (projT1 (prd r i))) (at level 60).
+Notation "r [seq i ]" := (fst (projT2 (prd r i))) (at level 60).
+Notation "r [stp i ]" := (snd (projT2 (prd r i))) (at level 60).
+
 Lemma DU_in :
   In DU UNWO_trs.
 Proof.
@@ -1201,13 +1207,20 @@ Fixpoint s_psi_Unpsin n : psi ->> Unt n (psi' n) :=
   | S n => append (s_psi_Unpsin n) (s_Unpsin_USnpsiSn n)
   end.
 
-(* psi ->> U^n @ psi' n but with Sigma return type including right-most term *)
-Definition s_psi_Unpsin_sig n : {t : term & psi ->> t} :=
-  existT (fun (t : term) => psi ->> t) (Unt n (psi' n)) (s_psi_Unpsin n).
+Lemma converges_Unpsin : converges (fun n => Unt n (psi' n)) repeat_U.
+Proof.
+intro d.
+exists d.
+intros m H.
+simpl.
+apply term_eq_up_to_weaken_generalized with m.
+assumption.
+apply term_eq_up_to_n_Unt_repeat_U.
+Admitted.
 
 (* Omega-step reduction psi ->> UUU... *)
 Definition s_psi_repeat_U : psi ->> repeat_U :=
-  Lim repeat_U s_psi_Unpsin_sig.
+  Lim s_psi_Unpsin converges_Unpsin.
 
 (*
    It should be noted that at this point, nothing has been said yet about
@@ -1336,6 +1349,7 @@ apply finite_s_psi_Unpsin.
 Qed.
 
 (* This reduction is well-formed *)
+(* TODO: not needed anymore, this is in Lim definition now *)
 Lemma wf_s_psi_repeat_U :
   wf s_psi_repeat_U.
 Proof.
@@ -1358,18 +1372,18 @@ apply weakly_convergent_finite.
 apply finite_s_psi_Unpsin.
 Qed.
 
-Lemma pref_s_psi_Unpsin :
+Lemma prd_s_psi_Unpsin :
   forall n m i,
     n <= m ->
     exists j,
-      pref (s_psi_Unpsin m) j = pref (s_psi_Unpsin n) i.
+      (s_psi_Unpsin m)[j] = (s_psi_Unpsin n)[i].
 Proof.
 intros n m i H.
 induction H as [| m H IH].
 exists i.
 reflexivity.
 destruct IH as [j IH].
-destruct (pref_append (s_psi_Unpsin m) (s_Unpsin_USnpsiSn m) j) as [k H1].
+destruct (prd_append (s_psi_Unpsin m) (s_Unpsin_USnpsiSn m) j) as [k H1].
 exists k.
 rewrite <- IH.
 rewrite <- H1.
@@ -1377,14 +1391,14 @@ reflexivity.
 Qed.
 
 (* this is just ridiculous *)
-Lemma diei : forall d, exists i : pref_type (s_psi_Unpsin (S d)), exists t, JMeq i (inl t tt).
+Lemma diei : forall d, exists i : prd_type (s_psi_Unpsin (S d)), exists t, JMeq i (inl t tt).
 intro d.
 simpl.
 generalize (s_psi_Unpsin d).
 induction d as [| d IH]; simpl;
 unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
 exists (inl _ tt).
-exists (pref_type r).
+exists (prd_type r).
 reflexivity.
 revert r.
 rewrite (plus_SnO d).
@@ -1393,13 +1407,13 @@ destruct (s_UmDSnUSnt_Umt_is_cons (S d) (d + d) (U @ psi' (S (S d)))) as [s [q [
 rewrite H.
 exists (inl _ tt).
 simpl.
-exists ((fix pref_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
+exists ((fix prd_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
          Type :=
            match r0 with
            | Nil _ => False
-           | Cons s1 t1 r1 _ _ => (unit + pref_type s1 t1 r1)%type
-           | Lim s1 _ f =>
-               {n : nat & pref_type s1 (projT1 (f n)) (projT2 (f n))}
+           | Cons s1 t1 r1 _ _ => (unit + prd_type s1 t1 r1)%type
+           | Lim s1 ts f _ _ =>
+               {n : nat & prd_type s1 (ts n) (f n)}
            end) psi s
           ((fix append_rec (s0 t0 : term) (u : term) (q0 : t0 ->> u) {struct q0} :
               s0 ->> t0 -> s0 ->> u :=
@@ -1409,13 +1423,12 @@ exists ((fix pref_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
               | Nil t1 => fun r0 : s0 ->> t1 => r0
               | Cons s1 t1 q1 u0 p0 =>
                   fun r0 : s0 ->> s1 => Cons (append_rec s0 s1 t1 q1 r0) p0
-              | Lim s1 u0 f =>
+              | Lim s1 ts1 f u0 c =>
                   fun r0 : s0 ->> s1 =>
-                  Lim u0
+                  Lim
                     (fun o : nat =>
-                     existT (fun u1 : term => s0 ->> u1)
-                       (projT1 (f o))
-                       (append_rec s0 s1 (projT1 (f o)) (projT2 (f o)) r0))
+                       (append_rec s0 s1 (ts1 o) (f o) r0))
+                    c
               end) psi
              (U @ Unt d (DnUnt (S (S (S (d + d)))) (U @ psi' (S (S d))))) s
              ((fix snoc_rec (s0 t0 : term) (u : term) (r0 : t0 ->> u) {struct r0} :
@@ -1426,13 +1439,12 @@ exists ((fix pref_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
                  | Nil t1 => fun p0 : s0[>]t1 => Cons (Nil' s0) p0
                  | Cons s1 t1 q0 u0 o =>
                      fun p0 : s0[>]s1 => Cons (snoc_rec s0 s1 t1 q0 p0) o
-                 | Lim s1 u0 f =>
+                 | Lim s1 ts f u0 c =>
                      fun p0 : s0[>]s1 =>
-                     Lim u0
+                     Lim
                        (fun o : nat =>
-                        existT (fun u1 : term => s0 ->> u1)
-                          (projT1 (f o))
-                          (snoc_rec s0 s1 (projT1 (f o)) (projT2 (f o)) p0))
+                          (snoc_rec s0 s1 (ts o) (f o) p0))
+                       c
                  end)
                 (U @ Unt d (DnUnt (S (S (S (d + d)))) (U @ psi' (S (S d)))))
                 (U @ Unt d (DnUnt (S (S (d + d))) (U @ psi' (S (S d))))) s
@@ -1444,13 +1456,12 @@ exists ((fix pref_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
                     | Nil t1 => fun p0 : s0[>]t1 => Cons (Nil' s0) p0
                     | Cons s1 t1 q0 u0 o =>
                         fun p0 : s0[>]s1 => Cons (snoc_rec s0 s1 t1 q0 p0) o
-                    | Lim s1 u0 f =>
+                    | Lim s1 us f u0 c =>
                         fun p0 : s0[>]s1 =>
-                        Lim u0
+                        Lim
                           (fun o : nat =>
-                           existT (fun u1 : term => s0 ->> u1)
-                             (projT1 (f o))
-                             (snoc_rec s0 s1 (projT1 (f o)) (projT2 (f o)) p0))
+                             (snoc_rec s0 s1 (us o) (f o) p0))
+                          c
                     end)
                    (U @ Unt d (DnUnt (S (S (d + d))) (U @ psi' (S (S d)))))
                    (U @ Unt d (DnUnt (S (d + d)) (U @ psi' (S (S d))))) s q
@@ -1463,26 +1474,26 @@ Qed.
 
 Require Import Lt.
 
-Lemma embed_s_psi_Unpsin_pref_lt :
+Lemma embed_s_psi_Unpsin_prd_lt :
   forall d n i,
-    embed (s_psi_Unpsin d) (fst (projT2 (pref (s_psi_Unpsin n) i))) ->
+    embed (s_psi_Unpsin d) ((s_psi_Unpsin n)[seq i]) ->
     d < n.
 Proof.
 intros d n i H.
 destruct (le_or_lt n d) as [N | N].
-destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
+destruct (prd_s_psi_Unpsin (m := d) i) as [j H1].
 assumption.
 rewrite <- H1 in H.
 contradict H.
-apply embed_not_pref_right.
+apply embed_not_prd_right.
 assumption.
 Qed.
 
 Lemma kkk :
   forall d n i,
     term_eq_up_to d (Unt n (psi' n)) repeat_U ->
-    embed (s_psi_Unpsin n) (fst (projT2 (pref (s_psi_Unpsin (S n)) i))) ->
-    term_eq_up_to d (fst (projT1 (pref (s_psi_Unpsin (S n)) i))) repeat_U.
+    embed (s_psi_Unpsin n) ((s_psi_Unpsin (S n))[seq i]) ->
+    term_eq_up_to d ((s_psi_Unpsin (S n))[1 i]) repeat_U.
 Proof.
 induction n as [| n IH]; simpl; intros i H1 H2.
 clear H2.
@@ -1491,10 +1502,10 @@ Admitted.
 
 Program Definition sdfds :
   forall d n i,
-    embed (s_psi_Unpsin d) (fst (projT2 (pref (s_psi_Unpsin n) i))) ->
-    exists j, fst (projT2 (pref (fst (projT2 (pref (s_psi_Unpsin n) i))) j)) = s_psi_Unpsin d := _.
+    embed (s_psi_Unpsin d) ((s_psi_Unpsin n)[seq i]) ->
+    exists j, ((s_psi_Unpsin n)[seq i])[seq j] = s_psi_Unpsin d := _.
 Next Obligation.
-destruct (pref_trans (s_psi_Unpsin n) i j) as [k H1].
+destruct (prd_trans (s_psi_Unpsin n) i j) as [k H1].
 rewrite <- H1.
 (* This cannot be proved from this context *)
 admit.
@@ -1536,7 +1547,7 @@ intro d.
 exists d.
 intros [n i] H1.
 simpl in * |- *.
-assert (H2 := embed_s_psi_Unpsin_pref_lt d n i H1).
+assert (H2 := embed_s_psi_Unpsin_prd_lt d n i H1).
 assert (H3 := term_eq_up_to_n_Unt_repeat_U d (psi' d)). (* right side of s_psi_Unpsin d *)
 
 
