@@ -259,9 +259,9 @@ Definition s_A_repeat_B : (A!) ->> repeat_B :=
 Notation "| s |" := (projT2 s) (no associativity, at level 75).
 Notation "$ s $" := (projT1 s) (no associativity, at level 75).
 
-(* This reduction is 'good' *)
-Lemma good_s_A_repeat_B :
-  good s_A_repeat_B.
+(* This reduction is well-formed *)
+Lemma wf_s_A_repeat_B :
+  wf s_A_repeat_B.
 Proof.
 split.
 induction n; simpl; trivial.

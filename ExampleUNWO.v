@@ -1229,14 +1229,8 @@ Definition s_psi_repeat_U : psi ->> repeat_U :=
    1) s_psi_Unpsin might not have a well-defined limit
    2) this limit might have nothing to do with repeat_U
 
-   We address 1 by proving the 'good' property and 2 by proving the 'wf'
-   and convergence properties.
-*)
-
-(* Ugly notation *)
-(*
-Notation "| s |" := (projT2 s) (no associativity, at level 75).
-Notation "$ s $" := (projT1 s) (no associativity, at level 75).
+   We address 1 by proving the 'wf' property and 2 follows by the definition
+   of sequences (so 2 is now moot).
 *)
 
 Lemma finite_s_UmDnUnt_Umt :
@@ -1318,28 +1312,6 @@ simpl.
 apply embed_append_right.
 Qed.
 
-Lemma good_s_psi_Unpsin :
-  forall n : nat, good (s_psi_Unpsin n).
-Proof.
-intro n.
-apply good_finite.
-apply finite_s_psi_Unpsin.
-Qed.
-
-(* This reduction is 'good' *)
-Lemma good_s_psi_repeat_U :
-  good s_psi_repeat_U.
-Proof.
-split.
-apply good_s_psi_Unpsin.
-intros n m H.
-induction H; simpl.
-apply embed_strict_append_Unpsin_USnpsiSn.
-apply embed_strict_trans with psi (Unt m (psi' m)) (s_psi_Unpsin m).
-apply IHle.
-apply embed_strict_append_Unpsin_USnpsiSn.
-Qed.
-
 Lemma wf_s_psi_Unpsin :
   forall n : nat, wf (s_psi_Unpsin n).
 Proof.
@@ -1349,19 +1321,17 @@ apply finite_s_psi_Unpsin.
 Qed.
 
 (* This reduction is well-formed *)
-(* TODO: not needed anymore, this is in Lim definition now *)
 Lemma wf_s_psi_repeat_U :
   wf s_psi_repeat_U.
 Proof.
 split.
 apply wf_s_psi_Unpsin.
-intro d.
-exists d.
-intros m H.
-simpl.
-apply term_eq_up_to_weaken_generalized with m.
-assumption.
-apply term_eq_up_to_n_Unt_repeat_U.
+intros n m H.
+induction H; simpl.
+apply embed_strict_append_Unpsin_USnpsiSn.
+apply embed_strict_trans with psi (Unt m (psi' m)) (s_psi_Unpsin m).
+apply IHle.
+apply embed_strict_append_Unpsin_USnpsiSn.
 Qed.
 
 Lemma weakly_convergent_s_psi_Unpsin :

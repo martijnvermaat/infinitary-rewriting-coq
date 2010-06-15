@@ -611,50 +611,17 @@ assumption.
 Qed.
 
 (*
-   'Good' sequences have limit functions f where n < m implies
+   Well-formed sequences have limit functions f where n < m implies
    that (f n) is strictly embedded in (f m).
-*)
-Fixpoint good `(r : s ->> t) : Prop :=
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => good q
-  | Lim _ _ f t _  =>
-    (forall n, good (f n)) /\
-    forall n m, (n < m)%nat -> f n < f m
-  end.
-
-(*
-   Some kind of weaker variant of weak convergence that we call
-   well-formedness for now.
-   This does not imply weak convergence because f n and f Sn
-   might differ in length more than one step.
-   The idea is that, while not implying convergence, wf says
-   that at least limits are well-defined.
 *)
 Fixpoint wf `(r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => wf q
-  | Lim _ ts f t _ =>
+  | Lim _ _ f t _  =>
     (forall n, wf (f n)) /\
-    forall d, exists n, forall m,
-      (n <= m)%nat ->
-      term_eq_up_to d (ts m) t
+    forall n m, (n < m)%nat -> f n < f m
   end.
-
-(* TODO: This proofs wf is no longer needed *)
-Lemma wf_dumb : forall `(r : s ->> t), wf r.
-Proof.
-induction r as [t | s t r w p IH | s ts f t c IH].
-exact I.
-exact IH.
-split.
-exact IH.
-exact c.
-Qed.
-
-(* TODO: with a bit of thinking there might room for generalizing
-   good and wf in some way... *)
 
 (*
    Weakly convergent sequences have limit functions f where for
@@ -720,7 +687,7 @@ Qed.
    include the weaker properties?
    Now we always have to state all of them, e.g.
 
-     good r /\ wf r /\ weakly_convergent r /\ strongly_convergent r
+     wf r /\ weakly_convergent r /\ strongly_convergent r
 
    (Note that weak convergence does not imply strong convergence.)
 *)
@@ -803,18 +770,6 @@ Fixpoint finite `(r : s ->> t) : Prop :=
   | Cons _ _ q _ _ => finite q
   | Lim _ _ f t c  => False
   end.
-
-Lemma good_finite :
-  forall `(r : s ->> t),
-    finite r ->
-    good r.
-Proof.
-induction r as [t | s t r u p IH | s ts f t c IH]; intro H.
-exact I.
-apply IH.
-assumption.
-elim H.
-Qed.
 
 Lemma wf_finite :
   forall `(r : s ->> t),
@@ -1037,10 +992,10 @@ assumption.
 elim H.
 Qed.
 
-Lemma snoc_good :
+Lemma snoc_wf :
   forall `(p : s [>] t, r : t ->> u),
-    good r ->
-    good (snoc p r).
+    wf r ->
+    wf (snoc p r).
 Proof.
 induction r as [u | t u r v o IH | t us f u c IH]; simpl.
 trivial.
@@ -1247,11 +1202,11 @@ apply IH; assumption.
 elim H2.
 Qed.
 
-Lemma append_good :
+Lemma append_wf :
   forall `(r : s ->> t, q : t ->> u),
-    good r ->
-    good q ->
-    good (append r q).
+    wf r ->
+    wf q ->
+    wf (append r q).
 Proof.
 induction q as [u | t u q v p IH | t us f u c IH]; simpl.
 trivial.
