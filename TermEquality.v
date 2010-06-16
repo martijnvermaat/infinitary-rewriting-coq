@@ -24,7 +24,7 @@ CoInductive term_bis : term -> term -> Prop :=
 
 (* Equality of infinite terms up to a given depth *)
 Inductive term_eq_up_to : nat -> term -> term -> Prop :=
-  | teut_0   : forall t u : term, term_eq_up_to 0 t u
+  | teut_0   : forall t u, term_eq_up_to 0 t u
   | teut_var : forall n x, term_eq_up_to n (Var x) (Var x)
   | teut_fun : forall n f v w,
                (forall i, term_eq_up_to n (v i) (w i)) ->
@@ -94,6 +94,14 @@ intro i.
 assert (H0 := term_eq_fun_inv H).
 apply eq2bis.
 apply H0.
+Qed.
+
+Lemma term_bis_term_eq :
+  forall (t u : term), term_bis t u <-> term_eq t u.
+Proof.
+split.
+apply term_bis_implies_term_eq.
+apply term_eq_implies_term_bis.
 Qed.
 
 Lemma term_eq_up_to_trans :

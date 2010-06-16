@@ -74,6 +74,10 @@ Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
               end
   end.
 
+(*
+   TODO: maybe we should build in inductive Finite and/or coinductive
+   Infinite property (as in A Tutorial on (Co)Inductive Types)
+*)
 Definition infinite (t : term) : Prop :=
   forall d,
     exists p : position,
