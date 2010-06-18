@@ -47,6 +47,7 @@ CoFixpoint substitute' (sigma : substitution) (t : term) : term :=
   end.
 
 (* Take apart a coinductive term up to depth 1 and put it back together *)
+(* TODO: move to Term.v *)
 Definition peek (t : term) : term :=
   match t with
   | Var x      => Var x

@@ -25,23 +25,23 @@ CoInductive term_bis : term -> term -> Prop :=
 (* Equality of infinite terms up to a given depth *)
 Inductive term_eq_up_to : nat -> term -> term -> Prop :=
   | teut_0   : forall t u, term_eq_up_to 0 t u
-  | teut_var : forall n x, term_eq_up_to n (Var x) (Var x)
-  | teut_fun : forall n f v w,
-               (forall i, term_eq_up_to n (v i) (w i)) ->
-               term_eq_up_to (S n) (Fun f v) (Fun f w).
+  | teut_var : forall d x, term_eq_up_to d (Var x) (Var x)
+  | teut_fun : forall d f v w,
+               (forall i, term_eq_up_to d (v i) (w i)) ->
+               term_eq_up_to (S d) (Fun f v) (Fun f w).
 
 Definition term_eq (t u : term) :=
-  forall n, term_eq_up_to n t u.
+  forall d, term_eq_up_to d t u.
 
 (* We do not see how to prove the following lemma without appeal to JMeq
    (as used by the tactic [dependent destruction]):
 *)
 Lemma teut_fun_inv :
-  forall n f v w,
-  term_eq_up_to (S n) (Fun f v) (Fun f w) ->
-  forall i, term_eq_up_to n (v i) (w i).
+  forall d f v w,
+  term_eq_up_to (S d) (Fun f v) (Fun f w) ->
+  forall i, term_eq_up_to d (v i) (w i).
 Proof.
-intros n f v w H.
+intros d f v w H.
 dependent destruction H.
 assumption.
 Qed.
@@ -58,15 +58,15 @@ Qed.
 Lemma term_bis_implies_term_eq :
   forall (t u : term), term_bis t u -> term_eq t u.
 Proof.
-intros t u H n.
+intros t u H d.
 generalize t u H; clear H t u.
-induction n as [| n IHn]; intros t u H.
+induction d as [| d IHd]; intros t u H.
 constructor.
 destruct H.
 constructor.
 constructor.
 intro i.
-apply IHn with (1:=(H i)).
+apply IHd with (1:=(H i)).
 Qed.
 
 Lemma term_eq_fun_inv_symbol :
@@ -105,12 +105,12 @@ apply term_eq_implies_term_bis.
 Qed.
 
 Lemma term_eq_up_to_trans :
-  forall n t u v,
-    term_eq_up_to n t u ->
-    term_eq_up_to n u v ->
-    term_eq_up_to n t v.
+  forall d t u v,
+    term_eq_up_to d t u ->
+    term_eq_up_to d u v ->
+    term_eq_up_to d t v.
 Proof.
-induction n as [| n IH].
+induction d as [| d IH].
 constructor.
 intros t u v H1.
 inversion_clear H1; intro H2.
@@ -124,23 +124,23 @@ Qed.
 (* TODO: define term_eq_refl and term_eq_symm using the
    term_eq_up_to_* equivalents, just like the *_trans case. *)
 Lemma term_eq_up_to_refl :
-  forall n t,
-    term_eq_up_to n t t.
+  forall d t,
+    term_eq_up_to d t t.
 Proof.
 Admitted.
 
 Lemma term_eq_up_to_symm :
-  forall n t u,
-    term_eq_up_to n t u ->
-    term_eq_up_to n u t.
+  forall d t u,
+    term_eq_up_to d t u ->
+    term_eq_up_to d u t.
 Proof.
 Admitted.
 
 Lemma term_eq_refl : forall t, term_eq t t.
 Proof.
-intros t n.
+intros t d.
 revert t.
-induction n as [| n IH]; intro t.
+induction d as [| d IH]; intro t.
 constructor.
 destruct t.
 constructor.
@@ -151,23 +151,23 @@ Qed.
 
 Lemma term_eq_symm : forall t u, term_eq t u -> term_eq u t.
 Proof.
-intros t u H n.
-assert (H' := H n). clear H.
+intros t u H d.
+assert (H' := H d). clear H.
 revert t u H'.
-induction n; intros.
+induction d; intros.
 constructor.
 inversion_clear H'.
 constructor.
 constructor.
 intro.
-apply IHn.
+apply IHd.
 apply H.
 Qed.
 
 Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
-intros t u v H1 H2 n.
-apply (term_eq_up_to_trans (H1 n) (H2 n)).
+intros t u v H1 H2 d.
+apply (term_eq_up_to_trans (H1 d) (H2 d)).
 Qed.
 
 Lemma term_bis_refl : forall t, term_bis t t.
@@ -201,17 +201,17 @@ apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
 Qed.
 
 Lemma term_eq_up_to_weaken :
-  forall t u n, term_eq_up_to (S n) t u -> term_eq_up_to n t u.
+  forall t u d, term_eq_up_to (S d) t u -> term_eq_up_to d t u.
 Proof.
-intros t u n H.
+intros t u d H.
 revert t u H.
-induction n; intros t u H.
+induction d; intros t u H.
 constructor.
 inversion_clear H.
 apply term_eq_up_to_refl.
 constructor.
 intro i.
-apply IHn.
+apply IHd.
 apply H0.
 Qed.
 

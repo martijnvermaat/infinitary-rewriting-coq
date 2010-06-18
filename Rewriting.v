@@ -115,9 +115,10 @@ Definition normal_form t :=
     In r system /\ fill c (substitute u (lhs r)) [~] t.
 
 (* f converges to t *)
+(* TODO: probably move to Term or TermEquality *)
 Definition converges (f : nat -> term) (t : term) : Prop :=
   forall d, exists n, forall m,
-    (n <= m)%nat ->
+    n <= m ->
     term_eq_up_to d (f m) t.
 
 Reserved Notation "s ->> t" (no associativity, at level 40).
@@ -138,7 +139,7 @@ where "s ->> t" := (sequence s t).
 Inductive sequence : term -> term -> Type :=
   | Nil   : forall t, t ->> t
   | Cons  : forall `(r : s ->> t, p : t [>] u), s ->> u
-  | Lim   : forall `(f : forall n, s ->> ts n, c : converges ts t), s ->> t
+  | Lim   : forall `(f : (forall n, s ->> ts n), c : converges ts t), s ->> t
 where "s ->> t" := (sequence s t).
 
 (*
