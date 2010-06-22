@@ -374,14 +374,17 @@ Qed.
    Idea by Vincent, this is all still a very rough try *)
 (* TODO: maybe should Nil s <= q only hold for q : s ->> _ ? *)
 (*
-   TODO: in the cons case, it should be possible to cons a step after r
-   that is equal to q[stp i] under some equivelance of steps instread of
-   requiring exactly q[stp i].
+   In the Cons case, the target term of p (q[2 i]) could be relaxed to any
+   term, but we stick with the design that source and target terms of steps
+   and sequences are not relevant modulo bisimilarity. A step p' with a
+   different target term can always be modified to one with the fitting
+   target term (q[2 i]), because they would be bisimilar anyway.
+   UPDATE: changed it anyway, looks better this way :)
 *)
 Inductive embed : forall `(r : s ->> t, q : u ->> v), Prop :=
   | Embed_Nil  : forall s `(q : u ->> v),
                    Nil s <= q
-  | Embed_Cons : forall `(q : u ->> v, r : s ->> (q[1 i]), p : (q[1 i]) [>] (q[2 i])),
+  | Embed_Cons : forall `(q : u ->> v, r : s ->> (q[1 i]), p : (q[1 i]) [>] t),
                    r <= q[seq i] ->
                    step_eq p (q[stp i]) ->
                    Cons r p <= q
@@ -437,7 +440,7 @@ Lemma embed_pred_left :
     r[seq i] <= q.
 Proof.
 intros s t r u v q i H.
-induction H as [s u v q | u v q s j r p H IH Hp | s ts f t c u v q H IH].
+induction H as [s u v q | u v q s j r t p H IH Hp | s ts f t c u v q H IH].
 elim i.
 destruct i as [[] | i]; apply embed_pred_right with j.
 apply H.
@@ -500,13 +503,13 @@ trivial.
 Qed.
 
 Lemma embed_cons_intro :
-  forall `(r : s ->> t, q : u ->> t, p : t [>] v, o : t [>] v),
+  forall `(r : s ->> t, q : u ->> t, p : t [>] v, o : t [>] w),
     r <= q ->
     step_eq p o ->
     Cons r p <= Cons q o.
 Proof.
 intros.
-apply (@Embed_Cons u v (Cons q o) s (inl _ tt) r); assumption.
+apply (@Embed_Cons u w (Cons q o) s (inl _ tt) r); assumption.
 Qed.
 
 Lemma embed_lim_right :
@@ -547,15 +550,15 @@ Lemma embed_trans :
 Proof.
 intros s t r u v q w z x H1.
 revert w z x.
-induction H1 as [s u v q | u v q s i r p H IH Hp | s ts f t c u v q H IH]; intros w z x H2.
+induction H1 as [s u v q | u v q s i r t p H IH Hp | s ts f t c u v q H IH]; intros w z x H2.
 constructor.
-induction H2 as [u w z x | w z x u j q o H' IH' Ho | u ts' f v c' w z x H' IH'].
+induction H2 as [u w z x | w z x u j q v o H' IH' Ho | u ts' f v c' w z x H' IH'].
 destruct i.
 destruct i as [[] | i']; simpl in * |- *.
 apply Embed_Cons.
 apply IH.
 assumption.
-apply step_eq_trans with (x[1 j]) (x[2 j]) o.
+apply step_eq_trans with (x[1 j]) v o.
 assumption.
 assumption.
 apply embed_pred_right with j.
@@ -921,12 +924,12 @@ apply embed_cons_right; simpl in IH.
 trivial.
 apply embed_lim_right with 0; simpl in IH |- *.
 trivial.
-induction q as [t | t v q w o IH | t vs f v c IH]; simpl.
+induction q as [w | w v q z o IH | w vs f v c IH]; simpl.
 destruct i.
 destruct i as [[] | i].
 simpl.
 change (Cons (snoc p r) (Cons (snoc p q) p0 [stp inl _ tt]) <= Cons (snoc p q) o).
-apply (@Embed_Cons s w (Cons (snoc p q) o) s (inl _ tt) (snoc p r)).
+apply (@Embed_Cons s z (Cons (snoc p q) o) s (inl _ tt) (snoc p r)).
 simpl. simpl in IH. simpl in IHembed.
 apply IHembed.
 assumption.
@@ -1189,12 +1192,12 @@ apply embed_cons_right; simpl in IH.
 trivial.
 apply embed_lim_right with 0; simpl in IH |- *.
 trivial.
-induction z as [t | t v z w o IH | t vs f v c IH]; simpl.
+induction z as [w | w v z x o IH | w vs f v c IH]; simpl.
 destruct i.
 destruct i as [[] | i].
 simpl.
 change (Cons (append r r0) (Cons (append r z) p [stp inl _ tt]) <= Cons (append r z) o).
-apply (@Embed_Cons s w (Cons (append r z) o) s (inl _ tt) (append r r0)).
+apply (@Embed_Cons s x (Cons (append r z) o) s (inl _ tt) (append r r0)).
 simpl. simpl in IH. simpl in IHembed.
 apply IHembed.
 assumption.
@@ -1307,7 +1310,6 @@ destruct i as [[] | i].
 simpl in H2 |- *.
 clear H1.
 Admitted.
-
 
 Lemma embed_not_append_pred_left :
   forall `(r : s ->> t, q : t ->> u, j : pred_type r),
