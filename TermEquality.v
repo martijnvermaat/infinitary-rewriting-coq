@@ -149,7 +149,8 @@ intro.
 apply IH.
 Qed.
 
-Lemma term_eq_symm : forall t u, term_eq t u -> term_eq u t.
+Lemma term_eq_symm :
+  forall t u, term_eq t u -> term_eq u t.
 Proof.
 intros t u H d.
 assert (H' := H d). clear H.
@@ -164,20 +165,25 @@ apply IHd.
 apply H.
 Qed.
 
-Lemma term_eq_trans : forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
+Lemma term_eq_trans :
+  forall t u v, term_eq t u -> term_eq u v -> term_eq t v.
 Proof.
 intros t u v H1 H2 d.
 apply (term_eq_up_to_trans (H1 d) (H2 d)).
 Qed.
 
-Lemma term_bis_refl : forall t, term_bis t t.
+Lemma term_bis_refl :
+  forall t, term_bis t t.
+Proof.
 cofix.
 destruct t as [x|f v]; constructor.
 intro i.
 apply term_bis_refl.
 Qed.
 
-Lemma term_bis_symm : forall t u, term_bis t u -> term_bis u t.
+Lemma term_bis_symm :
+  forall t u, term_bis t u -> term_bis u t.
+Proof.
 cofix.
 destruct 1 as [x|f v w H]; constructor.
 intro i.
@@ -185,7 +191,9 @@ apply term_bis_symm.
 apply H.
 Qed.
 
-Lemma term_bis_trans : forall s t u, term_bis s t -> term_bis t u -> term_bis s u.
+Lemma term_bis_trans :
+  forall s t u, term_bis s t -> term_bis t u -> term_bis s u.
+Proof.
 cofix.
 destruct 1 as [x|f xs ys H1].
 intro. assumption.

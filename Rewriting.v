@@ -7,6 +7,7 @@ Require Export FiniteTerm.
 Require Export Term.
 Require Export Substitution.
 Require Export Context.
+Require Export ContextEquality.
 Require Export Ordinal.
 Require Export TermEquality.
 
@@ -76,6 +77,14 @@ Inductive step : term -> term -> Type :=
              fill c (substitute u (rhs r)) [~] t ->
              s [>] t
 where "s [>] t" := (step s t).
+
+(*
+   TODO: equality on steps, where we require:
+   * equality of contexts (based on term_bis)
+   * equality of rules (coq equality because they are finite?)
+   * equality of substitutions for all variables in rule
+   This would imply bisimilarity of source and target.
+*)
 
 (* Depth of rule application in rewriting step *)
 Definition depth s t (p : s [>] t) : nat :=
@@ -329,6 +338,11 @@ Qed.
 (* Embeddings of reductions
    Idea by Vincent, this is all still a very rough try *)
 (* TODO: maybe should Nil s <= q only hold for q : s ->> _ ? *)
+(*
+   TODO: in the cons case, it should be possible to cons a step after r
+   that is equal to q[stp i] under some equivelance of steps instread of
+   requiring exactly q[stp i].
+*)
 Inductive embed : forall `(r : s ->> t, q : u ->> v), Prop :=
   | Embed_Nil  : forall s `(q : u ->> v),
                    Nil s <= q
