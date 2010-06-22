@@ -112,6 +112,15 @@ reflexivity.
 apply substitution_eq_refl.
 Qed.
 
+Lemma step_eq_trans :
+  forall `(p : s [>] t, o : u [>] v, m : w [>] z),
+    step_eq p o ->
+    step_eq o m ->
+    step_eq p m.
+Proof.
+(* TODO *)
+Admitted.
+
 (* Depth of rule application in rewriting step *)
 Definition depth s t (p : s [>] t) : nat :=
   match p with
@@ -372,9 +381,10 @@ Qed.
 Inductive embed : forall `(r : s ->> t, q : u ->> v), Prop :=
   | Embed_Nil  : forall s `(q : u ->> v),
                    Nil s <= q
-  | Embed_Cons : forall `(q : u ->> v, r : s ->> (q[1 i])),
+  | Embed_Cons : forall `(q : u ->> v, r : s ->> (q[1 i]), p : (q[1 i]) [>] (q[2 i])),
                    r <= q[seq i] ->
-                   Cons r (q[stp i]) <= q
+                   step_eq p (q[stp i]) ->
+                   Cons r p <= q
   | Embed_Lim  : forall `(f : (forall n, s ->> ts n), c : converges ts t, q : u ->> v),
                    (forall n, (f n) <= q) ->
                    Lim f c <= q
@@ -410,11 +420,10 @@ induction r as [t | s t r w p IH | s ts f t c IH]; intros u v q i H.
 constructor.
 dependent destruction H.
 destruct (pred_trans i i0) as [k T].
-revert r IH H.
+revert r p IH H H0.
 rewrite <- T.
-intros r IH H.
-apply Embed_Cons.
-assumption.
+intros r p IH H H0.
+apply Embed_Cons; assumption.
 constructor.
 intro n.
 dependent destruction H.
@@ -428,7 +437,7 @@ Lemma embed_pred_left :
     r[seq i] <= q.
 Proof.
 intros s t r u v q i H.
-induction H as [s u v q | u v q s j r H IH | s ts f t c u v q H IH].
+induction H as [s u v q | u v q s j r p H IH Hp | s ts f t c u v q H IH].
 elim i.
 destruct i as [[] | i]; apply embed_pred_right with j.
 apply H.
@@ -453,7 +462,7 @@ Lemma embed_cons_elim :
 Proof.
 intros s t r u v q w p x o H.
 dependent destruction H.
-destruct i as [[] |]; [| apply embed_pred_right with p]; assumption.
+destruct i as [[] |]; [| apply embed_pred_right with p0]; assumption.
 Qed.
 
 Lemma first_pred_after_cons_id :
@@ -482,8 +491,7 @@ Proof.
 induction r as [t | s t r z o _ | s ts f t c IH]; intros u v q w p H.
 constructor.
 dependent destruction H.
-apply (@Embed_Cons u w (Cons q p) s (inr _ i) r).
-assumption.
+apply (@Embed_Cons u w (Cons q p) s (inr _ i) r); assumption.
 constructor.
 intro n.
 apply IH.
@@ -492,13 +500,13 @@ trivial.
 Qed.
 
 Lemma embed_cons_intro :
-  forall `(r : s ->> t, q : u ->> t, p : t [>] v),
+  forall `(r : s ->> t, q : u ->> t, p : t [>] v, o : t [>] v),
     r <= q ->
-    Cons r p <= Cons q p.
+    step_eq p o ->
+    Cons r p <= Cons q o.
 Proof.
 intros.
-apply (@Embed_Cons u v (Cons q p) s (inl _ tt) r).
-assumption.
+apply (@Embed_Cons u v (Cons q o) s (inl _ tt) r); assumption.
 Qed.
 
 Lemma embed_lim_right :
@@ -509,8 +517,7 @@ Proof.
 induction r as [t | s t r w p _ | s ts f t c IH]; intros u ts' g v c' n H.
 constructor.
 dependent destruction H.
-apply (@Embed_Cons u v (Lim g c') s (existT (fun n => pred_type (g n)) n i) r).
-assumption.
+apply (@Embed_Cons u v (Lim g c') s (existT (fun n => pred_type (g n)) n i) r); assumption.
 constructor.
 intro m.
 apply (IH m u ts' g v c' n).
@@ -525,6 +532,7 @@ induction r as [t | s t r u p IH | s ts f t c IH].
 constructor.
 apply Embed_Cons with (q := Cons r p) (i := inl (pred_type r) tt).
 assumption.
+apply step_eq_refl.
 constructor.
 intro n.
 apply embed_lim_right with n.
@@ -539,20 +547,21 @@ Lemma embed_trans :
 Proof.
 intros s t r u v q w z x H1.
 revert w z x.
-induction H1 as [s u v q | u v q s i r H IH | s ts f t c u v q H IH]; intros w z x H2.
+induction H1 as [s u v q | u v q s i r p H IH Hp | s ts f t c u v q H IH]; intros w z x H2.
 constructor.
-induction H2 as [u w z x | w z x u j q H' IH' | u ts' f v c' w z x H' IH'].
+induction H2 as [u w z x | w z x u j q o H' IH' Ho | u ts' f v c' w z x H' IH'].
 destruct i.
 destruct i as [[] | i']; simpl in * |- *.
 apply Embed_Cons.
 apply IH.
 assumption.
+apply step_eq_trans with (x[1 j]) (x[2 j]) o.
+assumption.
+assumption.
 apply embed_pred_right with j.
-apply IH'.
-assumption.
-assumption.
+apply IH'; assumption.
 destruct i as [n i]; simpl in * |- *.
-apply (IH' n i r H IH).
+apply (IH' n i r p H Hp IH).
 constructor.
 intro n.
 exact (IH n w z x H2).
@@ -891,6 +900,7 @@ induction r as [s | s t r v o IH | s ts f t c IH]; intros u p; simpl.
 constructor.
 apply embed_cons_intro.
 apply IH.
+apply step_eq_refl.
 constructor.
 intro n.
 apply embed_lim_right with n.
@@ -915,14 +925,16 @@ induction q as [t | t v q w o IH | t vs f v c IH]; simpl.
 destruct i.
 destruct i as [[] | i].
 simpl.
-change (Cons (snoc p r) (Cons (snoc p q) o [stp inl _ tt]) <= Cons (snoc p q) o).
+change (Cons (snoc p r) (Cons (snoc p q) p0 [stp inl _ tt]) <= Cons (snoc p q) o).
 apply (@Embed_Cons s w (Cons (snoc p q) o) s (inl _ tt) (snoc p r)).
 simpl. simpl in IH. simpl in IHembed.
 apply IHembed.
 assumption.
+assumption.
 simpl in H. simpl in IH. simpl in IHembed. fold (@pred_type t v) in i.
 apply embed_cons_right.
 apply IH.
+assumption.
 assumption.
 trivial.
 destruct i as [n i].
@@ -930,6 +942,7 @@ simpl.
 apply embed_lim_right with n.
 simpl. simpl in IHembed. simpl in H. simpl in r. fold (pred_type (f n)) in i.
 apply IH.
+assumption.
 assumption.
 assumption.
 simpl.
@@ -1003,17 +1016,14 @@ destruct i as [[] | i]; simpl in * |- *.
 apply embed_cons_intro.
 apply IH with p.
 assumption.
+assumption.
 fold snoc_rec in i.
 apply embed_cons_right.
-apply IHq.
-assumption.
-assumption.
+apply IHq; assumption.
 destruct i as [n i].
 apply embed_lim_right with n.
-simpl.
-apply H0.
-assumption.
-assumption.
+simpl. (* This is pretty weird, because nothing changes... *)
+apply H1; assumption.
 constructor.
 intro n.
 apply IH with p.
@@ -1183,23 +1193,20 @@ induction z as [t | t v z w o IH | t vs f v c IH]; simpl.
 destruct i.
 destruct i as [[] | i].
 simpl.
-change (Cons (append r r0) (Cons (append r z) o [stp inl _ tt]) <= Cons (append r z) o).
+change (Cons (append r r0) (Cons (append r z) p [stp inl _ tt]) <= Cons (append r z) o).
 apply (@Embed_Cons s w (Cons (append r z) o) s (inl _ tt) (append r r0)).
 simpl. simpl in IH. simpl in IHembed.
 apply IHembed.
 assumption.
+assumption.
 simpl in H. simpl in IH. simpl in IHembed. fold (@pred_type t v) in i.
 apply embed_cons_right.
-apply IH.
-assumption.
-trivial.
+apply IH; assumption.
 destruct i as [n i].
 simpl.
 apply embed_lim_right with n.
 simpl. simpl in IHembed. simpl in H. simpl in r. fold (pred_type (f n)) in i.
-apply IH.
-assumption.
-assumption.
+apply IH; assumption.
 simpl.
 constructor.
 simpl.
@@ -1310,10 +1317,10 @@ induction q; simpl; intros i H1.
 contradict H1.
 apply embed_not_pred_right.
 dependent destruction H1.
-destruct (pred_trans i i0) as [j H].
+destruct (pred_trans i i0) as [j H2].
 specialize IHq with r j.
 apply IHq.
-rewrite H.
+rewrite H2.
 assumption.
 dependent destruction H1.
 specialize H0 with 0.
