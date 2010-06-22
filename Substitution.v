@@ -1,3 +1,4 @@
+Require Export List.
 Require Export FiniteTerm.
 Require Export Term.
 Require Import TermEquality.
@@ -16,6 +17,20 @@ Notation fterm := (finite_term F X).
 
 (* Type of substitutions of terms for variables *)
 Definition substitution := X -> term.
+
+(* Equality of substitutions on a list of variables *)
+Fixpoint substitution_eq (vars : list X) (sigma sigma' : substitution) :=
+  match vars with
+  | nil     => True
+  | x :: xs => (substitution_eq xs sigma sigma') /\ (sigma x = sigma' x)
+  end.
+
+(* This equality is reflexive *)
+Lemma substitution_eq_refl :
+  forall vars sigma, substitution_eq vars sigma sigma.
+Proof.
+induction vars; [simpl | split]; trivial.
+Qed.
 
 (* The identity substitution *)
 Definition empty_substitution (x : X) : term := Var x.

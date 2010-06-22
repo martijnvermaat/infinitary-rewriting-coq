@@ -86,6 +86,32 @@ where "s [>] t" := (step s t).
    This would imply bisimilarity of source and target.
 *)
 
+Definition step_eq `(p : s [>] t, o : u [>] v) :=
+  match p, o with
+  | Step _ _ r c u _ _ _, Step _ _ r' c' u' _ _ _ =>
+    context_bis c c' /\ r = r' /\ substitution_eq (vars (lhs r)) u u'
+  end.
+
+Lemma step_eq_source :
+  forall `(p : s [>] t, o : u [>] v),
+    step_eq p o ->
+    s [~] u.
+Proof.
+intros _ _ [s t r c a Hr Hs Ht] _ _ [u v r' c' b Hr' Hu Hv] H.
+(* TODO: this should be possible, but requires some work *)
+Admitted.
+
+Lemma step_eq_refl :
+  forall `(p : s [>] t), step_eq p p.
+Proof.
+intros _ _ [].
+constructor.
+apply context_bis_refl.
+split.
+reflexivity.
+apply substitution_eq_refl.
+Qed.
+
 (* Depth of rule application in rewriting step *)
 Definition depth s t (p : s [>] t) : nat :=
   match p with
