@@ -190,6 +190,11 @@ where "s ->> t" := (sequence s t).
    Coq ignores the recursive call in the Lim constructor and therefore
    the induction principle is missing a hypothesis. We reset the
    generated induction principle and create a new one below.
+
+   UPDATE: This was only true for our Sigma type definition, Coq generates
+   a perfectly fine induction principle now. For the moment, we keep our
+   own induction principle though, because the order of parameters is
+   different (this affects all proofs with 'induction r as [...]').
 *)
 Reset sequence_rect.
 
@@ -395,6 +400,8 @@ where "r <= q" := (embed r q).
 
 Definition embed_strict `(r : s ->> t, q : u ->> v) := exists i, r <= q[seq i].
 Infix " < " := embed_strict (no associativity, at level 70).
+
+(* TODO: define equality based on embed *)
 
 Lemma embed_length :
   forall `(r : s ->> t, q : u ->> v),
