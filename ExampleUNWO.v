@@ -1223,42 +1223,308 @@ Lemma rewrites_to_itself_DU :
 Proof.
 intros s p.
 dependent destruction p.
-destruct i as [H | [H | H]]; try (rewrite <- H in t1, t0; clear H).
+destruct i as [H | [H | []]]; try (rewrite <- H in t1, t0; clear H).
 
 unfold DU, lhs, DU_l in t0.
 unfold DU, rhs, DU_r in t1.
 apply term_bis_trans with (fill c (substitute u (1 !))).
 exact (term_bis_symm t1).
 clear t1.
-induction c as [| f i j e v c IH w]; simpl in t0 |- *.
 
-(* This does not seem to be the right way, we cannot prove the induction step *)
-
-(* from t0 deduce u 1 [=] repeat_DU, then transitivity of [=] *)
-apply term_eq_implies_term_bis.
-intro n.
-assert (H := (term_bis_implies_term_eq t0) (S (S n))).
-rewrite (peek_eq repeat_DU) in H.
-dependent destruction H.
-assert (H1 := H First).
-dependent destruction H1.
-assert (H2 := H0 First).
-rewrite (peek_eq repeat_DU) in H2.
-dependent destruction H2.
-constructor.
-unfold vmap in x; simpl in x.
-rewrite <- x.
-rewrite (peek_eq repeat_DU).
-simpl.
-constructor.
+assert ((substitute u (D @@ U @@ 1!)) [~] repeat_DU).
+induction c using context_ind2; simpl in t0.
 assumption.
 
-(*apply IH; clear IH.*)
-admit. (* more work *)
+(* absurd case *)
+rewrite (peek_eq repeat_DU) in t0.
+simpl in t0.
+dependent destruction t0.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+dependent destruction H.
 
-admit. (* same as previous case *)
+apply IHc; clear IHc.
+rewrite (peek_eq repeat_DU) in t0.
+simpl in t0.
+dependent destruction t0.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+dependent destruction H.
+specialize H with (First (n := 0)).
+simpl in H.
+assert (nm : n = 0 /\ m = 0).
+destruct n as [| [| n]]; auto; discriminate a.
+revert a x z H.
+rewrite (proj1 nm).
+rewrite (proj2 nm).
+simpl.
+intro a.
+clear n m nm.
+dependent destruction a.
+simpl.
+intros x z H.
+assumption.
 
-contradict H.
+assert (substitute u (1 !) [~] repeat_DU).
+dependent destruction H.
+specialize H with (First (n := 0)).
+unfold vmap in H.
+simpl in H.
+dependent destruction H.
+specialize H with (First (n := 0)).
+unfold vmap in H.
+simpl in H.
+rewrite (peek_eq repeat_DU) in x0.
+dependent destruction x0.
+assumption.
+
+assert (substitute u (D @@ U @@ 1 !) [~] substitute u (1 !)).
+apply term_bis_trans with repeat_DU.
+assumption.
+apply term_bis_symm.
+assumption.
+clear H H0.
+
+(* TODO: This should be a separate lemma *)
+generalize dependent (substitute u (1 !)).
+generalize dependent (substitute u (D @@ U @@ 1 !)).
+generalize dependent repeat_DU.
+clear t r u.
+
+induction c as [| [] i j e v c IH w]; intros s t H1 u H2; simpl in H1.
+apply term_bis_trans with t.
+apply term_bis_symm.
+assumption.
+assumption.
+
+dependent destruction H1.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+apply IH with t.
+assumption.
+assumption.
+inversion i.
+
+dependent destruction H1.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+apply IH with t.
+assumption.
+assumption.
+inversion i.
+
+(* This case is the same as the previous *)
+
+unfold UD, lhs, UD_l in t0.
+unfold UD, rhs, UD_r in t1.
+apply term_bis_trans with (fill c (substitute u (1 !))).
+exact (term_bis_symm t1).
+clear t1.
+
+destruct c; simpl in t0 |- *; rewrite (peek_eq repeat_DU) in t0; simpl in t0;
+dependent destruction t0.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v v0 H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v v0 H.
+clear v.
+
+change (fill c (substitute u (U @@ D @@ 1!)) [~] (U @ repeat_DU)) in H.
+assert ((substitute u (U @@ D @@ 1!)) [~] (U @ repeat_DU)).
+induction c using context_ind2; simpl in H.
+assumption.
+
+(* absurd case *)
+dependent destruction H.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+rewrite (peek_eq repeat_DU) in H.
+simpl in H.
+dependent destruction H.
+
+apply IHc; clear IHc.
+rewrite (peek_eq repeat_DU) in H.
+simpl in H.
+dependent destruction H.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+dependent destruction H.
+specialize H with (First (n := 0)).
+simpl in H.
+assert (nm : n = 0 /\ m = 0).
+destruct n as [| [| n]]; auto; discriminate a.
+revert a x z H.
+rewrite (proj1 nm).
+rewrite (proj2 nm).
+simpl.
+intro a.
+clear n m nm.
+dependent destruction a.
+simpl.
+intros x z H.
+assumption.
+
+assert (substitute u (1 !) [~] (U @ repeat_DU)).
+dependent destruction H0.
+specialize H0 with (First (n := 0)).
+unfold vmap in H0.
+simpl in H.
+dependent destruction H0.
+specialize H0 with (First (n := 0)).
+unfold vmap in H0.
+simpl in H0.
+rewrite (peek_eq repeat_DU) in x.
+dependent destruction x.
+assumption.
+
+assert (substitute u (U @@ D @@ 1 !) [~] substitute u (1 !)).
+apply term_bis_trans with (U @ repeat_DU).
+assumption.
+apply term_bis_symm.
+assumption.
+clear H0 H1.
+
+rewrite (peek_eq (repeat_DU)).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+clear v0.
+change (fill c (substitute u (1 !)) [~] (U @ repeat_DU)).
+
+(* TODO: This should be a separate lemma *)
+generalize dependent (substitute u (1 !)).
+generalize dependent (substitute u (U @@ D @@ 1 !)).
+generalize dependent (U @ repeat_DU).
+clear t r u.
+
+induction c as [| [] i j e v c IH w]; intros s t H1 u H2; simpl in H1.
+apply term_bis_trans with t.
+apply term_bis_symm.
+assumption.
+assumption.
+
+dependent destruction H1.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+apply IH with t.
+assumption.
+assumption.
+inversion i.
+
+dependent destruction H1.
+specialize H with (First (n := 0)).
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v w H.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+simpl.
+intro e.
+clear i j ij.
+dependent destruction e.
+simpl.
+intros v w H.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+apply IH with t.
+assumption.
+assumption.
+inversion i.
+inversion i.
 Qed.
 
 (* Zero-step reduction psi ->> psi *)

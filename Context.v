@@ -23,6 +23,37 @@ Inductive context : Type :=
 
 Implicit Arguments CFun [i j].
 
+Section InductionPrinciple.
+
+  Variable P : context -> Type.
+
+  Hypothesis H1 : P Hole.
+
+  Hypothesis H2 :
+    forall (f : F) (i j : nat) (e : i + S j = arity f) (v : terms i)
+      (w : terms j),
+      P (CFun f e v Hole w).
+
+  Hypothesis H3 :
+    forall (f : F) (i j : nat) (e : i + S j = arity f) (v : terms i)
+      (w : terms j)
+      (g : F) (n m : nat) (a : n + S m = arity g) (x : terms n)
+      (c : context) (z : terms m),
+      P c ->
+      P (CFun f e v (CFun g a x c z) w).
+
+  Fixpoint context_rect2 c : P c :=
+    match c return P c with
+    | Hole                  => H1
+    | CFun f i j e v Hole w => H2 f e v w
+    | CFun f i j e v (CFun g n m a x c z) w => H3 f e v w g a x z (context_rect2 c)
+    end.
+
+End InductionPrinciple.
+
+Definition context_ind2 (P : context -> Prop) :=
+  context_rect2 P.
+
 (* Depth of hole *)
 Fixpoint hole_depth c : nat :=
   match c with
