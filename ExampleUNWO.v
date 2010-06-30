@@ -961,7 +961,7 @@ rewrite (peek_eq repeat_D), (peek_eq repeat_U) in H.
 inversion H.
 Qed.
 
-(* DDD... and UUU are the only infinite normal forms *)
+(* DDD... and UUU... are the only infinite normal forms *)
 (* TODO: this is a very ugly proof *)
 Lemma only_infinite_nf_D_U :
   forall t,
@@ -978,32 +978,64 @@ reflexivity.
 discriminate Dp.
 
 left.
-cofix co.
-dependent destruction co. (* This of course is not guarded *)
-specialize H with (First (n := 0)).
+assert (H : term_eq_up_to 1 (@Fun F X D args) repeat_D).
+rewrite (peek_eq repeat_D).
+simpl.
+constructor.
+intro i.
+constructor.
+apply term_eq_implies_term_bis.
+intro n.
+generalize dependent (@Fun F X D args).
+induction n as [| n IH]; intros t It Nt H.
+constructor.
+rewrite (peek_eq repeat_D) in H.
+dependent destruction H.
+clear H.
 rewrite (peek_eq repeat_D).
 simpl.
 constructor.
 intro i.
 dependent destruction i.
 simpl.
-unfold infinite in It.
-specialize It with 2.
-destruct It as [p [H1 H2]].
-destruct p as [| a [| b [| c p]]].
-inversion H1.
-inversion H1.
+
+apply IH; clear IH.
+intro d.
+assert (H := It (S d)).
+destruct H as [p [H1 H2]].
+dependent destruction p.
+exists p.
+split.
+reflexivity.
+destruct n0.
+assumption.
+contradict H2.
+reflexivity.
+
+intros [c [r [u [H1 H2]]]].
+apply Nt.
+exists (D @@@ c).
+exists r.
+exists u.
+split.
+assumption.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+assumption.
+inversion i.
 
 (* contradict this with Nt *)
-assert (Hx : ~ exists args', args First = @Fun F X U args').
+assert (Hx : ~ exists w, v First = @Fun F X U w).
 intro Hx.
 unfold normal_form in Nt.
 apply Nt.
-clear H1 H2 H Nt. (* readability *)
-destruct Hx as [args' H].
+clear It Nt. (* readability *)
+destruct Hx as [w H].
 exists Hole.
 exists DU.
-exists (fun n => args' First).
+exists (fun n => w First).
 split.
 left; reflexivity.
 simpl.
@@ -1023,38 +1055,28 @@ inversion i.
 inversion i.
 clear Nt.
 
-destruct a.
+unfold infinite in It.
+specialize It with 2.
+destruct It as [p [H1 H2]].
+destruct p as [| [| a] [| b [| c p]]].
+inversion H1.
+inversion H1.
 simpl in H2.
 unfold vhead in H2.
-destruct (args First).
+destruct (v First).
 contradict H2.
 reflexivity.
 destruct f.
-simpl in H2.
 rewrite (peek_eq repeat_D).
 simpl.
 constructor.
 intro i.
-dependent destruction i.
-simpl.
-dependent destruction H.
-specialize H with (First (n := 0)).
-apply term_bis_trans with (w0 First).
-assumption.
-rewrite (peek_eq repeat_D) in x0.
-simpl in x0.
-dependent destruction x0.
-rewrite (peek_eq repeat_D) in x.
-simpl in x.
-dependent destruction x.
-simpl.
-apply term_bis_refl.
-inversion i.
+constructor.
 contradict Hx.
-exists v.
+exists v0.
 reflexivity.
-
-simpl in H2.
+inversion H1.
+inversion H1.
 contradict H2.
 reflexivity.
 inversion H1.
@@ -1063,32 +1085,64 @@ inversion i.
 (* Same argument follows *)
 
 right.
-cofix co.
-dependent destruction co.
-specialize H with (First (n := 0)).
+assert (H : term_eq_up_to 1 (@Fun F X U args) repeat_U).
+rewrite (peek_eq repeat_U).
+simpl.
+constructor.
+intro i.
+constructor.
+apply term_eq_implies_term_bis.
+intro n.
+generalize dependent (@Fun F X U args).
+induction n as [| n IH]; intros t It Nt H.
+constructor.
+rewrite (peek_eq repeat_U) in H.
+dependent destruction H.
+clear H.
 rewrite (peek_eq repeat_U).
 simpl.
 constructor.
 intro i.
 dependent destruction i.
 simpl.
-unfold infinite in It.
-specialize It with 2.
-destruct It as [p [H1 H2]].
-destruct p as [| a [| b [| c p]]].
-inversion H1.
-inversion H1.
+
+apply IH; clear IH.
+intro d.
+assert (H := It (S d)).
+destruct H as [p [H1 H2]].
+dependent destruction p.
+exists p.
+split.
+reflexivity.
+destruct n0.
+assumption.
+contradict H2.
+reflexivity.
+
+intros [c [r [u [H1 H2]]]].
+apply Nt.
+exists (U @@@ c).
+exists r.
+exists u.
+split.
+assumption.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+assumption.
+inversion i.
 
 (* contradict this with Nt *)
-assert (Hx : ~ exists args', args First = @Fun F X D args').
+assert (Hx : ~ exists w, v First = @Fun F X D w).
 intro Hx.
 unfold normal_form in Nt.
 apply Nt.
-clear H1 H2 Nt H. (* readability *)
-destruct Hx as [args' H].
+clear It Nt. (* readability *)
+destruct Hx as [w H].
 exists Hole.
 exists UD.
-exists (fun n => args' First).
+exists (fun n => w First).
 split.
 right; left; reflexivity.
 simpl.
@@ -1108,44 +1162,33 @@ inversion i.
 inversion i.
 clear Nt.
 
-destruct a.
+unfold infinite in It.
+specialize It with 2.
+destruct It as [p [H1 H2]].
+destruct p as [| [| a] [| b [| c p]]].
+inversion H1.
+inversion H1.
 simpl in H2.
 unfold vhead in H2.
-destruct (args First).
+destruct (v First).
 contradict H2.
 reflexivity.
 destruct f.
 contradict Hx.
-exists v.
+exists v0.
 reflexivity.
-simpl in H2.
 rewrite (peek_eq repeat_U).
 simpl.
 constructor.
 intro i.
-dependent destruction i.
-simpl.
-dependent destruction H.
-specialize H with (First (n := 0)).
-apply term_bis_trans with (w0 First).
-assumption.
-rewrite (peek_eq repeat_U) in x0.
-simpl in x0.
-dependent destruction x0.
-rewrite (peek_eq repeat_U) in x.
-simpl in x.
-dependent destruction x.
-simpl.
-apply term_bis_refl.
-inversion i.
-
-simpl in H2.
+constructor.
+inversion H1.
+inversion H1.
 contradict H2.
 reflexivity.
 inversion H1.
 inversion i.
-(* not a guarded proof *)
-Admitted.
+Qed.
 
 (* Reductions *)
 Notation Step := (Step UNWO_trs).
