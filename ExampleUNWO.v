@@ -608,6 +608,29 @@ rewrite (proj2 S).
 discriminate.
 Qed.
 
+(* UUU... is infinite *)
+Lemma infinite_U :
+  infinite repeat_U.
+Proof.
+intro d.
+assert (S : exists p : position, position_depth p = d /\ subterm repeat_U p = Some repeat_U).
+exists ((fix z n := match n with O => nil | S n => 0 :: (z n) end) d).
+induction d; split.
+reflexivity.
+reflexivity.
+simpl.
+f_equal.
+apply IHd.
+simpl.
+apply IHd.
+destruct S as [p S].
+exists p.
+split.
+apply S.
+rewrite (proj2 S).
+discriminate.
+Qed.
+
 (* DDD... is a normal form *)
 Lemma nf_D :
   normal_form (system := UNWO_trs) repeat_D.
@@ -616,7 +639,7 @@ Proof.
    Also, I expect that this could be generalized and shortened quite a bit
    by using pos_eq. *)
 intros [c [r [u [H1 H2]]]].
-destruct H1 as [H1 | H1].
+destruct H1 as [H1 | [H1 | []]].
 rewrite <- H1 in *|-.
 clear H1.
 assert (H := (term_bis_implies_term_eq H2) (S (S (hole_depth c)))).
@@ -711,16 +734,209 @@ intro e.
 constructor.
 constructor.
 
-(* TODO: almost the same argument as above for r=UD instead of r=DU *)
-admit.
-Admitted.
+(* almost the same argument as above for r=UD instead of r=DU *)
+
+rewrite <- H1 in *|-.
+clear H1.
+assert (H := (term_bis_implies_term_eq H2) (S (hole_depth c))).
+rewrite (peek_eq repeat_D) in H.
+dependent destruction H.
+assert (H' := H First).
+simpl in H'.
+clear x.
+
+induction c.
+
+rewrite (peek_eq repeat_D) in H2.
+inversion_clear H2.
+
+rewrite (peek_eq repeat_D) in H2.
+(*intro x0.*)
+assert (d : f = D).
+inversion_clear H2.
+reflexivity.
+
+revert e H2 H H'.
+dependent rewrite d.
+intro e.
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v0 v1.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+intros e v1 v2 H2 H H'.
+clear f i j d ij.
+apply IHc; clear IHc.
+
+(* this part is quite ugly *)
+apply term_eq_implies_term_bis.
+intro n.
+assert (H2' : term_eq_up_to (S n) (@Fun F X D (vcons (fill c (substitute u (lhs UD))) v2)) (D @ repeat_D)).
+assert (jaja : fill (@CFun F X D 0 0 e v1 c v2) (substitute u (lhs UD)) = @Fun F X D (vcons (fill c (substitute u (lhs UD))) v2)).
+dependent destruction e.
+reflexivity.
+rewrite jaja in H2.
+exact ((term_bis_implies_term_eq H2) (S n)).
+apply (@teut_fun_inv F X n D (vcons (fill c (substitute u (lhs UD))) v2) (vcons repeat_D (vnil term)) H2' First).
+intro i.
+apply term_eq_up_to_weaken.
+apply H.
+apply term_eq_up_to_weaken.
+assumption.
+Qed.
 
 (* UUU... is a normal form *)
 Lemma nf_U :
   normal_form (system := UNWO_trs) repeat_U.
 Proof.
-(* TODO: same as nf_D *)
-Admitted.
+(* This proof is just a copy of the repeat_D proof *)
+intros [c [r [u [H1 H2]]]].
+destruct H1 as [H1 | [H1 | []]].
+
+rewrite <- H1 in *|-.
+clear H1.
+assert (H := (term_bis_implies_term_eq H2) (S (hole_depth c))).
+rewrite (peek_eq repeat_U) in H.
+dependent destruction H.
+assert (H' := H First).
+simpl in H'.
+clear x.
+
+induction c.
+
+rewrite (peek_eq repeat_U) in H2.
+inversion_clear H2.
+
+rewrite (peek_eq repeat_U) in H2.
+(*intro x0.*)
+assert (d : f = U).
+inversion_clear H2.
+reflexivity.
+
+revert e H2 H H'.
+dependent rewrite d.
+intro e.
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v0 v1.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+intros e v1 v2 H2 H H'.
+clear f i j d ij.
+apply IHc; clear IHc.
+
+(* this part is quite ugly *)
+apply term_eq_implies_term_bis.
+intro n.
+assert (H2' : term_eq_up_to (S n) (@Fun F X U (vcons (fill c (substitute u (lhs DU))) v2)) (U @ repeat_U)).
+assert (jaja : fill (@CFun F X U 0 0 e v1 c v2) (substitute u (lhs DU)) = @Fun F X U (vcons (fill c (substitute u (lhs DU))) v2)).
+dependent destruction e.
+reflexivity.
+rewrite jaja in H2.
+exact ((term_bis_implies_term_eq H2) (S n)).
+apply (@teut_fun_inv F X n U (vcons (fill c (substitute u (lhs DU))) v2) (vcons repeat_U (vnil term)) H2' First).
+intro i.
+apply term_eq_up_to_weaken.
+apply H.
+apply term_eq_up_to_weaken.
+assumption.
+
+(* almost the same argument as above for r=DU instead of r=UD *)
+
+rewrite <- H1 in *|-.
+clear H1.
+assert (H := (term_bis_implies_term_eq H2) (S (S (hole_depth c)))).
+rewrite (peek_eq repeat_U) in H.
+dependent destruction H.
+assert (H' := H First).
+rewrite (peek_eq repeat_U) in H'.
+dependent destruction H'.
+assert (H' := H0 First).
+simpl in H'.
+
+(* idea, make [=]1 from x0 *)
+assert (y0 : term_eq_up_to 1 (@Fun F X U v) (fill c (@Fun F X U (vmap (substitute u) (vcons (D @@ 1 !) (vnil fterm)))))).
+(*assert (y0 : @Fun F X D v [=] fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm))))).*)
+rewrite x0.
+apply term_eq_up_to_refl.
+clear x0.
+
+induction c.
+
+assert (H3 := (term_bis_implies_term_eq H2) 2).
+rewrite (peek_eq repeat_U) in H3.
+dependent destruction H3.
+assert (H3 := H1 First).
+rewrite (peek_eq repeat_U) in H3.
+dependent destruction H3.
+
+rewrite (peek_eq repeat_U) in H2.
+(*intro x0.*)
+assert (d : f = U).
+(*assert (y1 := y0 1).*)
+inversion_clear y0.
+reflexivity.
+
+(*injection x0.
+intros _ d.*)
+revert e H2 H y0 H0 H'.
+dependent rewrite d.
+intro e.
+assert (ij : i = 0 /\ j = 0).
+destruct i as [| [| i]]; auto; discriminate e.
+revert e v1 v2.
+rewrite (proj1 ij).
+rewrite (proj2 ij).
+intros e v1 v2 H2 H y0 H0 H'.
+clear f i j d ij.
+apply IHc; clear IHc.
+
+(* this part is quite ugly *)
+apply term_eq_implies_term_bis.
+intro n.
+assert (H2' : term_eq_up_to (S n) (@Fun F X U (vcons (fill c (substitute u (lhs UD))) v2)) (U @ repeat_U)).
+assert (jaja : fill (@CFun F X U 0 0 e v1 c v2) (substitute u (lhs UD)) = @Fun F X U (vcons (fill c (substitute u (lhs UD))) v2)).
+dependent destruction e.
+reflexivity.
+rewrite jaja in H2.
+exact ((term_bis_implies_term_eq H2) (S n)).
+apply (@teut_fun_inv F X n U (vcons (fill c (substitute u (lhs UD))) v2) (vcons repeat_U (vnil term)) H2' First).
+intro i.
+apply term_eq_up_to_weaken.
+apply H.
+intro i.
+dependent destruction i.
+apply term_eq_up_to_weaken.
+assumption.
+dependent destruction i.
+apply term_eq_up_to_weaken.
+assumption.
+
+clear v0 x H y0 H0 H'.
+destruct c.
+constructor.
+constructor.
+simpl.
+simpl in H2.
+dependent destruction H2.
+assert (H3 := H First).
+simpl in H3.
+clear H.
+rewrite (peek_eq repeat_U) in H3.
+dependent destruction H3.
+revert x.
+dependent destruction e.
+intro y.
+simpl in y.
+injection y.
+intros _ d.
+clear y x H v1 v2 v4.
+revert e0.
+rewrite <- d.
+intro e.
+constructor.
+constructor.
+Qed.
 
 (* DDD... is an infinite normal form *)
 Lemma infinite_nf_D :
@@ -733,7 +949,8 @@ Qed.
 Lemma infinite_nf_U :
   infinite repeat_U /\ normal_form (system := UNWO_trs) repeat_U.
 Proof.
-Admitted.
+exact (conj infinite_U nf_U).
+Qed.
 
 (* DDD... and UUU... are different *)
 Lemma neq_D_U :
@@ -745,13 +962,12 @@ inversion H.
 Qed.
 
 (* DDD... and UUU are the only infinite normal forms *)
-(* TODO: we don't really need this *)
+(* TODO: this is a very ugly proof *)
 Lemma only_infinite_nf_D_U :
   forall t,
     infinite t /\ normal_form (system := UNWO_trs) t ->
     t [~] repeat_D \/ t [~] repeat_U.
 Proof.
-(* We should be able to prove this, but it's probably a lot of work *)
 intros [x | [] args] [It Nt].
 
 destruct (It 1) as [p [Dp Hp]].
@@ -762,10 +978,173 @@ reflexivity.
 discriminate Dp.
 
 left.
-admit.
+cofix co.
+dependent destruction co. (* This of course is not guarded *)
+specialize H with (First (n := 0)).
+rewrite (peek_eq repeat_D).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+unfold infinite in It.
+specialize It with 2.
+destruct It as [p [H1 H2]].
+destruct p as [| a [| b [| c p]]].
+inversion H1.
+inversion H1.
+
+(* contradict this with Nt *)
+assert (Hx : ~ exists args', args First = @Fun F X U args').
+intro Hx.
+unfold normal_form in Nt.
+apply Nt.
+clear H1 H2 H Nt. (* readability *)
+destruct Hx as [args' H].
+exists Hole.
+exists DU.
+exists (fun n => args' First).
+split.
+left; reflexivity.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+rewrite H.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+simpl.
+apply term_bis_refl.
+inversion i.
+inversion i.
+clear Nt.
+
+destruct a.
+simpl in H2.
+unfold vhead in H2.
+destruct (args First).
+contradict H2.
+reflexivity.
+destruct f.
+simpl in H2.
+rewrite (peek_eq repeat_D).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+dependent destruction H.
+specialize H with (First (n := 0)).
+apply term_bis_trans with (w0 First).
+assumption.
+rewrite (peek_eq repeat_D) in x0.
+simpl in x0.
+dependent destruction x0.
+rewrite (peek_eq repeat_D) in x.
+simpl in x.
+dependent destruction x.
+simpl.
+apply term_bis_refl.
+inversion i.
+contradict Hx.
+exists v.
+reflexivity.
+
+simpl in H2.
+contradict H2.
+reflexivity.
+inversion H1.
+inversion i.
+
+(* Same argument follows *)
 
 right.
-admit.
+cofix co.
+dependent destruction co.
+specialize H with (First (n := 0)).
+rewrite (peek_eq repeat_U).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+unfold infinite in It.
+specialize It with 2.
+destruct It as [p [H1 H2]].
+destruct p as [| a [| b [| c p]]].
+inversion H1.
+inversion H1.
+
+(* contradict this with Nt *)
+assert (Hx : ~ exists args', args First = @Fun F X D args').
+intro Hx.
+unfold normal_form in Nt.
+apply Nt.
+clear H1 H2 Nt H. (* readability *)
+destruct Hx as [args' H].
+exists Hole.
+exists UD.
+exists (fun n => args' First).
+split.
+right; left; reflexivity.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+rewrite H.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+simpl.
+apply term_bis_refl.
+inversion i.
+inversion i.
+clear Nt.
+
+destruct a.
+simpl in H2.
+unfold vhead in H2.
+destruct (args First).
+contradict H2.
+reflexivity.
+destruct f.
+contradict Hx.
+exists v.
+reflexivity.
+simpl in H2.
+rewrite (peek_eq repeat_U).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+dependent destruction H.
+specialize H with (First (n := 0)).
+apply term_bis_trans with (w0 First).
+assumption.
+rewrite (peek_eq repeat_U) in x0.
+simpl in x0.
+dependent destruction x0.
+rewrite (peek_eq repeat_U) in x.
+simpl in x.
+dependent destruction x.
+simpl.
+apply term_bis_refl.
+inversion i.
+
+simpl in H2.
+contradict H2.
+reflexivity.
+inversion H1.
+inversion i.
+(* not a guarded proof *)
 Admitted.
 
 (* Reductions *)
