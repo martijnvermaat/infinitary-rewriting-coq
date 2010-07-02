@@ -29,6 +29,12 @@ Definition root (t : term) : X + F :=
   | Fun f v => inr _ f
   end.
 
+Definition is_var (t : term) : bool :=
+  match t with
+  | Var _ => true
+  | _     => false
+  end.
+
 (* Trivial image of finite_term in term *)
 Fixpoint finite_term_as_term (t : fterm) : term :=
   match t with
@@ -58,6 +64,7 @@ Variable F : signature.
 Variable X : variables.
 
 Notation term := (term F X).
+Notation fterm := (finite_term F X).
 
 Definition position_depth (p : position) := length p.
 
@@ -71,6 +78,20 @@ Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
                               | left h  => subterm (vnth h args) p
                               | right _ => None
                               end
+              end
+  end.
+
+(* Finite subterm at position *)
+(* TODO: this is a quick hack so substitutions can work on subterms *)
+Fixpoint finite_subterm (t : fterm) (p : position) {struct p} : option fterm :=
+  match p with
+  | nil    => Some t
+  | n :: p => match t with
+              | FVar _      => None
+              | FFun f args => match lt_ge_dec n (arity f) with
+                               | left h  => finite_subterm (vnth h args) p
+                               | right _ => None
+                               end
               end
   end.
 

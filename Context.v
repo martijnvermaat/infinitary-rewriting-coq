@@ -23,6 +23,7 @@ Inductive context : Type :=
 
 Implicit Arguments CFun [i j].
 
+(* TODO: We use context_ind2 in ExampleUNWO. Define it there? *)
 Section InductionPrinciple.
 
   Variable P : context -> Type.
@@ -44,8 +45,8 @@ Section InductionPrinciple.
 
   Fixpoint context_rect2 c : P c :=
     match c return P c with
-    | Hole                  => H1
-    | CFun f i j e v Hole w => H2 f e v w
+    | Hole                                  => H1
+    | CFun f i j e v Hole w                 => H2 f e v w
     | CFun f i j e v (CFun g n m a x c z) w => H3 f e v w g a x z (context_rect2 c)
     end.
 
@@ -123,8 +124,14 @@ apply term_eq_refl.
 apply IHi.
 Qed.
 
-Lemma hulp : forall n m, n + S (m - S n) = m.
-Admitted.
+Require Import Arith.
+
+Lemma lt_plus_minus_r : forall n m, n < m -> n + S (m - S n) = m.
+intros.
+rewrite <- plus_Snm_nSm.
+apply le_plus_minus_r.
+assumption.
+Qed.
 
 Require Import Lt.
 Require Import Bool_nat.
@@ -138,7 +145,7 @@ Fixpoint dig (t : term) (p : position) {struct p} : option context :=
               | Fun f args => match lt_ge_dec n (arity f) with
                               | left h  => match dig (vnth h args) p with
                                            | None   => None
-                                           | Some c => Some (CFun f (hulp n (arity f))
+                                           | Some c => Some (CFun f (lt_plus_minus_r h)
                                                                   (vtake (lt_le_weak n (arity f) h) args)
                                                                   c
                                                                   (vdrop h args))

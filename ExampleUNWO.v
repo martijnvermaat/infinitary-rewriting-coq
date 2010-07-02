@@ -583,6 +583,99 @@ intro; assumption.
 constructor.
 Qed.
 
+Implicit Arguments critical_pair [F X system].
+
+Lemma cp_U : critical_pair (system := UNWO_trs) (U @@ 1!) (U @@ 1!).
+Proof.
+unfold critical_pair.
+exists UD.
+exists DU.
+exists (0 :: nil).
+exists (fun n => match n with 1 => U @@ 1! | _ => n! end).
+exists id_sub.
+split.
+right; left; reflexivity.
+split.
+left; reflexivity.
+split.
+discriminate.
+split.
+reflexivity.
+split.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+apply term_bis_refl.
+inversion i.
+inversion i.
+split.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+unfold vmap.
+simpl.
+unfold vcast.
+generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
+intro e.
+dependent destruction e.
+simpl.
+constructor.
+inversion i.
+apply term_bis_refl.
+Qed.
+
+Lemma cp_trivial :
+  forall t1 t2,
+    critical_pair (system := UNWO_trs) t1 t2 ->
+    t1 [~] t2.
+Proof.
+intros t1 t2 H.
+unfold critical_pair in H.
+destruct H as [r1 [r2 [[| [| a] [| [| b] [| c p]]] [sigma [tau [[Hr1 | [Hr1 | []]] [[Hr2 | [Hr2 | []]] [T H]]]]]]]];
+rewrite <- Hr1 in * |-;
+rewrite <- Hr2 in * |-;
+clear r1 r2 Hr1 Hr2;
+try (contradict T; auto; fail);
+clear T;
+try (contradict H; fail); simpl in H;
+destruct H as [V [H [H1 H2]]];
+try (contradict V; fail);
+apply (term_bis_trans H1); apply term_bis_symm; apply (term_bis_trans H2);
+clear H1 H2;
+dependent destruction H; specialize H with (First (n := 0)); unfold vmap in H; simpl in H;
+dependent destruction H; specialize H with (First (n := 0)); unfold vmap in H; simpl in H;
+clear V.
+
+rewrite <- x.
+constructor.
+intro i.
+dependent destruction i.
+unfold vcast.
+generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
+intro e.
+dependent destruction e.
+assumption.
+inversion i.
+
+rewrite <- x.
+constructor.
+intro i.
+dependent destruction i.
+unfold vcast.
+generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
+intro e.
+dependent destruction e.
+assumption.
+inversion i.
+Qed.
+
 (* TODO: prove UNWO_trs weakly orthogonal *)
 
 (* DDD... is infinite *)

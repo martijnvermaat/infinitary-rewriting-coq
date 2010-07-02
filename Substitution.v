@@ -69,7 +69,7 @@ Definition peek (t : term) : term :=
   | Fun f args => Fun f args
   end.
 
-Theorem peek_eq : forall (t : term), t = peek t.
+Lemma peek_eq : forall (t : term), t = peek t.
   destruct t; reflexivity.
 Qed.
 

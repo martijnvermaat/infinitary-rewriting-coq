@@ -21,13 +21,6 @@ Inductive finite_term : Type :=
 Notation fterm := (finite_term).
 Notation fterms := (vector fterm).
 
-(* TODO: Bool or prop? *)
-Definition is_var (t : fterm) : bool :=
-  match t with
-  | FVar _ => true
-  | _      => false
-  end.
-
 Fixpoint size (t : fterm) : nat :=
   match t with
   | FVar _      => 1

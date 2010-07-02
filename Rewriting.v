@@ -68,6 +68,25 @@ Variable system : trs.
 (* Only needed in Coq 8.3 *)
 Generalizable All Variables.
 
+(* Alternatively via positions *)
+(* TODO: is the r1=r2 the right equality condiction on the rules? seems to work *)
+(* TODO: mgci, minimality and freshness conditions *)
+(* TODO: finite_subterm is a quick hack, substitute should be generalized *)
+Definition critical_pair (t1 t2 : term) : Prop :=
+  exists r1 : rule, exists r2 : rule,
+    exists p : position,
+      exists sigma : substitution, exists tau : substitution,
+      In r1 system /\ In r2 system /\
+      (r1 = r2 -> p <> nil) /\
+      match finite_subterm (lhs r1) p, dig (substitute sigma (lhs r1)) p with
+      | Some s, Some c =>
+          is_var s = false /\
+          substitute sigma s [~] substitute tau (lhs r2) /\
+          t1 [~] fill c (substitute tau (rhs r2)) /\
+          t2 [~] substitute sigma (rhs r1)
+      | _, _           => False
+      end.
+
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
 Inductive step : term -> term -> Type :=
@@ -1437,3 +1456,4 @@ End TRS.
 
 
 Implicit Arguments normal_form [F X system].
+Implicit Arguments critical_pair [F X system].
