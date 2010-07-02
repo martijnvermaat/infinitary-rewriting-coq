@@ -724,6 +724,28 @@ rewrite (proj2 S).
 discriminate.
 Qed.
 
+(* DDD... is infinite *)
+(* This uses the (alternative) coinductive term_inf predicate *)
+Lemma term_inf_D :
+  term_inf repeat_D.
+Proof.
+cofix co.
+rewrite (peek_eq repeat_D); simpl.
+apply Fun_inf with (First (n := 0)).
+assumption.
+Qed.
+
+(* UUU... is infinite *)
+(* This uses the (alternative) coinductive term_inf predicate *)
+Lemma term_inf_U :
+  term_inf repeat_U.
+Proof.
+cofix co.
+rewrite (peek_eq repeat_U); simpl.
+apply Fun_inf with (First (n := 0)).
+assumption.
+Qed.
+
 (* DDD... is a normal form *)
 Lemma nf_D :
   normal_form (system := UNWO_trs) repeat_D.
@@ -1280,6 +1302,203 @@ inversion H1.
 contradict H2.
 reflexivity.
 inversion H1.
+inversion i.
+Qed.
+
+(* DDD... and UUU... are the only infinite normal forms *)
+(* This is alternative, using coinductive term_inf predicate *)
+(* TODO: this is a very ugly proof *)
+Lemma only_term_inf_nf_D_U :
+  forall t,
+    term_inf t /\ normal_form (system := UNWO_trs) t ->
+    t [~] repeat_D \/ t [~] repeat_U.
+Proof.
+intros [x | [] args] [It Nt].
+
+inversion It.
+
+left.
+assert (H : term_eq_up_to 1 (@Fun F X D args) repeat_D).
+rewrite (peek_eq repeat_D).
+simpl.
+constructor.
+intro i.
+constructor.
+apply term_eq_implies_term_bis.
+intro n.
+generalize dependent (@Fun F X D args).
+induction n as [| n IH]; intros t It Nt H.
+constructor.
+rewrite (peek_eq repeat_D) in H.
+dependent destruction H.
+clear H.
+rewrite (peek_eq repeat_D).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+
+apply IH; clear IH.
+inversion It.
+dependent destruction H1.
+revert H0.
+dependent destruction i.
+trivial.
+inversion i.
+
+intros [c [r [u [H1 H2]]]].
+apply Nt.
+exists (D @@@ c).
+exists r.
+exists u.
+split.
+assumption.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+assumption.
+inversion i.
+
+(* contradict this with Nt *)
+assert (Hx : ~ exists w, v First = @Fun F X U w).
+intro Hx.
+unfold normal_form in Nt.
+apply Nt.
+clear It Nt. (* readability *)
+destruct Hx as [w H].
+exists Hole.
+exists DU.
+exists (fun n => w First).
+split.
+left; reflexivity.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+rewrite H.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+simpl.
+apply term_bis_refl.
+inversion i.
+inversion i.
+clear Nt.
+
+inversion It.
+clear It.
+dependent destruction H1.
+revert H0.
+dependent destruction i.
+intro It.
+destruct (v First).
+inversion It.
+destruct f.
+rewrite (peek_eq repeat_D); simpl.
+constructor.
+constructor.
+contradict Hx.
+exists v0.
+reflexivity.
+inversion i.
+inversion i.
+
+(* Same argument follows *)
+
+right.
+assert (H : term_eq_up_to 1 (@Fun F X U args) repeat_U).
+rewrite (peek_eq repeat_U).
+simpl.
+constructor.
+intro i.
+constructor.
+apply term_eq_implies_term_bis.
+intro n.
+generalize dependent (@Fun F X U args).
+induction n as [| n IH]; intros t It Nt H.
+constructor.
+rewrite (peek_eq repeat_U) in H.
+dependent destruction H.
+clear H.
+rewrite (peek_eq repeat_U).
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+simpl.
+
+apply IH; clear IH.
+inversion It.
+dependent destruction H1.
+revert H0.
+dependent destruction i.
+trivial.
+inversion i.
+
+intros [c [r [u [H1 H2]]]].
+apply Nt.
+exists (U @@@ c).
+exists r.
+exists u.
+split.
+assumption.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+assumption.
+inversion i.
+
+(* contradict this with Nt *)
+assert (Hx : ~ exists w, v First = @Fun F X D w).
+intro Hx.
+unfold normal_form in Nt.
+apply Nt.
+clear It Nt. (* readability *)
+destruct Hx as [w H].
+exists Hole.
+exists UD.
+exists (fun n => w First).
+split.
+right; left; reflexivity.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+rewrite H.
+simpl.
+constructor.
+intro i.
+dependent destruction i.
+unfold vmap.
+simpl.
+apply term_bis_refl.
+inversion i.
+inversion i.
+clear Nt.
+
+inversion It.
+clear It.
+dependent destruction H1.
+revert H0.
+dependent destruction i.
+intro It.
+destruct (v First).
+inversion It.
+destruct f.
+contradict Hx.
+exists v0.
+reflexivity.
+rewrite (peek_eq repeat_U); simpl.
+constructor.
+constructor.
+inversion i.
 inversion i.
 Qed.
 

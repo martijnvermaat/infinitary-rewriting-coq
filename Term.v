@@ -104,6 +104,67 @@ Definition infinite (t : term) : Prop :=
     exists p : position,
       position_depth p = d /\ subterm t p <> None.
 
+(* So here is a coinductive predicate *)
+CoInductive term_inf : term -> Prop :=
+  | Fun_inf : forall f v i, term_inf (v i) -> term_inf (Fun f v).
+
+Require Import Equality.
+
+(* But we cannot prove this *)
+Lemma infinite_implies_term_inf :
+  forall t, infinite t -> term_inf t.
+Proof.
+cofix co.
+intros [x | f v] H.
+unfold infinite in H.
+specialize H with 1.
+destruct H as [[| a p] [D H]].
+inversion D.
+contradict H.
+reflexivity.
+
+(*
+   We need to establish that there is an n such that
+   for every depth there exists a p with n::p etc.
+
+   I don't see how to get there, but it ought to be
+   possible since (arity f) is finite, using something
+   akin to the pigeon hole principle.
+*)
+Admitted.
+
+Lemma term_inf_implies_infinite :
+  forall t, term_inf t -> infinite t.
+Proof.
+intros t H d.
+revert t H.
+induction d as [| d IH]; intros t H.
+exists nil.
+split.
+reflexivity.
+discriminate.
+destruct H.
+specialize IH with (v i).
+destruct IH as [p [D IH]].
+assumption.
+(* Seems like we need some way of getting an n from an i *)
+revert IH.
+dependent induction i.
+intro IH.
+exists (0 :: p).
+split.
+simpl.
+reflexivity.
+simpl.
+destruct (arity f).
+inversion i0.
+simpl.
+unfold vhead.
+admit. (* Don't know what to do here *)
+intro IH.
+(* Don't know what to do here either *)
+Admitted.
+
 End Position.
 
 
