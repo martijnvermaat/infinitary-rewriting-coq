@@ -181,6 +181,7 @@ intros t c u f H.
 Admitted.
 
 (* Normal form if no left-hand side matches *)
+(* TODO: perhaps just define this as ~exists p : t [>] _, True? *)
 Definition normal_form t :=
   ~ exists c:context, exists r, exists u,
     In r system /\ fill c (substitute u (lhs r)) [~] t.
@@ -1427,6 +1428,14 @@ apply M.
 apply H3.
 apply M.
 Qed.
+
+Definition unique_normal_forms : Prop :=
+  forall t u v (r : t ->> u) (q : t ->> v),
+    wf r ->
+    wf q ->
+    normal_form u ->
+    normal_form v ->
+    u [~] v.
 
 Lemma compression :
   trs_left_linear system ->

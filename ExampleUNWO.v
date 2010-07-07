@@ -676,7 +676,13 @@ assumption.
 inversion i.
 Qed.
 
-(* TODO: prove UNWO_trs weakly orthogonal *)
+Lemma UNWO_weakly_orthogonal :
+  weakly_orthogonal UNWO_trs.
+Proof.
+split.
+exact UNWO_left_linear.
+exact cp_trivial.
+Qed.
 
 (* DDD... is infinite *)
 Lemma infinite_D :
@@ -2646,25 +2652,31 @@ Definition s_psi_repeat_D : psi ->> repeat_D.
 (* TODO: same construction as psi ->> repeat_U *)
 Admitted.
 
-(* TODO: also include wf properties of the reductions *)
-Definition unique_normal_forms :=
-  forall t u v,
-    t ->> u ->
-    t ->> v ->
-    normal_form (system := UNWO_trs) u ->
-    normal_form (system := UNWO_trs) v ->
-    u [~] v.
-
-Lemma no_unique_normal_forms :
-  ~ unique_normal_forms.
+(* This reduction is well-formed *)
+Lemma wf_s_psi_repeat_D :
+  wf s_psi_repeat_D.
 Proof.
-intros H.
+Admitted.
+
+Lemma UNWO_no_unique_normal_forms :
+  ~ unique_normal_forms UNWO_trs.
+Proof.
+intro H.
 apply neq_D_U.
-apply (H psi).
-exact s_psi_repeat_D.
-exact s_psi_repeat_U.
+apply H with psi s_psi_repeat_D s_psi_repeat_U.
+exact wf_s_psi_repeat_D.
+exact wf_s_psi_repeat_U.
 exact nf_D.
 exact nf_U.
+Qed.
+
+Lemma unwo :
+  ~ forall F X trs, weakly_orthogonal (F := F) (X := X) trs -> unique_normal_forms trs.
+Proof.
+intro H.
+apply UNWO_no_unique_normal_forms.
+apply H.
+apply UNWO_weakly_orthogonal.
 Qed.
 
 (* TODO: generalize the result, also using weak orthogonality *)

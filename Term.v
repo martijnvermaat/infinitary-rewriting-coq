@@ -68,6 +68,12 @@ Notation fterm := (finite_term F X).
 
 Definition position_depth (p : position) := length p.
 
+(*
+   TODO: instead of the definitions with option types, we could also define
+   the set of positions for a term and then require 'correct' positions by
+   typing.
+*)
+
 (* Subterm at position *)
 Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
   match p with
