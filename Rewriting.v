@@ -87,6 +87,14 @@ Definition critical_pair (t1 t2 : term) : Prop :=
       | _, _           => False
       end.
 
+Definition orthogonal : Prop :=
+  trs_left_linear system /\
+  forall t1 t2, ~ critical_pair t1 t2.
+
+Definition weakly_orthogonal : Prop :=
+  trs_left_linear system /\
+  forall t1 t2, critical_pair t1 t2 -> t1 [~] t2.
+
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
 Inductive step : term -> term -> Type :=
