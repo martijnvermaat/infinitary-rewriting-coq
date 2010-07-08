@@ -20,7 +20,7 @@ Fixpoint wf alpha : Prop :=
   match alpha with
   | Zero      => True
   | Succ beta => wf beta
-  | Limit f   => forall n, wf (f n) /\ forall m, (n < m)%nat -> (f n) < (f m)
+  | Limit f   => forall n, wf (f n) /\ forall m, (n < m)%nat -> f n < f m
   end.
 
 Lemma nat_wf :

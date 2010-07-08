@@ -574,7 +574,7 @@ Definition UNWO_trs : trs := DU :: UD :: nil.
 Lemma UNWO_left_linear :
   trs_left_linear UNWO_trs.
 Proof.
-split; [| split];
+constructor; [| constructor];
   unfold left_linear; unfold linear; simpl;
     constructor.
 intro; assumption.

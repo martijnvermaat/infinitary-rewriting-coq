@@ -40,11 +40,13 @@ Definition left_linear (r : rule) : Prop :=
 Definition trs := list rule.
 
 (* All rules are left-linear *)
-Fixpoint trs_left_linear (s : trs) : Prop :=
+Definition trs_left_linear (s : trs) : Prop := Forall left_linear s.
+
+(*Fixpoint trs_left_linear (s : trs) : Prop :=
   match s with
   | nil   => True
   | r::rs => left_linear r /\ trs_left_linear rs
-  end.
+  end.*)
 
 End Rule.
 
@@ -702,11 +704,11 @@ Qed.
    Well-formed sequences have limit functions f where n < m implies
    that (f n) is strictly embedded in (f m).
 *)
-Fixpoint wf `(r : s ->> t) : Prop :=
+Fixpoint wf s t (r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
   | Cons _ _ q _ _ => wf q
-  | Lim _ _ f t _  =>
+  | Lim _ _ f _ _  =>
     (forall n, wf (f n)) /\
     forall n m, (n < m)%nat -> f n < f m
   end.

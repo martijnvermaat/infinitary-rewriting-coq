@@ -123,7 +123,7 @@ Definition ABA_trs : trs := ABA :: nil.
 Lemma ABA_left_linear :
   trs_left_linear ABA_trs.
 Proof.
-split; constructor.
+constructor; constructor.
 Qed.
 
 (* Reductions *)
