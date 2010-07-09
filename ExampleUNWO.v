@@ -569,6 +569,7 @@ Qed.
 
 Definition UD : rule := Rule UD_l UD_r UD_wf.
 
+(* TODO: call this UD_trs *)
 Definition UNWO_trs : trs := DU :: UD :: nil.
 
 Lemma UNWO_left_linear :
@@ -631,7 +632,7 @@ inversion i.
 apply term_bis_refl.
 Qed.
 
-Lemma cp_trivial :
+Lemma UNWO_critical_pairs_trivial :
   forall t1 t2,
     critical_pair (system := UNWO_trs) t1 t2 ->
     t1 [~] t2.
@@ -681,7 +682,7 @@ Lemma UNWO_weakly_orthogonal :
 Proof.
 split.
 exact UNWO_left_linear.
-exact cp_trivial.
+exact UNWO_critical_pairs_trivial.
 Qed.
 
 (* DDD... is infinite *)
@@ -2222,7 +2223,7 @@ simpl.
 apply term_eq_up_to_weaken_generalized with m.
 assumption.
 apply term_eq_up_to_n_Unt_repeat_U.
-Admitted.
+Qed.
 
 (* Omega-step reduction psi ->> UUU... *)
 Definition s_psi_repeat_U : psi ->> repeat_U :=
@@ -2678,8 +2679,6 @@ apply UNWO_no_unique_normal_forms.
 apply H.
 apply UNWO_weakly_orthogonal.
 Qed.
-
-(* TODO: generalize the result, also using weak orthogonality *)
 
 (*
    What follows is an alternative (actually the original) definition of psi
