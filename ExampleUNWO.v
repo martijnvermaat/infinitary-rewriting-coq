@@ -2036,15 +2036,15 @@ Definition s_psi_UUpsi2 : psi ->> (U @ U @ psi' 2) := Cons s_psi_UDUUpsi2 p_UDUU
 *)
 
 (* Substitution for step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
-Definition sub_DSnUSnt_DnUnt n t (x : X) : term :=
+Definition sub_DSnUSnt_DnUnt t (x : X) : term :=
   match x with
-  | 1 => Unt n t
+  | 1 => t
   | _ => Var x
   end.
 
 Lemma fact_term_bis_DSnUSnt :
   forall (n : nat) (t : term),
-    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
+    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (lhs DU))
     [~]
     DnUnt (S n) t.
 Proof.
@@ -2067,7 +2067,7 @@ Qed.
 
 Lemma fact_term_eq_DnUnt :
   forall (n : nat) (t : term),
-    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
     =
     DnUnt n t.
 Proof.
@@ -2083,7 +2083,7 @@ Qed.
 
 Lemma fact_term_bis_DnUnt :
   forall (n : nat) (t : term),
-    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
     [~]
     DnUnt n t.
 Proof.
@@ -2094,7 +2094,7 @@ Qed.
 
 (* Step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
 Definition p_DSnUSnt_DnUnt n t : DnUnt (S n) t [>] DnUnt n t :=
-  Step DU (Dnc n Hole) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
+  Step DU (Dnc n Hole) (sub_DSnUSnt_DnUnt (Unt n t)) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
 
 (* n-step reduction D^n @ U^n @ t ->> t *)
 Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
@@ -2119,7 +2119,7 @@ Defined.
 
 Lemma fact_term_bis_UmDSnUSnt :
   forall (m n : nat) (t : term),
-    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt n t) (lhs DU))
+    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (lhs DU))
     [~]
     Unt m (DnUnt (S n) t).
 Proof.
@@ -2143,7 +2143,7 @@ Qed.
 
 Lemma fact_term_eq_UmDnUnt :
   forall (m n : nat) (t : term),
-    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
     =
     Unt m (DnUnt n t).
 Proof.
@@ -2156,7 +2156,7 @@ Qed.
 
 Lemma fact_term_bis_UmDnUnt :
   forall (m n : nat) (t : term),
-    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt n t) (rhs DU))
+    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
     [~]
     Unt m (DnUnt n t).
 Proof.
@@ -2167,7 +2167,7 @@ Qed.
 
 (* Step U^m @ D^Sn @ U^Sn @ t -> U^m @ D^n @ U^n @ t *)
 Definition p_UmDSnUSnt_UmDnUnt m n t : Unt m (DnUnt (S n) t) [>] Unt m (DnUnt n t) :=
-  Step DU (Unc m (Dnc n Hole)) (sub_DSnUSnt_DnUnt n t) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
+  Step DU (Unc m (Dnc n Hole)) (sub_DSnUSnt_DnUnt (Unt n t)) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
 
 (* n-step reduction U^m @ D^n @ U^n @ t ->> U^m t *)
 Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
