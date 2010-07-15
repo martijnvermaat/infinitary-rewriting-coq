@@ -185,7 +185,7 @@ Admitted.
 (* Normal form if no left-hand side matches *)
 (* TODO: perhaps just define this as ~exists p : t [>] _, True? *)
 Definition normal_form t :=
-  ~ exists c:context, exists r, exists u,
+  ~ exists c : context, exists r, exists u,
     In r system /\ fill c (substitute u (lhs r)) [~] t.
 
 (* f converges to t *)
@@ -1431,6 +1431,10 @@ apply H3.
 apply M.
 Qed.
 
+(*
+   Not that this defines uniqueness of normal forms with respect to
+   rewriting, not the more general unique normal forms property.
+*)
 Definition unique_normal_forms : Prop :=
   forall t u v (r : t ->> u) (q : t ->> v),
     wf r ->
