@@ -537,9 +537,11 @@ Qed.
 
 Notation trs := (trs F X).
 
+Definition varx : X := 5.
+
 (* D(U(x)) -> x *)
-Definition DU_l : fterm := D @@ U @@ 1!.
-Definition DU_r : fterm := 1!.
+Definition DU_l : fterm := D @@ U @@ varx!.
+Definition DU_r : fterm := varx!.
 
 Lemma DU_wf :
   is_var DU_l = false /\
@@ -554,8 +556,8 @@ Qed.
 Definition DU : rule := Rule DU_l DU_r DU_wf.
 
 (* U(D(x)) -> x *)
-Definition UD_l : fterm := U @@ D @@ 1!.
-Definition UD_r : fterm := 1!.
+Definition UD_l : fterm := U @@ D @@ varx!.
+Definition UD_r : fterm := varx!.
 
 Lemma UD_wf :
   is_var UD_l = false /\
@@ -586,13 +588,13 @@ Qed.
 
 Implicit Arguments critical_pair [F X system].
 
-Lemma cp_U : critical_pair (system := UNWO_trs) (U @@ 1!) (U @@ 1!).
+Lemma cp_U : critical_pair (system := UNWO_trs) (U @@ varx!) (U @@ varx!).
 Proof.
 unfold critical_pair.
 exists UD.
 exists DU.
 exists (0 :: nil).
-exists (fun n => match n with 1 => U @@ 1! | _ => n! end).
+exists (fun x => match (beq_var x varx) with true => U @@ varx! | false => x! end).
 exists id_sub.
 split.
 right; left; reflexivity.
@@ -774,7 +776,7 @@ assert (H' := H0 First).
 simpl in H'.
 
 (* idea, make [=]1 from x0 *)
-assert (y0 : term_eq_up_to 1 (@Fun F X D v) (fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm)))))).
+assert (y0 : term_eq_up_to 1 (@Fun F X D v) (fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ varx!) (vnil fterm)))))).
 (*assert (y0 : @Fun F X D v [=] fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm))))).*)
 rewrite x0.
 apply term_eq_up_to_refl.
@@ -977,7 +979,7 @@ assert (H' := H0 First).
 simpl in H'.
 
 (* idea, make [=]1 from x0 *)
-assert (y0 : term_eq_up_to 1 (@Fun F X U v) (fill c (@Fun F X U (vmap (substitute u) (vcons (D @@ 1 !) (vnil fterm)))))).
+assert (y0 : term_eq_up_to 1 (@Fun F X U v) (fill c (@Fun F X U (vmap (substitute u) (vcons (D @@ varx!) (vnil fterm)))))).
 (*assert (y0 : @Fun F X D v [=] fill c (@Fun F X D (vmap (substitute u) (vcons (U @@ 1 !) (vnil fterm))))).*)
 rewrite x0.
 apply term_eq_up_to_refl.
@@ -1546,11 +1548,11 @@ destruct i as [H | [H | []]]; try (rewrite <- H in t1, t0; clear H).
 
 unfold DU, lhs, DU_l in t0.
 unfold DU, rhs, DU_r in t1.
-apply term_bis_trans with (fill c (substitute u (1 !))).
+apply term_bis_trans with (fill c (substitute u (varx!))).
 exact (term_bis_symm t1).
 clear t1.
 
-assert ((substitute u (D @@ U @@ 1!)) [~] repeat_DU).
+assert ((substitute u (D @@ U @@ varx!)) [~] repeat_DU).
 induction c using context_ind2; simpl in t0.
 assumption.
 
@@ -1604,7 +1606,7 @@ simpl.
 intros x z H.
 assumption.
 
-assert (substitute u (1 !) [~] repeat_DU).
+assert (substitute u (varx!) [~] repeat_DU).
 dependent destruction H.
 specialize H with (First (n := 0)).
 unfold vmap in H.
@@ -1617,7 +1619,7 @@ rewrite (peek_eq repeat_DU) in x0.
 dependent destruction x0.
 assumption.
 
-assert (substitute u (D @@ U @@ 1 !) [~] substitute u (1 !)).
+assert (substitute u (D @@ U @@ varx!) [~] substitute u (varx!)).
 apply term_bis_trans with repeat_DU.
 assumption.
 apply term_bis_symm.
@@ -1625,8 +1627,8 @@ assumption.
 clear H H0.
 
 (* TODO: This should be a separate lemma *)
-generalize dependent (substitute u (1 !)).
-generalize dependent (substitute u (D @@ U @@ 1 !)).
+generalize dependent (substitute u (varx!)).
+generalize dependent (substitute u (D @@ U @@ varx!)).
 generalize dependent repeat_DU.
 clear t r u.
 
@@ -1684,7 +1686,7 @@ inversion i.
 
 unfold UD, lhs, UD_l in t0.
 unfold UD, rhs, UD_r in t1.
-apply term_bis_trans with (fill c (substitute u (1 !))).
+apply term_bis_trans with (fill c (substitute u (varx!))).
 exact (term_bis_symm t1).
 clear t1.
 
@@ -1704,8 +1706,8 @@ simpl.
 intros v v0 H.
 clear v.
 
-change (fill c (substitute u (U @@ D @@ 1!)) [~] (U @ repeat_DU)) in H.
-assert ((substitute u (U @@ D @@ 1!)) [~] (U @ repeat_DU)).
+change (fill c (substitute u (U @@ D @@ varx!)) [~] (U @ repeat_DU)) in H.
+assert ((substitute u (U @@ D @@ varx!)) [~] (U @ repeat_DU)).
 induction c using context_ind2; simpl in H.
 assumption.
 
@@ -1759,7 +1761,7 @@ simpl.
 intros x z H.
 assumption.
 
-assert (substitute u (1 !) [~] (U @ repeat_DU)).
+assert (substitute u (varx!) [~] (U @ repeat_DU)).
 dependent destruction H0.
 specialize H0 with (First (n := 0)).
 unfold vmap in H0.
@@ -1772,7 +1774,7 @@ rewrite (peek_eq repeat_DU) in x.
 dependent destruction x.
 assumption.
 
-assert (substitute u (U @@ D @@ 1 !) [~] substitute u (1 !)).
+assert (substitute u (U @@ D @@ varx!) [~] substitute u (varx!)).
 apply term_bis_trans with (U @ repeat_DU).
 assumption.
 apply term_bis_symm.
@@ -1786,11 +1788,11 @@ intro i.
 dependent destruction i.
 simpl.
 clear v0.
-change (fill c (substitute u (1 !)) [~] (U @ repeat_DU)).
+change (fill c (substitute u (varx!)) [~] (U @ repeat_DU)).
 
 (* TODO: This should be a separate lemma *)
-generalize dependent (substitute u (1 !)).
-generalize dependent (substitute u (U @@ D @@ 1 !)).
+generalize dependent (substitute u (varx!)).
+generalize dependent (substitute u (U @@ D @@ varx!)).
 generalize dependent (U @ repeat_DU).
 clear t r u.
 
@@ -1851,9 +1853,9 @@ Definition s_psi_psi : psi ->> psi := Nil' psi.
 
 (* Substitution for step psi -> U @ psi' 1 *)
 Definition sub_psi_Upsi1 (x : X) : term :=
-  match x with
-  | 1 => U @ psi' 1
-  | _ => Var x
+  match beq_var x varx with
+  | true => U @ psi' 1
+  | false => Var x
   end.
 
 Lemma fact_term_bis_psi :
@@ -1883,6 +1885,7 @@ constructor.
 unfold vmap.
 intro i.
 dependent destruction i; [idtac | inversion i].
+unfold sub_psi_Upsi1.
 simpl.
 rewrite (peek_eq (psi' 1)).
 apply term_bis_refl.
@@ -1898,9 +1901,9 @@ Definition s_psi_Upsi1 : psi ->> (U @ psi' 1) :=
 
 (* Substitution for step U @ psi' 1 -> U D D U U U @ psi' 2 *)
 Definition sub_Upsi1_UDDUUUpsi2 (x : X) : term :=
-  match x with
-  | 1 => U @ U @ U @ psi' 2
-  | _ => Var x
+  match beq_var x varx with
+  | true => U @ U @ U @ psi' 2
+  | false => Var x
   end.
 
 Lemma fact_term_bis_Upsi1 :
@@ -1949,6 +1952,7 @@ constructor.
 intro i.
 dependent destruction i; [idtac | inversion i].
 unfold vmap.
+unfold sub_Upsi1_UDDUUUpsi2.
 simpl.
 constructor.
 intro i.
@@ -1984,9 +1988,9 @@ Definition s_psi_UDDUUUpsi2 : psi ->> (U @ D @ D @ U @ U @ U @ psi' 2) := Cons s
 
 (* Substitution for step U D D U U U @ psi' 2 -> U D U U @ psi' 2 *)
 Definition sub_UDDUUUpsi2_UDUUpsi2 (x : X) : term :=
-  match x with
-  | 1 => U @ U @ psi' 2
-  | _ => Var x
+  match beq_var x varx with
+  | true => U @ U @ psi' 2
+  | false => Var x
   end.
 
 Lemma fact_term_bis_UDDUUUpsi2 :
@@ -2006,9 +2010,9 @@ Definition s_psi_UDUUpsi2 : psi ->> (U @ D @ U @ U @ psi' 2) := Cons s_psi_UDDUU
 
 (* Substitution for step U D U U @ psi' 2 -> U U @ psi' 2 *)
 Definition sub_UDUUpsi2_UUpsi2 (x : X) : term :=
-  match x with
-  | 1 => U @ psi' 2
-  | _ => Var x
+  match beq_var x varx with
+  | true => U @ psi' 2
+  | false => Var x
   end.
 
 Lemma fact_term_bis_UDUUpsi2 :
@@ -2037,9 +2041,9 @@ Definition s_psi_UUpsi2 : psi ->> (U @ U @ psi' 2) := Cons s_psi_UDUUpsi2 p_UDUU
 
 (* Substitution for step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
 Definition sub_DSnUSnt_DnUnt t (x : X) : term :=
-  match x with
-  | 1 => t
-  | _ => Var x
+  match beq_var x varx with
+  | true  => t
+  | false => Var x
   end.
 
 Lemma fact_term_bis_DSnUSnt :
