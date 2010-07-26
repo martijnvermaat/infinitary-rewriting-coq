@@ -23,6 +23,36 @@ Fixpoint wf alpha : Prop :=
   | Limit f   => forall n, wf (f n) /\ forall m, (n < m)%nat -> f n < f m
   end.
 
+Lemma add_lt :
+  forall alpha beta gamma,
+    beta < gamma ->
+    add alpha beta < add alpha gamma.
+Proof.
+(* See append_embed_strict *)
+Admitted.
+
+Lemma add_wf :
+  forall alpha beta,
+    wf alpha ->
+    wf beta ->
+    wf (add alpha beta).
+Proof.
+intros alpha beta.
+revert beta.
+induction beta as [| beta IH | f IH]; intros WFa WFb.
+assumption.
+apply IH; assumption.
+intro n.
+split.
+apply IH.
+assumption.
+apply WFb.
+intros m H.
+apply add_lt.
+apply WFb.
+assumption.
+Qed.
+
 Lemma nat_wf :
   forall (n : nat), wf n.
 Proof.

@@ -579,88 +579,87 @@ Coercion nat_as_ord : nat >-> ord.
 
 Definition omega := Limit (fun n => n).
 
-Lemma lt_nat_ord : forall n m, (n < m)%nat -> n < m.
-Proof.
-(* TODO: see old proof below *)
-Admitted.
+Require Import Le.
 
-Lemma lt_ord_nat : forall (n m : nat), n < m -> (n < m)%nat.
+Lemma le_implies_ord_le : forall n m, (n <= m)%nat -> n <= m.
 Proof.
-(* TODO: see old proof below *)
-Admitted.
-
-(*
-(* TODO: redo this for new < definition *)
-(* < on nat is the same as < on ord *)
-Require Import Lt. (* For 'auto with arith' *)
-(* This proof is een zooitje, but at least it ends with Qed *)
-Lemma lt_nat_ord : forall n m, (n < m)%nat <-> nat_as_ord n < nat_as_ord m.
-Proof.
-induction n; intro m; split; intro H.
-simpl.
-destruct H.
-split.
+induction n as [| n IH]; intros m H.
 constructor.
-simpl.
-apply ord_le_not_succ_zero.
-simpl.
-split.
-constructor.
-apply ord_le_not_succ_zero.
-destruct m.
-elimtype False.
-apply (ord_lt_irrefl (nat_as_ord 0) H).
-auto with arith.
-simpl.
-split.
-destruct H.
-simpl.
-apply Ord_le_Succ with (i := inl (pd_type (Succ (nat_as_ord n))) tt).
-apply ord_le_succ_right.
-apply ord_le_refl.
-simpl.
-apply Ord_le_Succ with (i := inl (pd_type (nat_as_ord m)) tt).
-elim (IHn m).
-intros.
-elim H0.
-intros.
-assumption.
-auto with arith.
-intro.
-destruct m.
-contradict H.
-auto with arith.
-simpl in H0.
-assert (H1 := ord_le_succ (nat_as_ord m) (nat_as_ord n) H0).
-contradict H1.
-elimtype (nat_as_ord n < nat_as_ord m).
-intros.
-assumption.
-apply (IHn m).
-auto with arith.
-destruct m.
-destruct H.
-simpl in H.
-contradict H.
-apply (ord_le_not_succ_zero (nat_as_ord n)).
-elimtype (n < m)%nat.
-auto with arith.
-intros.
-auto with arith.
-apply (IHn m).
-split; destruct H.
-apply (ord_le_succ (nat_as_ord n) (nat_as_ord m) H).
-intro.
-apply H0.
-simpl.
-apply Ord_le_Succ with (i := inl (pd_type (nat_as_ord n)) tt).
-simpl.
+destruct m as [| m].
+contradiction le_Sn_0 with n.
+apply ord_le_succ_intro.
+apply IH.
+apply le_S_n.
 assumption.
 Qed.
-*)
 
-(* TODO: I think proofs like the above would benefit from adding
-   some lemma's about ord_le as hints *)
+Lemma ord_le_implies_le : forall (n m : nat), n <= m -> (n <= m)%nat.
+Proof.
+induction n as [| n IH]; intros m H.
+apply le_0_n.
+destruct m as [| m].
+contradiction ord_le_not_succ_zero with n.
+apply le_n_S.
+apply IH.
+apply ord_le_succ_elim.
+assumption.
+Qed.
+
+Lemma ord_le_le : forall n m, (n <= m)%nat <-> n <= m.
+Proof.
+split.
+apply le_implies_ord_le.
+apply ord_le_implies_le.
+Qed.
+
+Require Import Lt.
+
+Lemma lt_implies_ord_lt : forall n m, (n < m)%nat -> n < m.
+Proof.
+induction n as [| n IH]; intros m H.
+destruct H; exists (inl _ tt); constructor.
+destruct m as [| m].
+contradiction lt_n_O with (S n).
+exists (inl _ tt).
+apply ord_lt_ord_le_succ; simpl.
+apply IH.
+apply lt_S_n.
+assumption.
+Qed.
+
+Lemma ord_lt_implies_lt : forall (n m : nat), n < m -> (n < m)%nat.
+Proof.
+induction n as [| n IH]; intros m H.
+destruct H as [i H].
+destruct m as [| m].
+elim i.
+apply lt_0_Sn.
+destruct H as [i H].
+destruct m as [| m].
+elim i.
+apply lt_n_S.
+apply IH.
+(* this can be cleaned up *)
+destruct m as [| m].
+destruct i as [[] | []].
+contradiction ord_le_not_succ_zero with n.
+exists (inl _ tt).
+destruct i as [[] | [[] | i]].
+apply ord_le_succ_elim.
+assumption.
+apply ord_le_succ_left.
+assumption.
+apply ord_le_succ_left.
+apply ord_le_pd_right with i.
+assumption.
+Qed.
+
+Lemma ord_lt_lt : forall n m, (n < m)%nat <-> n < m.
+Proof.
+split.
+apply lt_implies_ord_lt.
+apply ord_lt_implies_lt.
+Qed.
 
 Lemma aaaa :
   Limit (fun n => S n) == Limit (fun n => n).

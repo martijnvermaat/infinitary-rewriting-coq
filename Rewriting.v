@@ -1327,6 +1327,31 @@ exists (existT (fun n => pred_type (append r (f n))) 0 j).
 assumption.
 Qed.
 
+(*
+   Rough idea: if we could proof something like the following lemma then
+   we could use it to prove weak convergence for ExampleUNWO.
+*)
+Lemma aaa :
+  forall `(r : (forall n, s ->> ts n), q : (forall n, ts n ->> ts (S n))) t,
+    (forall n, r (S n) = append (r n) (q n)) ->
+    (forall n, all_terms_eq_up_to n (q n) t) ->
+    forall d n i,
+      r d <= (r n)[seq i] ->
+      term_eq_up_to d ((r n)[1 i]) t.
+Proof.
+intros.
+destruct n.
+(* d must be 0 *)
+admit.
+revert i H1.
+rewrite H.
+intros.
+generalize dependent (q n).
+intros.
+dependent induction s0.
+(* no idea how to deal with this *)
+Admitted.
+
 (* can we use this in append_weakly_convergent? *)
 Lemma sdfsfsdf :
   forall d x `(r : s ->> t, q : t ->> u) (i : pred_type (append r q)),
