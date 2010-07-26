@@ -155,7 +155,7 @@ Definition nat_as_wf_ord (n : nat) : wf_ord :=
 
 Coercion nat_as_wf_ord : nat >-> wf_ord.
 
-Definition wf_omega := limit nat_as_wf_ord lt_nat_ord.
+Definition wf_omega := limit nat_as_wf_ord lt_implies_ord_lt.
 
 Lemma n_le_omega : forall (n : nat), n <wf= wf_omega.
 Proof.
