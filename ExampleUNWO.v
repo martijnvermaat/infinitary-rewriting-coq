@@ -11,7 +11,21 @@ Set Implicit Arguments.
 
   and show it is a counterexample to UN-inf.
 
-  Because we have X for variables, we use D and U instead of P and S.
+  J. Endrullis, C. Grabmayer, D. Hendriks, J.W. Klop and V. van Oostrom
+  Unique Normal Forms in Infinitary Weakly Orthogonal Rewriting
+  Rewriting Techniques and Applications, 2010
+
+  Because we have S as nat constructor, we rename the function symbol
+  to D and U (up, down).
+
+  Let psi = U^1 D^2 U^3 D^4, we show:
+
+  * This TRS is weakly orthogonal
+  * psi rewrites to DDD...
+  * psi rewrites to UUU...
+  * DDD... is a normal form
+  * UUU... is a normal form
+  * DDD... and UUU... are not bisimilar
 *)
 
 (* Signature *)
@@ -44,21 +58,14 @@ Definition arity (f : symbol) : nat :=
 
 (* Variables *)
 
-Definition variable : Set := nat.
+(* We only need one variable *)
+Definition variable : Set := unit.
 
-Fixpoint beq_var (x y : variable) : bool :=
-  match x, y with
-  | 0, 0       => true
-  | S x', S y' => beq_var x' y'
-  | _,    _    => false
-end.
+Fixpoint beq_var (x y : variable) : bool := true.
 
 Lemma beq_var_ok : forall x y, beq_var x y = true <-> x = y.
 Proof.
-induction x as [|x IH]; destruct y;
-  simpl; split; intro H; try (reflexivity || discriminate).
-  f_equal. exact (proj1 (IH _) H).
-  apply (proj2 (IH _)). inversion H. reflexivity.
+intros [] []; split; reflexivity.
 Qed.
 
 (* Terms *)
@@ -461,8 +468,6 @@ Notation context := (context F X).
 (* Function application with one argument *)
 Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
-Notation id_sub := (empty_substitution F X).
-
 Fixpoint Dnc n c : context :=
   match n with
   | O   => c
@@ -515,6 +520,16 @@ intros n t.
 apply fill_Unc_t.
 Qed.
 
+Lemma fill_DmUnc_t :
+  forall m n c t,
+    fill (Dnc m (Unc n c)) t = Dnt m (Unt n (fill c t)).
+Proof.
+intros m n c t.
+rewrite fill_Dnc_t.
+rewrite fill_Unc_t.
+reflexivity.
+Qed.
+
 Lemma fill_UmDnc_t :
   forall m n c t,
     fill (Unc m (Dnc n c)) t = Unt m (Dnt n (fill c t)).
@@ -523,6 +538,14 @@ intros m n c t.
 rewrite fill_Unc_t.
 rewrite fill_Dnc_t.
 reflexivity.
+Qed.
+
+Lemma fill_DmUnHole_t :
+  forall m n t,
+    fill (Dnc m (Unc n Hole)) t = Dnt m (Unt n t).
+Proof.
+intros m n t.
+apply fill_DmUnc_t.
 Qed.
 
 Lemma fill_UmDnHole_t :
@@ -537,9 +560,10 @@ Qed.
 
 Notation trs := (trs F X).
 
-Definition varx : X := 5.
+(* We use this variable in the rewrite rules *)
+Definition varx : X := tt.
 
-(* D(U(x)) -> x *)
+(* DUx -> x *)
 Definition DU_l : fterm := D @@ U @@ varx!.
 Definition DU_r : fterm := varx!.
 
@@ -555,7 +579,7 @@ Qed.
 
 Definition DU : rule := Rule DU_l DU_r DU_wf.
 
-(* U(D(x)) -> x *)
+(* UDx -> x *)
 Definition UD_l : fterm := U @@ D @@ varx!.
 Definition UD_r : fterm := varx!.
 
@@ -571,11 +595,10 @@ Qed.
 
 Definition UD : rule := Rule UD_l UD_r UD_wf.
 
-(* TODO: call this UD_trs *)
-Definition UNWO_trs : trs := DU :: UD :: nil.
+Definition UD_trs : trs := DU :: UD :: nil.
 
-Lemma UNWO_left_linear :
-  trs_left_linear UNWO_trs.
+Lemma UD_left_linear :
+  trs_left_linear UD_trs.
 Proof.
 constructor; [| constructor];
   unfold left_linear; unfold linear; simpl;
@@ -586,57 +609,9 @@ intro; assumption.
 constructor.
 Qed.
 
-Implicit Arguments critical_pair [F X system].
-
-Lemma cp_U : critical_pair (system := UNWO_trs) (U @@ varx!) (U @@ varx!).
-Proof.
-unfold critical_pair.
-exists UD.
-exists DU.
-exists (0 :: nil).
-exists (fun x => match (beq_var x varx) with true => U @@ varx! | false => x! end).
-exists id_sub.
-split.
-right; left; reflexivity.
-split.
-left; reflexivity.
-split.
-discriminate.
-split.
-reflexivity.
-split.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-apply term_bis_refl.
-inversion i.
-inversion i.
-split.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-unfold vmap.
-simpl.
-unfold vcast.
-generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
-intro e.
-dependent destruction e.
-simpl.
-constructor.
-inversion i.
-apply term_bis_refl.
-Qed.
-
-Lemma UNWO_critical_pairs_trivial :
+Lemma UD_critical_pairs_trivial :
   forall t1 t2,
-    critical_pair (system := UNWO_trs) t1 t2 ->
+    critical_pair UD_trs t1 t2 ->
     t1 [~] t2.
 Proof.
 intros t1 t2 H.
@@ -679,85 +654,17 @@ assumption.
 inversion i.
 Qed.
 
-Lemma UNWO_weakly_orthogonal :
-  weakly_orthogonal UNWO_trs.
+Lemma UD_weakly_orthogonal :
+  weakly_orthogonal UD_trs.
 Proof.
 split.
-exact UNWO_left_linear.
-exact UNWO_critical_pairs_trivial.
-Qed.
-
-(* DDD... is infinite *)
-Lemma infinite_D :
-  infinite repeat_D.
-Proof.
-intro d.
-assert (S : exists p : position, position_depth p = d /\ subterm repeat_D p = Some repeat_D).
-exists ((fix z n := match n with O => nil | S n => 0 :: (z n) end) d).
-induction d; split.
-reflexivity.
-reflexivity.
-simpl.
-f_equal.
-apply IHd.
-simpl.
-apply IHd.
-destruct S as [p S].
-exists p.
-split.
-apply S.
-rewrite (proj2 S).
-discriminate.
-Qed.
-
-(* UUU... is infinite *)
-Lemma infinite_U :
-  infinite repeat_U.
-Proof.
-intro d.
-assert (S : exists p : position, position_depth p = d /\ subterm repeat_U p = Some repeat_U).
-exists ((fix z n := match n with O => nil | S n => 0 :: (z n) end) d).
-induction d; split.
-reflexivity.
-reflexivity.
-simpl.
-f_equal.
-apply IHd.
-simpl.
-apply IHd.
-destruct S as [p S].
-exists p.
-split.
-apply S.
-rewrite (proj2 S).
-discriminate.
-Qed.
-
-(* DDD... is infinite *)
-(* This uses the (alternative) coinductive term_inf predicate *)
-Lemma term_inf_D :
-  term_inf repeat_D.
-Proof.
-cofix co.
-rewrite (peek_eq repeat_D); simpl.
-apply Fun_inf with (First (n := 0)).
-assumption.
-Qed.
-
-(* UUU... is infinite *)
-(* This uses the (alternative) coinductive term_inf predicate *)
-Lemma term_inf_U :
-  term_inf repeat_U.
-Proof.
-cofix co.
-rewrite (peek_eq repeat_U); simpl.
-apply Fun_inf with (First (n := 0)).
-assumption.
+exact UD_left_linear.
+exact UD_critical_pairs_trivial.
 Qed.
 
 (* DDD... is a normal form *)
-Lemma nf_D :
-  normal_form (system := UNWO_trs) repeat_D.
+Lemma normal_form_repeat_D :
+  normal_form UD_trs repeat_D.
 Proof.
 (* TODO: a lot of this proof is a mess, cleanup
    Also, I expect that this could be generalized and shortened quite a bit
@@ -910,8 +817,8 @@ assumption.
 Qed.
 
 (* UUU... is a normal form *)
-Lemma nf_U :
-  normal_form (system := UNWO_trs) repeat_U.
+Lemma normal_form_repeat_U :
+  normal_form UD_trs repeat_U.
 Proof.
 (* This proof is just a copy of the repeat_D proof *)
 intros [c [r [u [H1 H2]]]].
@@ -1062,22 +969,8 @@ constructor.
 constructor.
 Qed.
 
-(* DDD... is an infinite normal form *)
-Lemma infinite_nf_D :
-  infinite repeat_D /\ normal_form (system := UNWO_trs) repeat_D.
-Proof.
-exact (conj infinite_D nf_D).
-Qed.
-
-(* UUU... is an infinite normal form *)
-Lemma infinite_nf_U :
-  infinite repeat_U /\ normal_form (system := UNWO_trs) repeat_U.
-Proof.
-exact (conj infinite_U nf_U).
-Qed.
-
 (* DDD... and UUU... are different *)
-Lemma neq_D_U :
+Lemma neq_repeat_D_repeat_U :
   ~ repeat_D [~] repeat_U.
 Proof.
 intro H.
@@ -1085,438 +978,12 @@ rewrite (peek_eq repeat_D), (peek_eq repeat_U) in H.
 inversion H.
 Qed.
 
-(* DDD... and UUU... are the only infinite normal forms *)
-(* TODO: this is a very ugly proof *)
-Lemma only_infinite_nf_D_U :
-  forall t,
-    infinite t /\ normal_form (system := UNWO_trs) t ->
-    t [~] repeat_D \/ t [~] repeat_U.
-Proof.
-intros [x | [] args] [It Nt].
-
-destruct (It 1) as [p [Dp Hp]].
-contradict Hp.
-destruct p as [| a [| b p]].
-discriminate Dp.
-reflexivity.
-discriminate Dp.
-
-left.
-assert (H : term_eq_up_to 1 (@Fun F X D args) repeat_D).
-rewrite (peek_eq repeat_D).
-simpl.
-constructor.
-intro i.
-constructor.
-apply term_eq_implies_term_bis.
-intro n.
-generalize dependent (@Fun F X D args).
-induction n as [| n IH]; intros t It Nt H.
-constructor.
-rewrite (peek_eq repeat_D) in H.
-dependent destruction H.
-clear H.
-rewrite (peek_eq repeat_D).
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-
-apply IH; clear IH.
-intro d.
-assert (H := It (S d)).
-destruct H as [p [H1 H2]].
-dependent destruction p.
-exists p.
-split.
-reflexivity.
-destruct n0.
-assumption.
-contradict H2.
-reflexivity.
-
-intros [c [r [u [H1 H2]]]].
-apply Nt.
-exists (D @@@ c).
-exists r.
-exists u.
-split.
-assumption.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-assumption.
-inversion i.
-
-(* contradict this with Nt *)
-assert (Hx : ~ exists w, v First = @Fun F X U w).
-intro Hx.
-unfold normal_form in Nt.
-apply Nt.
-clear It Nt. (* readability *)
-destruct Hx as [w H].
-exists Hole.
-exists DU.
-exists (fun n => w First).
-split.
-left; reflexivity.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-rewrite H.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-simpl.
-apply term_bis_refl.
-inversion i.
-inversion i.
-clear Nt.
-
-unfold infinite in It.
-specialize It with 2.
-destruct It as [p [H1 H2]].
-destruct p as [| [| a] [| b [| c p]]].
-inversion H1.
-inversion H1.
-simpl in H2.
-unfold vhead in H2.
-destruct (v First).
-contradict H2.
-reflexivity.
-destruct f.
-rewrite (peek_eq repeat_D).
-simpl.
-constructor.
-intro i.
-constructor.
-contradict Hx.
-exists v0.
-reflexivity.
-inversion H1.
-inversion H1.
-contradict H2.
-reflexivity.
-inversion H1.
-inversion i.
-
-(* Same argument follows *)
-
-right.
-assert (H : term_eq_up_to 1 (@Fun F X U args) repeat_U).
-rewrite (peek_eq repeat_U).
-simpl.
-constructor.
-intro i.
-constructor.
-apply term_eq_implies_term_bis.
-intro n.
-generalize dependent (@Fun F X U args).
-induction n as [| n IH]; intros t It Nt H.
-constructor.
-rewrite (peek_eq repeat_U) in H.
-dependent destruction H.
-clear H.
-rewrite (peek_eq repeat_U).
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-
-apply IH; clear IH.
-intro d.
-assert (H := It (S d)).
-destruct H as [p [H1 H2]].
-dependent destruction p.
-exists p.
-split.
-reflexivity.
-destruct n0.
-assumption.
-contradict H2.
-reflexivity.
-
-intros [c [r [u [H1 H2]]]].
-apply Nt.
-exists (U @@@ c).
-exists r.
-exists u.
-split.
-assumption.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-assumption.
-inversion i.
-
-(* contradict this with Nt *)
-assert (Hx : ~ exists w, v First = @Fun F X D w).
-intro Hx.
-unfold normal_form in Nt.
-apply Nt.
-clear It Nt. (* readability *)
-destruct Hx as [w H].
-exists Hole.
-exists UD.
-exists (fun n => w First).
-split.
-right; left; reflexivity.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-rewrite H.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-simpl.
-apply term_bis_refl.
-inversion i.
-inversion i.
-clear Nt.
-
-unfold infinite in It.
-specialize It with 2.
-destruct It as [p [H1 H2]].
-destruct p as [| [| a] [| b [| c p]]].
-inversion H1.
-inversion H1.
-simpl in H2.
-unfold vhead in H2.
-destruct (v First).
-contradict H2.
-reflexivity.
-destruct f.
-contradict Hx.
-exists v0.
-reflexivity.
-rewrite (peek_eq repeat_U).
-simpl.
-constructor.
-intro i.
-constructor.
-inversion H1.
-inversion H1.
-contradict H2.
-reflexivity.
-inversion H1.
-inversion i.
-Qed.
-
-(* DDD... and UUU... are the only infinite normal forms *)
-(* This is alternative, using coinductive term_inf predicate *)
-(* TODO: this is a very ugly proof *)
-Lemma only_term_inf_nf_D_U :
-  forall t,
-    term_inf t /\ normal_form (system := UNWO_trs) t ->
-    t [~] repeat_D \/ t [~] repeat_U.
-Proof.
-intros [x | [] args] [It Nt].
-
-inversion It.
-
-left.
-assert (H : term_eq_up_to 1 (@Fun F X D args) repeat_D).
-rewrite (peek_eq repeat_D).
-simpl.
-constructor.
-intro i.
-constructor.
-apply term_eq_implies_term_bis.
-intro n.
-generalize dependent (@Fun F X D args).
-induction n as [| n IH]; intros t It Nt H.
-constructor.
-rewrite (peek_eq repeat_D) in H.
-dependent destruction H.
-clear H.
-rewrite (peek_eq repeat_D).
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-
-apply IH; clear IH.
-inversion It.
-dependent destruction H1.
-revert H0.
-dependent destruction i.
-trivial.
-inversion i.
-
-intros [c [r [u [H1 H2]]]].
-apply Nt.
-exists (D @@@ c).
-exists r.
-exists u.
-split.
-assumption.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-assumption.
-inversion i.
-
-(* contradict this with Nt *)
-assert (Hx : ~ exists w, v First = @Fun F X U w).
-intro Hx.
-unfold normal_form in Nt.
-apply Nt.
-clear It Nt. (* readability *)
-destruct Hx as [w H].
-exists Hole.
-exists DU.
-exists (fun n => w First).
-split.
-left; reflexivity.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-rewrite H.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-simpl.
-apply term_bis_refl.
-inversion i.
-inversion i.
-clear Nt.
-
-inversion It.
-clear It.
-dependent destruction H1.
-revert H0.
-dependent destruction i.
-intro It.
-destruct (v First).
-inversion It.
-destruct f.
-rewrite (peek_eq repeat_D); simpl.
-constructor.
-constructor.
-contradict Hx.
-exists v0.
-reflexivity.
-inversion i.
-inversion i.
-
-(* Same argument follows *)
-
-right.
-assert (H : term_eq_up_to 1 (@Fun F X U args) repeat_U).
-rewrite (peek_eq repeat_U).
-simpl.
-constructor.
-intro i.
-constructor.
-apply term_eq_implies_term_bis.
-intro n.
-generalize dependent (@Fun F X U args).
-induction n as [| n IH]; intros t It Nt H.
-constructor.
-rewrite (peek_eq repeat_U) in H.
-dependent destruction H.
-clear H.
-rewrite (peek_eq repeat_U).
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-
-apply IH; clear IH.
-inversion It.
-dependent destruction H1.
-revert H0.
-dependent destruction i.
-trivial.
-inversion i.
-
-intros [c [r [u [H1 H2]]]].
-apply Nt.
-exists (U @@@ c).
-exists r.
-exists u.
-split.
-assumption.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-assumption.
-inversion i.
-
-(* contradict this with Nt *)
-assert (Hx : ~ exists w, v First = @Fun F X D w).
-intro Hx.
-unfold normal_form in Nt.
-apply Nt.
-clear It Nt. (* readability *)
-destruct Hx as [w H].
-exists Hole.
-exists UD.
-exists (fun n => w First).
-split.
-right; left; reflexivity.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-rewrite H.
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-unfold vmap.
-simpl.
-apply term_bis_refl.
-inversion i.
-inversion i.
-clear Nt.
-
-inversion It.
-clear It.
-dependent destruction H1.
-revert H0.
-dependent destruction i.
-intro It.
-destruct (v First).
-inversion It.
-destruct f.
-contradict Hx.
-exists v0.
-reflexivity.
-rewrite (peek_eq repeat_U); simpl.
-constructor.
-constructor.
-inversion i.
-inversion i.
-Qed.
-
 (* Reductions *)
-Notation Step := (Step UNWO_trs).
-Notation Nil' := (Nil UNWO_trs).
+Notation Step := (Step UD_trs).
+Notation Nil' := (Nil UD_trs).
 
-Notation "s [>] t" := (step UNWO_trs s t) (at level 40).
-Notation "s ->> t" := (sequence UNWO_trs s t) (at level 40).
+Notation "s [>] t" := (step UD_trs s t) (at level 40).
+Notation "s ->> t" := (sequence UD_trs s t) (at level 40).
 
 Notation "r [ i ]" := (pred r i) (at level 60).
 Notation "r [1 i ]" := (fst (projT1 (pred r i))) (at level 60).
@@ -1525,605 +992,28 @@ Notation "r [seq i ]" := (fst (projT2 (pred r i))) (at level 60).
 Notation "r [stp i ]" := (snd (projT2 (pred r i))) (at level 60).
 
 Lemma DU_in :
-  In DU UNWO_trs.
+  In DU UD_trs.
 Proof.
 left; reflexivity.
 Qed.
 
 Lemma UD_in :
-  In UD UNWO_trs.
+  In UD UD_trs.
 Proof.
 right; left; reflexivity.
 Qed.
 
-(* DUDU... rewrites only to itself *)
-(* TODO: we don't really need this *)
-Lemma rewrites_to_itself_DU :
-  forall t (p : repeat_DU [>] t),
-    t [~] repeat_DU.
-Proof.
-intros s p.
-dependent destruction p.
-destruct i as [H | [H | []]]; try (rewrite <- H in t1, t0; clear H).
-
-unfold DU, lhs, DU_l in t0.
-unfold DU, rhs, DU_r in t1.
-apply term_bis_trans with (fill c (substitute u (varx!))).
-exact (term_bis_symm t1).
-clear t1.
-
-assert ((substitute u (D @@ U @@ varx!)) [~] repeat_DU).
-induction c using context_ind2; simpl in t0.
-assumption.
-
-(* absurd case *)
-rewrite (peek_eq repeat_DU) in t0.
-simpl in t0.
-dependent destruction t0.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-dependent destruction H.
-
-apply IHc; clear IHc.
-rewrite (peek_eq repeat_DU) in t0.
-simpl in t0.
-dependent destruction t0.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-dependent destruction H.
-specialize H with (First (n := 0)).
-simpl in H.
-assert (nm : n = 0 /\ m = 0).
-destruct n as [| [| n]]; auto; discriminate a.
-revert a x z H.
-rewrite (proj1 nm).
-rewrite (proj2 nm).
-simpl.
-intro a.
-clear n m nm.
-dependent destruction a.
-simpl.
-intros x z H.
-assumption.
-
-assert (substitute u (varx!) [~] repeat_DU).
-dependent destruction H.
-specialize H with (First (n := 0)).
-unfold vmap in H.
-simpl in H.
-dependent destruction H.
-specialize H with (First (n := 0)).
-unfold vmap in H.
-simpl in H.
-rewrite (peek_eq repeat_DU) in x0.
-dependent destruction x0.
-assumption.
-
-assert (substitute u (D @@ U @@ varx!) [~] substitute u (varx!)).
-apply term_bis_trans with repeat_DU.
-assumption.
-apply term_bis_symm.
-assumption.
-clear H H0.
-
-(* TODO: This should be a separate lemma *)
-generalize dependent (substitute u (varx!)).
-generalize dependent (substitute u (D @@ U @@ varx!)).
-generalize dependent repeat_DU.
-clear t r u.
-
-induction c as [| [] i j e v c IH w]; intros s t H1 u H2; simpl in H1.
-apply term_bis_trans with t.
-apply term_bis_symm.
-assumption.
-assumption.
-
-dependent destruction H1.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-apply IH with t.
-assumption.
-assumption.
-inversion i.
-
-dependent destruction H1.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-apply IH with t.
-assumption.
-assumption.
-inversion i.
-
-(* This case is the same as the previous *)
-
-unfold UD, lhs, UD_l in t0.
-unfold UD, rhs, UD_r in t1.
-apply term_bis_trans with (fill c (substitute u (varx!))).
-exact (term_bis_symm t1).
-clear t1.
-
-destruct c; simpl in t0 |- *; rewrite (peek_eq repeat_DU) in t0; simpl in t0;
-dependent destruction t0.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v v0 H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v v0 H.
-clear v.
-
-change (fill c (substitute u (U @@ D @@ varx!)) [~] (U @ repeat_DU)) in H.
-assert ((substitute u (U @@ D @@ varx!)) [~] (U @ repeat_DU)).
-induction c using context_ind2; simpl in H.
-assumption.
-
-(* absurd case *)
-dependent destruction H.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-rewrite (peek_eq repeat_DU) in H.
-simpl in H.
-dependent destruction H.
-
-apply IHc; clear IHc.
-rewrite (peek_eq repeat_DU) in H.
-simpl in H.
-dependent destruction H.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-dependent destruction H.
-specialize H with (First (n := 0)).
-simpl in H.
-assert (nm : n = 0 /\ m = 0).
-destruct n as [| [| n]]; auto; discriminate a.
-revert a x z H.
-rewrite (proj1 nm).
-rewrite (proj2 nm).
-simpl.
-intro a.
-clear n m nm.
-dependent destruction a.
-simpl.
-intros x z H.
-assumption.
-
-assert (substitute u (varx!) [~] (U @ repeat_DU)).
-dependent destruction H0.
-specialize H0 with (First (n := 0)).
-unfold vmap in H0.
-simpl in H.
-dependent destruction H0.
-specialize H0 with (First (n := 0)).
-unfold vmap in H0.
-simpl in H0.
-rewrite (peek_eq repeat_DU) in x.
-dependent destruction x.
-assumption.
-
-assert (substitute u (U @@ D @@ varx!) [~] substitute u (varx!)).
-apply term_bis_trans with (U @ repeat_DU).
-assumption.
-apply term_bis_symm.
-assumption.
-clear H0 H1.
-
-rewrite (peek_eq (repeat_DU)).
-simpl.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-clear v0.
-change (fill c (substitute u (varx!)) [~] (U @ repeat_DU)).
-
-(* TODO: This should be a separate lemma *)
-generalize dependent (substitute u (varx!)).
-generalize dependent (substitute u (U @@ D @@ varx!)).
-generalize dependent (U @ repeat_DU).
-clear t r u.
-
-induction c as [| [] i j e v c IH w]; intros s t H1 u H2; simpl in H1.
-apply term_bis_trans with t.
-apply term_bis_symm.
-assumption.
-assumption.
-
-dependent destruction H1.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-apply IH with t.
-assumption.
-assumption.
-inversion i.
-
-dependent destruction H1.
-specialize H with (First (n := 0)).
-assert (ij : i = 0 /\ j = 0).
-destruct i as [| [| i]]; auto; discriminate e.
-revert e v w H.
-rewrite (proj1 ij).
-rewrite (proj2 ij).
-simpl.
-intro e.
-clear i j ij.
-dependent destruction e.
-simpl.
-intros v w H.
-constructor.
-intro i.
-dependent destruction i.
-simpl.
-apply IH with t.
-assumption.
-assumption.
-inversion i.
-inversion i.
-Qed.
-
-(* Zero-step reduction psi ->> psi *)
-Definition s_psi_psi : psi ->> psi := Nil' psi.
-
-(* Substitution for step psi -> U @ psi' 1 *)
-Definition sub_psi_Upsi1 (x : X) : term :=
-  match beq_var x varx with
-  | true => U @ psi' 1
-  | false => Var x
-  end.
-
-Lemma fact_term_bis_psi :
-  fill Hole (substitute sub_psi_Upsi1 (lhs DU)) [~] psi.
-Proof.
-rewrite (peek_eq psi).
-simpl.
-constructor.
-intro i; simpl in i.
-dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-(* this is really annoying, but i guess there's no way around it... *)
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-      match u with
-      | 0 => psi' 1
-      | S u0 => U @ U @ U2nt u0
-      end) 1)).
-simpl.
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-       match u with
-       | 0 => psi' 1
-       | S u0 => U @ U @ U2nt u0
-       end) 0)).
-simpl.
-constructor.
-unfold vmap.
-intro i.
-dependent destruction i; [idtac | inversion i].
-unfold sub_psi_Upsi1.
-simpl.
-rewrite (peek_eq (psi' 1)).
-apply term_bis_refl.
-Qed.
-
-(* Step psi -> U @ psi' 1 *)
-Definition p_psi_Upsi1 : psi [>] (U @ psi' 1) :=
-  Step DU Hole sub_psi_Upsi1 DU_in fact_term_bis_psi (term_bis_refl (U @ psi' 1)).
-
-(* Single-step reduction psi ->> U @ psi' 1 *)
-Definition s_psi_Upsi1 : psi ->> (U @ psi' 1) :=
-  Cons s_psi_psi p_psi_Upsi1.
-
-(* Substitution for step U @ psi' 1 -> U D D U U U @ psi' 2 *)
-Definition sub_Upsi1_UDDUUUpsi2 (x : X) : term :=
-  match beq_var x varx with
-  | true => U @ U @ U @ psi' 2
-  | false => Var x
-  end.
-
-Lemma fact_term_bis_Upsi1 :
-  fill (U @@@ D @@@ D @@@ Hole) (substitute sub_Upsi1_UDDUUUpsi2 (lhs DU))
-  [~]
-  (U @ psi' 1).
-Proof.
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-rewrite (peek_eq (psi' 1)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
-       match d with
-       | 0 =>
-           D @
-           (cofix U2nt (u : nat) : term :=
-              match u with
-              | 0 => psi' 2
-              | S u0 => U @ U @ U2nt u0
-              end) 2
-       | S d0 => D @ D @ D2nDt d0
-       end) 0)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-      match u with
-      | 0 => psi' 2
-      | S u0 => U @ U @ U2nt u0
-      end) 2)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-unfold vmap.
-unfold sub_Upsi1_UDDUUUpsi2.
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-      match u with
-      | 0 => psi' 2
-      | S u0 => U @ U @ U2nt u0
-      end) 1)).
-simpl.
-constructor.
-intro i.
-dependent destruction i; [idtac | inversion i].
-simpl.
-generalize (psi' 2).
-intro t.
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ U @ U2nt u0
-       end) 0)).
-simpl.
-destruct t; apply term_bis_U; apply term_bis_refl.
-Qed.
-
-(* Step U @ psi' 1 -> U D D U U U @ psi' 2 *)
-Definition p_Upsi1_UDDUUUpsi2 : (U @ psi' 1) [>] (U @ D @ D @ U @ U @ U @ psi' 2) :=
-  Step DU (U @@@ D @@@ D @@@ Hole) sub_Upsi1_UDDUUUpsi2 DU_in fact_term_bis_Upsi1 (term_bis_refl (U @ D @ D @ U @ U @ U @ psi' 2)).
-
-(* Two-step reduction psi ->> U D D U U U @ psi' 2 *)
-Definition s_psi_UDDUUUpsi2 : psi ->> (U @ D @ D @ U @ U @ U @ psi' 2) := Cons s_psi_Upsi1 p_Upsi1_UDDUUUpsi2.
-
-(* Substitution for step U D D U U U @ psi' 2 -> U D U U @ psi' 2 *)
-Definition sub_UDDUUUpsi2_UDUUpsi2 (x : X) : term :=
-  match beq_var x varx with
-  | true => U @ U @ psi' 2
-  | false => Var x
-  end.
-
-Lemma fact_term_bis_UDDUUUpsi2 :
-  fill (U @@@ D @@@ Hole) (substitute sub_UDDUUUpsi2_UDUUpsi2 (lhs DU))
-  [~]
-  (U @ D @ D @ U @ U @ U @ psi' 2).
-Proof.
-(* more of the same *)
-Admitted.
-
-(* Step U D D U U U @ psi' 2 -> U D U U @ psi' 2 *)
-Definition p_UDDUUUpsi2_UDUUpsi2 : (U @ D @ D @ U @ U @ U @ psi' 2) [>] (U @ D @ U @ U @ psi' 2) :=
-  Step DU (U @@@ D @@@ Hole) sub_UDDUUUpsi2_UDUUpsi2 DU_in fact_term_bis_UDDUUUpsi2 (term_bis_refl (U @ D @ U @ U @ psi' 2)).
-
-(* Three-step reduction psi ->> U D U U @ psi' 2 *)
-Definition s_psi_UDUUpsi2 : psi ->> (U @ D @ U @ U @ psi' 2) := Cons s_psi_UDDUUUpsi2 p_UDDUUUpsi2_UDUUpsi2.
-
-(* Substitution for step U D U U @ psi' 2 -> U U @ psi' 2 *)
-Definition sub_UDUUpsi2_UUpsi2 (x : X) : term :=
-  match beq_var x varx with
-  | true => U @ psi' 2
-  | false => Var x
-  end.
-
-Lemma fact_term_bis_UDUUpsi2 :
-  fill (U @@@ Hole) (substitute sub_UDUUpsi2_UUpsi2 (lhs DU))
-  [~]
-  (U @ D @ U @ U @ psi' 2).
-Proof.
-(* more of the same *)
-Admitted.
-
-(* Step U D U U @ psi' 2 -> U U @ psi' 2 *)
-Definition p_UDUUpsi2_UUpsi2 : (U @ D @ U @ U @ psi' 2) [>] (U @ U @ psi' 2) :=
-  Step DU (U @@@ Hole) sub_UDUUpsi2_UUpsi2 DU_in fact_term_bis_UDUUpsi2 (term_bis_refl (U @ U @ psi' 2)).
-
-(* Four-step reduction psi ->> U U @ psi' 2 *)
-Definition s_psi_UUpsi2 : psi ->> (U @ U @ psi' 2) := Cons s_psi_UDUUpsi2 p_UDUUpsi2_UUpsi2.
-
 (*
-   All reductions defined so far are really just examples and we now turn
-   to parameterized reductions and eventually build up to an infinite
-   reduction.
-
-   TODO: complete the above examples, or get rid of the incomplete ones, or
-   maybe even add a few.
+   We now build our infinite rewrite sequences.
 *)
 
-(* Substitution for step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
-Definition sub_DSnUSnt_DnUnt t (x : X) : term :=
-  match beq_var x varx with
-  | true  => t
-  | false => Var x
-  end.
+Definition sub_t t (x : X) : term := t.
 
-Lemma fact_term_bis_DSnUSnt :
-  forall (n : nat) (t : term),
-    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (lhs DU))
-    [~]
-    DnUnt (S n) t.
-Proof.
-intros n t.
-rewrite fill_DnHole_t.
-unfold DnUnt.
-simpl.
-rewrite DDnt_eq_DnDt.
-apply term_bis_Dnt.
-constructor.
-intro i; dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-constructor.
-intro i; dependent destruction i; [idtac | inversion i].
-unfold vmap.
-simpl.
-apply term_bis_refl.
-Qed.
-
-Lemma fact_term_eq_DnUnt :
-  forall (n : nat) (t : term),
-    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
-    =
-    DnUnt n t.
-Proof.
-induction n; intro t; simpl.
-reflexivity.
-simpl in IHn.
-rewrite UUnt_eq_UnUt.
-rewrite IHn with (U @ t).
-unfold DnUnt; simpl.
-rewrite UUnt_eq_UnUt.
-reflexivity.
-Qed.
-
-Lemma fact_term_bis_DnUnt :
-  forall (n : nat) (t : term),
-    fill (Dnc n Hole) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
-    [~]
-    DnUnt n t.
-Proof.
-intros n t.
-rewrite fact_term_eq_DnUnt.
-apply term_bis_refl.
-Qed.
-
-(* Step D^Sn @ U^Sn @ t -> D^n @ U^n @ t *)
-Definition p_DSnUSnt_DnUnt n t : DnUnt (S n) t [>] DnUnt n t :=
-  Step DU (Dnc n Hole) (sub_DSnUSnt_DnUnt (Unt n t)) DU_in (fact_term_bis_DSnUSnt n t) (fact_term_bis_DnUnt n t).
-
-(* n-step reduction D^n @ U^n @ t ->> t *)
-Fixpoint s_DnUnt_t n t : DnUnt n t ->> t :=
-  match n return DnUnt n t ->> t with
-  | O   => Nil' t
-  | S n => snoc (p_DSnUSnt_DnUnt n t) (s_DnUnt_t n t)
-  end.
-
-(* n-step reduction psi n ->> U @ psi (S n) *)
-Program Definition s_psin_UpsiSn n : psi' n ->> (U @ (psi' (S n))) :=
-  s_DnUnt_t (S (2 * n)) (U @ psi' (S n)).
-Next Obligation.
-symmetry.
-apply psin_eq_DS2nUS2nUpsiSn.
-Defined.
-
-(*
-   Now we slightly adjust these sequences to take place under U^m.
-
-   (So the above were still examples.)
-*)
+(* 1) psi ->> UUU... *)
 
 Lemma fact_term_bis_UmDSnUSnt :
   forall (m n : nat) (t : term),
-    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (lhs DU))
+    fill (Unc m (Dnc n Hole)) (substitute (sub_t (Unt n t)) (lhs DU))
     [~]
     Unt m (DnUnt (S n) t).
 Proof.
@@ -2147,7 +1037,7 @@ Qed.
 
 Lemma fact_term_eq_UmDnUnt :
   forall (m n : nat) (t : term),
-    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
+    fill (Unc m (Dnc n Hole)) (substitute (sub_t (Unt n t)) (rhs DU))
     =
     Unt m (DnUnt n t).
 Proof.
@@ -2160,7 +1050,7 @@ Qed.
 
 Lemma fact_term_bis_UmDnUnt :
   forall (m n : nat) (t : term),
-    fill (Unc m (Dnc n Hole)) (substitute (sub_DSnUSnt_DnUnt (Unt n t)) (rhs DU))
+    fill (Unc m (Dnc n Hole)) (substitute (sub_t (Unt n t)) (rhs DU))
     [~]
     Unt m (DnUnt n t).
 Proof.
@@ -2171,7 +1061,7 @@ Qed.
 
 (* Step U^m @ D^Sn @ U^Sn @ t -> U^m @ D^n @ U^n @ t *)
 Definition p_UmDSnUSnt_UmDnUnt m n t : Unt m (DnUnt (S n) t) [>] Unt m (DnUnt n t) :=
-  Step DU (Unc m (Dnc n Hole)) (sub_DSnUSnt_DnUnt (Unt n t)) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
+  Step DU (Unc m (Dnc n Hole)) (sub_t (Unt n t)) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
 
 (* n-step reduction U^m @ D^n @ U^n @ t ->> U^m t *)
 Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
@@ -2199,7 +1089,7 @@ Defined.
 (* This is the ugly but working alternative to the Program above *)
 Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)).
 intro n.
-assert (H :Unt n (DnUnt (S (2 * n)) (U @ psi' (S n))) ->> Unt n (U @ psi' (S n))).
+assert (H : Unt n (DnUnt (S (2 * n)) (U @ psi' (S n))) ->> Unt n (U @ psi' (S n))).
 refine (s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n))).
 unfold DnUnt in H.
 rewrite psin_eq_DS2nUS2nUpsiSn.
@@ -2233,15 +1123,145 @@ Qed.
 Definition s_psi_repeat_U : psi ->> repeat_U :=
   Lim s_psi_Unpsin converges_Unpsin.
 
+(* 2) psi ->> DDD... *)
+
+Lemma fact_term_bis_DmUSnDSnt :
+  forall (m n : nat) (t : term),
+    fill (Dnc m (Unc n Hole)) (substitute (sub_t (Dnt n t)) (lhs UD))
+    [~]
+    Dnt m (UnDnt (S n) t).
+Proof.
+intros m n t.
+rewrite fill_DmUnHole_t.
+unfold UnDnt.
+simpl.
+rewrite UUnt_eq_UnUt.
+apply term_bis_Dnt.
+apply term_bis_Unt.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+constructor.
+intro i; dependent destruction i; [idtac | inversion i].
+unfold vmap.
+simpl.
+apply term_bis_refl.
+Qed.
+
+Lemma fact_term_eq_DmUnDnt :
+  forall (m n : nat) (t : term),
+    fill (Dnc m (Unc n Hole)) (substitute (sub_t (Dnt n t)) (rhs UD))
+    =
+    Dnt m (UnDnt n t).
+Proof.
+intros m n t.
+rewrite fill_Dnc_t.
+rewrite fill_Unc_t.
+simpl.
+reflexivity.
+Qed.
+
+Lemma fact_term_bis_DmUnDnt :
+  forall (m n : nat) (t : term),
+    fill (Dnc m (Unc n Hole)) (substitute (sub_t (Dnt n t)) (rhs UD))
+    [~]
+    Dnt m (UnDnt n t).
+Proof.
+intros m n t.
+rewrite fact_term_eq_DmUnDnt.
+apply term_bis_refl.
+Qed.
+
+(* Step D^m @ U^Sn @ D^Sn @ t -> D^m @ U^n @ D^n @ t *)
+Definition p_DmUSnDSnt_DmUnDnt m n t : Dnt m (UnDnt (S n) t) [>] Dnt m (UnDnt n t) :=
+  Step UD (Dnc m (Unc n Hole)) (sub_t (Dnt n t)) UD_in (fact_term_bis_DmUSnDSnt m n t) (fact_term_bis_DmUnDnt m n t).
+
+(* n-step reduction D^m @ U^n @ D^n @ t ->> D^m t *)
+Fixpoint s_DmUnDnt_Dmt m n t : Dnt m (UnDnt n t) ->> Dnt m t :=
+  match n return Dnt m (UnDnt n t) ->> Dnt m t with
+  | O   => Nil' (Dnt m t)
+  | S n => snoc (p_DmUSnDSnt_DmUnDnt m n t) (s_DmUnDnt_Dmt m n t)
+  end.
+
+(* Is the following error a bug in Program? *)
+(*
+Program Definition s_DnU2npsin_DSnU2SnpsiSn n : Dnt n (Unt (2 * n) (psi' n)) ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))) :=
+  s_DmUnDnt_Dmt n (2 * n) (D @ (Unt (2 * (S n)) (psi' (S n)))).
+Next Obligation.
+symmetry.
+unfold UnDnt.
+rewrite psin_eq_DS2nUS2nUpsiSn.
+unfold DnUnt.
+simpl.
+rewrite DDnt_eq_DnDt.
+rewrite <- plus_n_Sm.
+rewrite <- UUnt_eq_UnUt.
+reflexivity.
+Defined.
+Next Obligation.
+rewrite DDnt_eq_DnDt.
+reflexivity.
+Defined.
+*)
+
+(* This is the ugly but working alternative to the Program above *)
+Definition s_DnU2npsin_DSnU2SnpsiSn n : Dnt n (Unt (2 * n) (psi' n)) ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))).
+intro n.
+assert (H : Dnt n (UnDnt (2 * n) (D @ Unt (2 * (S n)) (psi' (S n)))) ->> Dnt n (D @ (Unt (2 * S n)) (psi' (S n)))).
+refine (s_DmUnDnt_Dmt n (2 * n) (D @ (Unt (2 * (S n)) (psi' (S n))))).
+unfold UnDnt in H.
+rewrite psin_eq_DS2nUS2nUpsiSn.
+unfold DnUnt.
+simpl.
+rewrite DDnt_eq_DnDt.
+simpl in H.
+rewrite <- plus_n_Sm in H.
+rewrite <- plus_n_Sm.
+simpl in H.
+simpl.
+rewrite <- UUnt_eq_UnUt.
+rewrite DDnt_eq_DnDt.
+exact H.
+Defined.
+
+(* psi ->> D^n @ U^2n @ psi' n *)
+(*
+Fixpoint s_psi_DnU2npsin n : psi ->> Dnt n (Unt (2 * n) (psi' n)) :=
+  match n return psi ->> Dnt n (Unt (2 * n) (psi' n)) with
+  | O   => Nil' psi
+  | S n => append (s_psi_DnU2npsin n) (s_DnU2npsin_DSnU2SnpsiSn n)
+  end.
+*)
+Fixpoint s_psi_DSnU2SnpsiSn n : psi ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))) :=
+  match n return psi ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))) with
+  | O   => s_DnU2npsin_DSnU2SnpsiSn 0
+  | S n => append (s_psi_DSnU2SnpsiSn n) (s_DnU2npsin_DSnU2SnpsiSn (S n))
+  end.
+
+Lemma converges_DSnU2SnpsiSn : converges (fun n => Dnt (S n) (Unt (2 * (S n)) (psi' (S n)))) repeat_D.
+Proof.
+intro d.
+exists d.
+intros m H.
+simpl.
+apply term_eq_up_to_weaken_generalized with m.
+assumption.
+rewrite DDnt_eq_DnDt.
+apply term_eq_up_to_n_Dnt_repeat_D.
+Qed.
+
+(* Omega-step reduction psi ->> DDD... *)
+Definition s_psi_repeat_D : psi ->> repeat_D :=
+  Lim s_psi_DSnU2SnpsiSn converges_DSnU2SnpsiSn.
+
 (*
    It should be noted that at this point, nothing has been said yet about
-   well-formedness properties of s_psi_repeat_U. More specifically,
+   well-formedness of the rewrite sequences. Furthermore, it might not
+   converge.
 
-   1) s_psi_Unpsin might not have a well-defined limit
-   2) this limit might have nothing to do with repeat_U
-
-   We address 1 by proving the 'wf' property and 2 follows by the definition
-   of sequences (so 2 is now moot).
+   So we proceed by proving the 'wf' property. Convergence seems our of
+   our reach at this point unfortunately.
 *)
 
 Lemma finite_s_UmDnUnt_Umt :
@@ -2273,7 +1293,72 @@ exact IH.
 apply finite_s_Unpsin_USnpsiSn.
 Qed.
 
-Lemma s_UmDSnUSnt_Umt_is_cons :
+Lemma finite_s_DmUnDnt_Dmt :
+  forall m n t, finite (s_DmUnDnt_Dmt m n t).
+Proof.
+induction n as [| n IH]; intro t; simpl.
+exact I.
+apply snoc_finite.
+apply IH.
+Qed.
+
+Lemma finite_s_DnU2npsin_DSnU2SnpsiSn :
+  forall n, finite (s_DnU2npsin_DSnU2SnpsiSn n).
+Proof.
+intro n.
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
+(* http://www.lix.polytechnique.fr/coq/stdlib/Coq.Program.Equality.html *)
+unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+(*apply finite_s_DmUnDnt_Dmt.*)
+Admitted.
+
+Program Lemma saaa :
+  forall t u (e : (u = t)),
+  (eq_rect t
+    (fun y : term => y ->> t)
+    (Nil' t) u
+    (eq_sym e))
+  = Nil' t.
+Proof.
+intros.
+rewrite e.
+reflexivity.
+Qed.
+
+(*
+    (eq_rect (DnUnt 1 (U @ psi' 1))
+        (fun y : term => y ->> (D @ U @ U @ psi' 1))
+        (Nil' (D @ U @ U @ psi' 1)) (psi' 0)
+        (eq_sym (psin_eq_DS2nUS2nUpsiSn 0)))
+*)
+
+Lemma finite_s_psi_DSnU2SnpsiSn :
+  forall n : nat, finite (s_psi_DSnU2SnpsiSn n).
+Proof.
+induction n as [| n IH]; simpl.
+unfold s_DnU2npsin_DSnU2SnpsiSn.
+simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+unfold DnUnt. simpl.
+generalize (psin_eq_DS2nUS2nUpsiSn 0).
+intro.
+unfold Logic.eq_sym.
+unfold eq_rect.
+generalize (D @ U @ U @ psi' 1).
+rewrite (psin_eq_DS2nUS2nUpsiSn 0).
+
+rewrite saaa.
+simpl.
+
+unfold DnUnt.
+
+
+admit. (* TODO! *)
+apply append_finite.
+exact IH.
+exact (finite_s_DnU2npsin_DSnU2SnpsiSn (S n)).
+Qed.
+
+Lemma s_UmDnUnt_Umt_is_cons :
   forall m n t,
     exists s, exists r : _ ->> s, exists p : s [>] _,
       s_UmDnUnt_Umt m (S n) t = Cons r p.
@@ -2309,14 +1394,14 @@ Lemma embed_strict_append_Unpsin_USnpsiSn :
     embed_strict r (append r (s_Unpsin_USnpsiSn n)).
 Proof.
 intro t.
-induction n as [| n IH]; simpl;
+destruct n as [| n]; simpl;
 unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
 exists (inl _ tt).
 apply embed_refl.
 revert r.
 rewrite (plus_SnO n).
 intro r.
-destruct (s_UmDSnUSnt_Umt_is_cons (S n) (n + n) (U @ psi' (S (S n)))) as [s [q [p H]]].
+destruct (s_UmDnUnt_Umt_is_cons (S n) (n + n) (U @ psi' (S (S n)))) as [s [q [p H]]].
 rewrite H.
 exists (inl _ tt).
 simpl.
@@ -2345,558 +1430,149 @@ apply IHle.
 apply embed_strict_append_Unpsin_USnpsiSn.
 Qed.
 
-Lemma weakly_convergent_s_psi_Unpsin :
-  forall n : nat, weakly_convergent (s_psi_Unpsin n).
+Lemma s_DmUnDnt_Dmt_is_cons :
+  forall m n t,
+    exists s, exists r : _ ->> s, exists p : s [>] _,
+      s_DmUnDnt_Dmt m (S n) t = Cons r p.
+Proof.
+induction n; intro t; simpl.
+exists (Dnt m (UnDnt 1 t)).
+exists (Nil' (Dnt m (UnDnt 1 t))).
+exists (p_DmUSnDSnt_DmUnDnt m 0 t).
+reflexivity.
+simpl in IHn.
+specialize IHn with t.
+destruct IHn as [s [r [p IH]]].
+rewrite IH.
+simpl.
+exists s.
+exists (snoc (p_DmUSnDSnt_DmUnDnt m (S n) t) r).
+exists p.
+reflexivity.
+Qed.
+
+(*
+Lemma s_DnU2npsin_DSnU2SnpsiSn_is_cons :
+  forall n,
+    exists s, exists r : _ ->> s, exists p : s [>] _,
+      s_DnU2npsin_DSnU2SnpsiSn (S n) = Cons r p.
+Proof.
+induction n; simpl.
+exists (Dnt 1 (UnDnt 1 (D @ (Unt 4 (psi' 2))))).
+assert (e := (psin_eq_DS2nUS2nUpsiSn 1)).
+unfold DnUnt in e.
+simpl in e.
+(*rewrite e.
+exists (Cons (Nil' (Dnt 1 (UnDnt 2 (D @ (Unt 4 (psi' 2)))))) (p_DmUSnDSnt_DmUnDnt 1 1 (D @ (Unt 4 (psi' 2))))).
+exists (p_DmUSnDSnt_DmUnDnt 1 0 (D @ (Unt 4 (psi' 2)))).
+unfold s_DnU2npsin_DSnU2SnpsiSn.
+simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).*)
+Admitted.
+*)
+
+Lemma plus_SSnO :
+  forall n,
+    n + S (S (n + 0)) = S (S (n + n)).
 Proof.
 intro n.
-apply weakly_convergent_finite.
-apply finite_s_psi_Unpsin.
+rewrite <- plus_n_O.
+rewrite plus_n_Sm.
+rewrite plus_n_Sm.
+reflexivity.
 Qed.
 
-Lemma pred_s_psi_Unpsin :
-  forall n m i,
-    n <= m ->
-    exists j,
-      (s_psi_Unpsin m)[j] = (s_psi_Unpsin n)[i].
+Lemma embed_strict_append_DnU2npsin_DSnU2SnpsiSn :
+  forall t n (r : t ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n)))),
+    embed_strict r (append r (s_DnU2npsin_DSnU2SnpsiSn (S n))).
 Proof.
-intros n m i H.
-induction H as [| m H IH].
-exists i.
-reflexivity.
-destruct IH as [j IH].
-destruct (pred_append (s_psi_Unpsin m) (s_Unpsin_USnpsiSn m) j) as [k H1].
-exists k.
-rewrite <- IH.
-rewrite <- H1.
-reflexivity.
-Qed.
-
-(* this is just ridiculous *)
-Lemma diei : forall d, exists i : pred_type (s_psi_Unpsin (S d)), exists t, JMeq i (inl t tt).
-intro d.
-simpl.
-generalize (s_psi_Unpsin d).
-induction d as [| d IH]; simpl;
-unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
+intros t.
+destruct n as [| n].
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
 exists (inl _ tt).
-exists (pred_type r).
-reflexivity.
-revert r.
-rewrite (plus_SnO d).
-intro r.
-destruct (s_UmDSnUSnt_Umt_is_cons (S d) (d + d) (U @ psi' (S (S d)))) as [s [q [p H]]].
+simpl.
+apply embed_cons_right.
+apply embed_refl.
+
+generalize (S n).
+clear n.
+intro n.
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
+
+simpl.
+
+
+intro t.
+induction n as [| n IH]; simpl;
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
+exists (inl _ tt).
+simpl.
+apply embed_cons_right.
+apply embed_refl.
+(*revert r.
+rewrite (plus_SSnO n).
+intro r.*)
+
+
+
+
+destruct (s_DmUnDnt_Dmt_is_cons (S (S n)) (S (n + n)) (D @ U @ U @ U @ (Unt (n + S (S (S (n + 0)))) (psi' (S (S (S n))))))) as [s [q [p H]]].
+rewrite <- (plus_SSnO n) in H.
 rewrite H.
 exists (inl _ tt).
 simpl.
-exists ((fix pred_type (s0 t0 : term) (r0 : s0 ->> t0) {struct r0} :
-         Type :=
-           match r0 with
-           | Nil _ => False
-           | Cons s1 t1 r1 _ _ => (unit + pred_type s1 t1 r1)%type
-           | Lim s1 ts f _ _ =>
-               {n : nat & pred_type s1 (ts n) (f n)}
-           end) psi s
-          ((fix append_rec (s0 t0 : term) (u : term) (q0 : t0 ->> u) {struct q0} :
-              s0 ->> t0 -> s0 ->> u :=
-              match
-                q0 in (sequence _ t1 u0) return (s0 ->> t1 -> s0 ->> u0)
-              with
-              | Nil t1 => fun r0 : s0 ->> t1 => r0
-              | Cons s1 t1 q1 u0 p0 =>
-                  fun r0 : s0 ->> s1 => Cons (append_rec s0 s1 t1 q1 r0) p0
-              | Lim s1 ts1 f u0 c =>
-                  fun r0 : s0 ->> s1 =>
-                  Lim
-                    (fun o : nat =>
-                       (append_rec s0 s1 (ts1 o) (f o) r0))
-                    c
-              end) psi
-             (U @ Unt d (DnUnt (S (S (S (d + d)))) (U @ psi' (S (S d))))) s
-             ((fix snoc_rec (s0 t0 : term) (u : term) (r0 : t0 ->> u) {struct r0} :
-                 s0[>]t0 -> s0 ->> u :=
-                 match
-                   r0 in (sequence _ t1 u0) return (s0[>]t1 -> s0 ->> u0)
-                 with
-                 | Nil t1 => fun p0 : s0[>]t1 => Cons (Nil' s0) p0
-                 | Cons s1 t1 q0 u0 o =>
-                     fun p0 : s0[>]s1 => Cons (snoc_rec s0 s1 t1 q0 p0) o
-                 | Lim s1 ts f u0 c =>
-                     fun p0 : s0[>]s1 =>
-                     Lim
-                       (fun o : nat =>
-                          (snoc_rec s0 s1 (ts o) (f o) p0))
-                       c
-                 end)
-                (U @ Unt d (DnUnt (S (S (S (d + d)))) (U @ psi' (S (S d)))))
-                (U @ Unt d (DnUnt (S (S (d + d))) (U @ psi' (S (S d))))) s
-                ((fix snoc_rec (s0 t0 : term) (u : term) (r0 : t0 ->> u) {struct r0} :
-                    s0[>]t0 -> s0 ->> u :=
-                    match
-                      r0 in (sequence _ t1 u0) return (s0[>]t1 -> s0 ->> u0)
-                    with
-                    | Nil t1 => fun p0 : s0[>]t1 => Cons (Nil' s0) p0
-                    | Cons s1 t1 q0 u0 o =>
-                        fun p0 : s0[>]s1 => Cons (snoc_rec s0 s1 t1 q0 p0) o
-                    | Lim s1 us f u0 c =>
-                        fun p0 : s0[>]s1 =>
-                        Lim
-                          (fun o : nat =>
-                             (snoc_rec s0 s1 (us o) (f o) p0))
-                          c
-                    end)
-                   (U @ Unt d (DnUnt (S (S (d + d))) (U @ psi' (S (S d)))))
-                   (U @ Unt d (DnUnt (S (d + d)) (U @ psi' (S (S d))))) s q
-                   (p_UmDSnUSnt_UmDnUnt (S d) (S (d + d))
-                      (U @ psi' (S (S d)))))
-                (p_UmDSnUSnt_UmDnUnt (S d) (S (S (d + d)))
-                   (U @ psi' (S (S d))))) r)).
-reflexivity.
-Qed.
+apply embed_append_right.
 
-Require Import Lt.
+(s_DmUnDnt_Dmt (S (S n)) 
+                                (n + S (S (n + 0)))
+                                (D @
+                                 U @
+                                 U @
+                                 U @
+                                 Unt (n + S (S (S (n + 0))))
+                                   (psi' (S (S (S n))))))
 
-Lemma embed_s_psi_Unpsin_pred_lt :
-  forall d n i,
-    embed (s_psi_Unpsin d) ((s_psi_Unpsin n)[seq i]) ->
-    d < n.
-Proof.
-intros d n i H.
-destruct (le_or_lt n d) as [N | N].
-destruct (pred_s_psi_Unpsin (m := d) i) as [j H1].
-assumption.
-rewrite <- H1 in H.
-contradict H.
-apply embed_not_pred_right.
-assumption.
-Qed.
-
-Lemma kkk :
-  forall d n i,
-    term_eq_up_to d (Unt n (psi' n)) repeat_U ->
-    embed (s_psi_Unpsin n) ((s_psi_Unpsin (S n))[seq i]) ->
-    term_eq_up_to d ((s_psi_Unpsin (S n))[1 i]) repeat_U.
-Proof.
-induction n as [| n IH]; simpl; intros i H1 H2.
-clear H2.
-unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 Admitted.
-
-Program Definition sdfds :
-  forall d n i,
-    embed (s_psi_Unpsin d) ((s_psi_Unpsin n)[seq i]) ->
-    exists j, ((s_psi_Unpsin n)[seq i])[seq j] = s_psi_Unpsin d := _.
-Next Obligation.
-destruct (pred_trans (s_psi_Unpsin n) i j) as [k H1].
-rewrite <- H1.
-(* This cannot be proved from this context *)
-admit.
-Defined.
-Next Obligation.
-admit.
-Defined.
-
-Lemma all_terms_eq_up_to_d_s_UdDnUnt_Udt_repeat_U :
-  forall d n t,
-    all_terms_eq_up_to d (s_UmDnUnt_Umt d n t) repeat_U.
-Proof.
-intros d n t.
-induction n as [| n IH]; simpl.
-apply term_eq_up_to_n_Unt_repeat_U.
-apply all_terms_eq_up_to_snoc.
-apply term_eq_up_to_n_Unt_repeat_U.
-apply IH.
-Qed.
-
-Lemma all_terms_eq_up_to_d_s_Udpsid_USdpsiSd_repeat_U :
-  forall d,
-    all_terms_eq_up_to d (s_Unpsin_USnpsiSn d) repeat_U.
-Proof.
-intro d.
-unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-apply all_terms_eq_up_to_snoc.
-apply term_eq_up_to_n_Unt_repeat_U.
-apply all_terms_eq_up_to_d_s_UdDnUnt_Udt_repeat_U.
-Qed.
-
-(* This reduction is weakly convergent *)
-Lemma weakly_convergent_s_psi_repeat_U :
-  weakly_convergent s_psi_repeat_U.
-Proof.
-split.
-apply weakly_convergent_s_psi_Unpsin.
-intro d.
-exists d.
-intros [n i] H1.
-simpl in * |- *.
-assert (H2 := embed_s_psi_Unpsin_pred_lt d n i H1).
-assert (H3 := term_eq_up_to_n_Unt_repeat_U d (psi' d)). (* right side of s_psi_Unpsin d *)
-
-
-induction n as [| n IHn].
-inversion H2.
-(*Require Import Compare.
-destruct (discrete_nat d n N) as [N1 | [m N1]].*)
-assert (H4 : exists m, S (d + m) = n).
-admit. (* TODO *)
-clear H2.
-destruct H4 as [m H4].
-revert i H1.
-rewrite <- H4.
-clear H4.
-intros i H1.
-induction m as [| m IHm].
-simpl in * |- *.
-assert (J : forall n, n + 0 = n).
-admit. (* TODO *)
-revert i H1.
-rewrite (J d).
-clear J.
-intros i H1.
-induction d as [| d IHd].
-constructor.
-simpl.
-
-
-
-
-(*
-exists d.
-intros [n i] H.
-simpl in * |- *.
-destruct (le_or_lt n d) as [N | N].
-destruct (pref_s_psi_Unpsin (m := d) i) as [j H1].
-assumption.
-rewrite <- H1 in H.
-contradict H.
-apply embed_not_pref_right.
-*)
-Admitted.
-
-(* This reduction is weakly convergent *)
-(* Version for pref_type lim instead of nat *)
-(*
-Lemma weakly_convergent_s_psi_repeat_U :
-  weakly_convergent s_psi_repeat_U.
-Proof.
-split.
-apply weakly_convergent_s_psi_Unpsin.
-intro d.
-simpl.
-destruct (diei d) as [i [t Ht]].
-exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) i).
-intros [n j] H.
-simpl in * |- *.
-
-
-split.
-apply weakly_convergent_s_psi_Unpsin.
-intro d.
-simpl.
-assert (M : finite (s_psi_Unpsin (S d))).
-apply finite_s_psi_Unpsin.
-generalize_eqs M.
-destruct r.
-admit. (* TODO: absurd case *)
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-simplify_one_dep_elim.
-
-(* TODO: how can we insert inl_tt here and show it has the right type later??? *)
-(* maybe use refine? have a look at a proof term for 'exist' tactic... *)
-
-assert (i : pref_type (s_psi_Unpsin (S d))).
-simpl.
-rewrite <- x.
-exact (inl (pref_type r) tt).
-
-
-simpl.
-unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-
-exists (existT (fun n => pref_type (s_psi_Unpsin n)) (S d) (inl _ tt)).
 *)
 
-(* psi rewrites to repeat_D *)
-Definition s_psi_repeat_D : psi ->> repeat_D.
-(* TODO: same construction as psi ->> repeat_U *)
-Admitted.
+Lemma wf_s_psi_DSnU2SnpsiSn :
+  forall n : nat, wf (s_psi_DSnU2SnpsiSn n).
+Proof.
+intro n.
+apply wf_finite.
+apply finite_s_psi_DSnU2SnpsiSn.
+Qed.
 
 (* This reduction is well-formed *)
 Lemma wf_s_psi_repeat_D :
   wf s_psi_repeat_D.
 Proof.
-Admitted.
+split.
+apply wf_s_psi_DSnU2SnpsiSn.
+intros n m H.
+induction H; simpl.
+apply embed_strict_append_DnU2npsin_DSnU2SnpsiSn.
+apply embed_strict_trans with psi (Dnt m (Unt (2 * m) (psi' m))) (s_psi_DnU2npsin m).
+apply IHle.
+apply embed_strict_append_DnU2npsin_DSnUS2npsiSn.
+Qed.
 
-Lemma UNWO_no_unique_normal_forms :
-  ~ unique_normal_forms UNWO_trs.
+Lemma UD_no_unique_normal_forms :
+  ~ unique_normal_forms UD_trs.
 Proof.
 intro H.
-apply neq_D_U.
+apply neq_repeat_D_repeat_U.
 apply H with psi s_psi_repeat_D s_psi_repeat_U.
 exact wf_s_psi_repeat_D.
 exact wf_s_psi_repeat_U.
-exact nf_D.
-exact nf_U.
+exact normal_form_repeat_D.
+exact normal_form_repeat_U.
 Qed.
 
 Lemma unwo :
   ~ forall F X trs, weakly_orthogonal (F := F) (X := X) trs -> unique_normal_forms trs.
 Proof.
 intro H.
-apply UNWO_no_unique_normal_forms.
+apply UD_no_unique_normal_forms.
 apply H.
-apply UNWO_weakly_orthogonal.
-Qed.
-
-(*
-   What follows is an alternative (actually the original) definition of psi
-   and a proof that it is equal to the new psi used above.
-
-   Indeed, the remaining is only for 'fun'.
-*)
-
-(* D^n U^Sn D^SSn U^SSSn ... *)
-CoFixpoint oldpsi' n : term :=
-  (cofix Dnt (d : nat) :=
-    match d with
-    | O   => (cofix USnt (u : nat) :=
-               match u with
-               | O   => U @ oldpsi' (S (S n))
-               | S u => U @ (USnt u)
-               end) (S n)
-    | S d => D @ (Dnt d)
-    end) (S n).
-
-(* DUUDDDUUUU... *)
-Definition oldpsi := oldpsi' 0.
-
-Lemma UUSnt_eq_USnUt :
-  forall n t,
-    (U @ (cofix USnt (u : nat) : term :=
-            match u with
-            | 0 => t
-            | S u0 => U @ USnt u0
-            end) n)
-    =
-    (cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => U @ t
-       | S u0 => U @ USnt u0
-       end) n.
-Proof.
-induction n; intro t.
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-      match u with
-      | 0 => U @ t
-      | S u0 => U @ USnt u0
-      end) 0)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ USnt u0
-       end) 0)).
-simpl.
-destruct t; reflexivity.
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ USnt u0
-       end) (S n))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-      match u with
-      | 0 => U @ t
-      | S u0 => U @ USnt u0
-      end) (S n))).
-simpl.
-rewrite IHn with t.
-reflexivity.
-Qed.
-
-(* Terrible lemma that should help proving psi n and oldpsi 2n equal *)
-Lemma zo :
-  forall n t,
-    (cofix D2nDt (d : nat) :=
-      match d with
-      | O   => D @ (cofix U2nt (u : nat) :=
-                 match u with
-                 | O   => t
-                 | S u => U @ U @ (U2nt u)
-                 end) (S n)
-      | S d => D @ D @ (D2nDt d)
-      end) n
-    =
-    (cofix Dnt (d : nat) :=
-      match d with
-      | O   => (cofix USnt (u : nat) :=
-                 match u with
-                 | O   => U @ t
-                 | S u => U @ (USnt u)
-                 end) (S (n + n))
-      | S d => D @ (Dnt d)
-      end) (S (2 * n)).
-Proof.
-induction n; intro t; simpl.
-rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
-      match d with
-      | 0 =>
-          D @
-          (cofix U2nt (u : nat) : term :=
-             match u with
-             | 0 => t
-             | S u0 => U @ U @ U2nt u0
-             end) 1
-      | S d0 => D @ D @ D2nDt d0
-      end) 0)).
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-                match u with
-                | 0 => t
-                | S u0 => U @ U @ U2nt u0
-                end) 1)).
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-      match d with
-      | 0 =>
-          (cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) 1
-      | S d0 => D @ Dnt d0
-      end) 1)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) 1)).
-simpl.
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-       match u with
-       | 0 => t
-       | S u0 => U @ U @ U2nt u0
-       end) 0)).
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-      match d with
-      | 0 =>
-          U @
-          (cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) 0
-      | S d0 => D @ Dnt d0
-      end) 0)).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                match u with
-                | 0 => U @ t
-                | S u0 => U @ USnt u0
-                end) 0)).
-simpl.
-destruct t; reflexivity.
-rewrite (peek_eq ((cofix D2nDt (d : nat) : term :=
-      match d with
-      | 0 =>
-          D @
-          (cofix U2nt (u : nat) : term :=
-             match u with
-             | 0 => t
-             | S u0 => U @ U @ U2nt u0
-             end) (S (S n))
-      | S d0 => D @ D @ D2nDt d0
-      end) (S n))).
-rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
-             match u with
-             | 0 => t
-             | S u0 => U @ U @ U2nt u0
-             end) (S (S n)))).
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-      match d with
-      | 0 =>
-          (cofix USnt (u : nat) : term :=
-             match u with
-             | 0 => U @ t
-             | S u0 => U @ USnt u0
-             end) (S (S (n + S n)))
-      | S d0 => D @ Dnt d0
-      end) (S (S (n + S (n + 0)))))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                match u with
-                | 0 => U @ t
-                | S u0 => U @ USnt u0
-                end) (S (S (n + S n))))).
-simpl.
-rewrite (peek_eq ((cofix Dnt (d : nat) : term :=
-       match d with
-       | 0 =>
-           U @
-           (cofix USnt (u : nat) : term :=
-              match u with
-              | 0 => U @ t
-              | S u0 => U @ USnt u0
-              end) (S (n + S n))
-       | S d0 => D @ Dnt d0
-       end) (S (n + S (n + 0))))).
-rewrite (peek_eq ((cofix USnt (u : nat) : term :=
-                 match u with
-                 | 0 => U @ t
-                 | S u0 => U @ USnt u0
-                 end) (S (n + S n)))).
-simpl.
-rewrite UU2nt_eq_U2nUt_unfolded with (S n) t.
-rewrite UU2nt_eq_U2nUt_unfolded with (S n) (U @ t).
-rewrite IHn with (U @ U @ t).
-rewrite UUSnt_eq_USnUt with (n + S n) (U @ t).
-rewrite UUSnt_eq_USnUt with (n + S n) (U @ U @ t).
-simpl.
-rewrite (eq_sym (plus_n_Sm n n)).
-rewrite (eq_sym (plus_n_Sm n (n + 0))).
-reflexivity.
-Qed.
-
-Lemma psin_eq_oldpsi2n :
-  forall n,
-    psi' n [~] oldpsi' (2 * n).
-Proof.
-(* TODO: should be somehow possible to show, using lemma zo *)
-Admitted.
-
-(* This increases confidence in correctness of psi :) *)
-Lemma psi_eq_oldpsi :
-  psi [~] oldpsi.
-Proof.
-apply psin_eq_oldpsi2n.
+apply UD_weakly_orthogonal.
 Qed.

@@ -1503,5 +1503,5 @@ Qed.
 End TRS.
 
 
-Implicit Arguments normal_form [F X system].
-Implicit Arguments critical_pair [F X system].
+Implicit Arguments normal_form [F X].
+Implicit Arguments critical_pair [F X].
