@@ -1220,6 +1220,7 @@ rewrite <- plus_n_Sm in H.
 rewrite <- plus_n_Sm.
 simpl in H.
 simpl.
+(*pattern (U @ Unt (n + (n + 0)) (psi' (S n))) at 1 in H.*)
 rewrite <- UUnt_eq_UnUt.
 rewrite DDnt_eq_DnDt.
 exact H.
@@ -1302,57 +1303,59 @@ apply snoc_finite.
 apply IH.
 Qed.
 
+(* it is very unclear to me why we have to take this statement apart *)
+Lemma bleh :
+  forall n,
+       finite
+     (eq_rect
+        (Dnt (n + (n + 0)) (D @ U @ Unt (n + (n + 0)) (U @ psi' (S n))))
+        (fun y : term =>
+         Dnt n (Unt (n + (n + 0)) y) ->>
+         Dnt n (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
+        (eq_rect (U @ Unt (n + (n + 0)) (psi' (S n)))
+           (fun t : term =>
+            Dnt n (Unt (n + (n + 0)) (Dnt (n + (n + 0)) (D @ U @ t))) ->>
+            Dnt n (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
+           (s_DmUnDnt_Dmt n (n + (n + 0))
+              (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
+           (Unt (n + (n + 0)) (U @ psi' (S n)))
+           (UUnt_eq_UnUt (n + (n + 0)) (psi' (S n))))
+        (D @ Dnt (n + (n + 0)) (U @ Unt (n + (n + 0)) (U @ psi' (S n))))
+        (eq_sym
+           (DDnt_eq_DnDt (n + (n + 0))
+              (U @ Unt (n + (n + 0)) (U @ psi' (S n)))))).
+Proof.
+intro n.
+repeat (elim_eq_rect ; simpl).
+apply finite_s_DmUnDnt_Dmt.
+Qed.
+
 Lemma finite_s_DnU2npsin_DSnU2SnpsiSn :
   forall n, finite (s_DnU2npsin_DSnU2SnpsiSn n).
 Proof.
 intro n.
 unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
-(* http://www.lix.polytechnique.fr/coq/stdlib/Coq.Program.Equality.html *)
 unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-(*apply finite_s_DmUnDnt_Dmt.*)
-Admitted.
-
-Program Lemma saaa :
-  forall t u (e : (u = t)),
-  (eq_rect t
-    (fun y : term => y ->> t)
-    (Nil' t) u
-    (eq_sym e))
-  = Nil' t.
-Proof.
-intros.
-rewrite e.
-reflexivity.
+apply bleh.
 Qed.
 
-(*
-    (eq_rect (DnUnt 1 (U @ psi' 1))
+(* it is very unclear to me why we have to take this statement apart *)
+Lemma blegh :
+   finite
+     (eq_rect (DnUnt 1 (U @ psi' 1))
         (fun y : term => y ->> (D @ U @ U @ psi' 1))
-        (Nil' (D @ U @ U @ psi' 1)) (psi' 0)
-        (eq_sym (psin_eq_DS2nUS2nUpsiSn 0)))
-*)
+        (Nil' (D @ U @ U @ psi' 1)) (psi' 0) (eq_sym (psin_eq_DS2nUS2nUpsiSn 0))).
+Proof.
+elim_eq_rect; simpl.
+exact I.
+Qed.
 
 Lemma finite_s_psi_DSnU2SnpsiSn :
   forall n : nat, finite (s_psi_DSnU2SnpsiSn n).
 Proof.
 induction n as [| n IH]; simpl.
-unfold s_DnU2npsin_DSnU2SnpsiSn.
-simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-unfold DnUnt. simpl.
-generalize (psin_eq_DS2nUS2nUpsiSn 0).
-intro.
-unfold Logic.eq_sym.
-unfold eq_rect.
-generalize (D @ U @ U @ psi' 1).
-rewrite (psin_eq_DS2nUS2nUpsiSn 0).
-
-rewrite saaa.
-simpl.
-
-unfold DnUnt.
-
-
-admit. (* TODO! *)
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
+unfold eq_rect_r; repeat (elim_eq_rect; simpl); apply blegh.
 apply append_finite.
 exact IH.
 exact (finite_s_DnU2npsin_DSnU2SnpsiSn (S n)).
@@ -1451,7 +1454,18 @@ exists p.
 reflexivity.
 Qed.
 
-(*
+Program Definition aa : (D @ U @ U @ psi' 1) ->> Dnt 1 (UnDnt 1 (D @ Unt 4 (psi' 2))) :=
+  Cons (Nil' (Dnt 1 (UnDnt 2 (D @ (Unt 4 (psi' 2)))))) (p_DmUSnDSnt_DmUnDnt 1 1 (D @ (Unt 4 (psi' 2)))).
+Next Obligation.
+assert (e := (psin_eq_DS2nUS2nUpsiSn 1)).
+unfold DnUnt in e.
+simpl in e.
+rewrite e.
+unfold UnDnt.
+simpl.
+reflexivity.
+Defined.
+
 Lemma s_DnU2npsin_DSnU2SnpsiSn_is_cons :
   forall n,
     exists s, exists r : _ ->> s, exists p : s [>] _,
@@ -1459,16 +1473,19 @@ Lemma s_DnU2npsin_DSnU2SnpsiSn_is_cons :
 Proof.
 induction n; simpl.
 exists (Dnt 1 (UnDnt 1 (D @ (Unt 4 (psi' 2))))).
-assert (e := (psin_eq_DS2nUS2nUpsiSn 1)).
-unfold DnUnt in e.
-simpl in e.
-(*rewrite e.
+exists aa.
+exists (p_DmUSnDSnt_DmUnDnt 1 0 (D @ (Unt 4 (psi' 2)))).
+simpl.
+unfold s_DnU2npsin_DSnU2SnpsiSn.
+unfold aa.
+simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+(*
 exists (Cons (Nil' (Dnt 1 (UnDnt 2 (D @ (Unt 4 (psi' 2)))))) (p_DmUSnDSnt_DmUnDnt 1 1 (D @ (Unt 4 (psi' 2))))).
 exists (p_DmUSnDSnt_DmUnDnt 1 0 (D @ (Unt 4 (psi' 2)))).
 unfold s_DnU2npsin_DSnU2SnpsiSn.
-simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).*)
-Admitted.
+simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 *)
+Admitted.
 
 Lemma plus_SSnO :
   forall n,
@@ -1498,9 +1515,7 @@ clear n.
 intro n.
 unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
 
-simpl.
-
-
+(*
 intro t.
 induction n as [| n IH]; simpl;
 unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
@@ -1521,18 +1536,8 @@ rewrite H.
 exists (inl _ tt).
 simpl.
 apply embed_append_right.
-
-(s_DmUnDnt_Dmt (S (S n)) 
-                                (n + S (S (n + 0)))
-                                (D @
-                                 U @
-                                 U @
-                                 U @
-                                 Unt (n + S (S (S (n + 0))))
-                                   (psi' (S (S (S n))))))
-
-Admitted.
 *)
+Admitted.
 
 Lemma wf_s_psi_DSnU2SnpsiSn :
   forall n : nat, wf (s_psi_DSnU2SnpsiSn n).
