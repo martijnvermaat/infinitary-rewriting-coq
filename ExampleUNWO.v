@@ -1339,6 +1339,94 @@ unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 apply bleh.
 Qed.
 
+Fixpoint is_cons s t (r : s ->> t) : Prop :=
+  match r with
+  | Nil _          => False
+  | Cons _ _ q _ _ => True
+  | Lim _ _ f t c  => False
+  end.
+
+Lemma is_cons_snoc :
+  forall s t u (p : s [>] t) (r : t ->> u),
+    is_cons r ->
+    is_cons (snoc p r).
+Proof.
+intros.
+destruct r; simpl.
+exact I.
+exact I.
+inversion H.
+Qed.
+
+Lemma append_is_cons :
+  forall s t u (r : s ->> t) (q : t ->> u),
+    is_cons q ->
+    embed_strict r (append r q).
+Proof.
+intros.
+destruct q.
+elim H.
+simpl.
+exists (inl _ tt).
+simpl.
+apply embed_append_right.
+elim H.
+Qed.
+
+Lemma is_cons_s_DmUnDnt_Dmt :
+  forall m n t, is_cons (s_DmUnDnt_Dmt m (S n) t).
+Proof.
+induction n as [| n IH]; intro t; simpl.
+exact I.
+apply is_cons_snoc.
+apply IH.
+Qed.
+
+(* it is very unclear to me why we have to take this statement apart *)
+Lemma bleh2 :
+  forall n,
+   is_cons
+     (eq_rect
+        (Dnt (S n + (S n + 0))
+           (D @ U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n)))))
+        (fun y : term =>
+         Dnt (S n) (Unt (S n + (S n + 0)) y) ->>
+         Dnt (S n) (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
+        (eq_rect (U @ Unt (S n + (S n + 0)) (psi' (S (S n))))
+           (fun t : term =>
+            Dnt (S n)
+              (Unt (S n + (S n + 0)) (Dnt (S n + (S n + 0)) (D @ U @ t))) ->>
+            Dnt (S n) (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
+           (s_DmUnDnt_Dmt (S n) (S n + (S n + 0))
+              (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
+           (Unt (S n + (S n + 0)) (U @ psi' (S (S n))))
+           (UUnt_eq_UnUt (S n + (S n + 0)) (psi' (S (S n)))))
+        (D @
+         Dnt (S n + (S n + 0))
+           (U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n)))))
+        (eq_sym
+           (DDnt_eq_DnDt (S n + (S n + 0))
+              (U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n))))))).
+Proof.
+intro n.
+simpl.
+repeat (elim_eq_rect ; simpl).
+apply is_cons_snoc.
+rewrite <- plus_n_Sm.
+exact (is_cons_s_DmUnDnt_Dmt (S n) (n + (n + 0)) (D @ U @ U @ U @ Unt (S (n + (n + 0))) (psi' (S (S n))))).
+Qed.
+
+Lemma is_cons_s_DnU2npsin_DSnU2SnpsiSn :
+  forall n, 0 < n -> is_cons (s_DnU2npsin_DSnU2SnpsiSn n).
+Proof.
+intros n H.
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
+unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+destruct n.
+inversion H.
+apply bleh2.
+Qed.
+
 (* it is very unclear to me why we have to take this statement apart *)
 Lemma blegh :
    finite
@@ -1454,90 +1542,15 @@ exists p.
 reflexivity.
 Qed.
 
-Program Definition aa : (D @ U @ U @ psi' 1) ->> Dnt 1 (UnDnt 1 (D @ Unt 4 (psi' 2))) :=
-  Cons (Nil' (Dnt 1 (UnDnt 2 (D @ (Unt 4 (psi' 2)))))) (p_DmUSnDSnt_DmUnDnt 1 1 (D @ (Unt 4 (psi' 2)))).
-Next Obligation.
-assert (e := (psin_eq_DS2nUS2nUpsiSn 1)).
-unfold DnUnt in e.
-simpl in e.
-rewrite e.
-unfold UnDnt.
-simpl.
-reflexivity.
-Defined.
-
-Lemma s_DnU2npsin_DSnU2SnpsiSn_is_cons :
-  forall n,
-    exists s, exists r : _ ->> s, exists p : s [>] _,
-      s_DnU2npsin_DSnU2SnpsiSn (S n) = Cons r p.
-Proof.
-induction n; simpl.
-exists (Dnt 1 (UnDnt 1 (D @ (Unt 4 (psi' 2))))).
-exists aa.
-exists (p_DmUSnDSnt_DmUnDnt 1 0 (D @ (Unt 4 (psi' 2)))).
-simpl.
-unfold s_DnU2npsin_DSnU2SnpsiSn.
-unfold aa.
-simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-(*
-exists (Cons (Nil' (Dnt 1 (UnDnt 2 (D @ (Unt 4 (psi' 2)))))) (p_DmUSnDSnt_DmUnDnt 1 1 (D @ (Unt 4 (psi' 2))))).
-exists (p_DmUSnDSnt_DmUnDnt 1 0 (D @ (Unt 4 (psi' 2)))).
-unfold s_DnU2npsin_DSnU2SnpsiSn.
-simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-*)
-Admitted.
-
-Lemma plus_SSnO :
-  forall n,
-    n + S (S (n + 0)) = S (S (n + n)).
-Proof.
-intro n.
-rewrite <- plus_n_O.
-rewrite plus_n_Sm.
-rewrite plus_n_Sm.
-reflexivity.
-Qed.
-
 Lemma embed_strict_append_DnU2npsin_DSnU2SnpsiSn :
   forall t n (r : t ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n)))),
     embed_strict r (append r (s_DnU2npsin_DSnU2SnpsiSn (S n))).
 Proof.
-intros t.
-destruct n as [| n].
-unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
-exists (inl _ tt).
-simpl.
-apply embed_cons_right.
-apply embed_refl.
-
-generalize (S n).
-clear n.
-intro n.
-unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
-
-(*
-intro t.
-induction n as [| n IH]; simpl;
-unfold s_DnU2npsin_DSnU2SnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl); intro r.
-exists (inl _ tt).
-simpl.
-apply embed_cons_right.
-apply embed_refl.
-(*revert r.
-rewrite (plus_SSnO n).
-intro r.*)
-
-
-
-
-destruct (s_DmUnDnt_Dmt_is_cons (S (S n)) (S (n + n)) (D @ U @ U @ U @ (Unt (n + S (S (S (n + 0)))) (psi' (S (S (S n))))))) as [s [q [p H]]].
-rewrite <- (plus_SSnO n) in H.
-rewrite H.
-exists (inl _ tt).
-simpl.
-apply embed_append_right.
-*)
-Admitted.
+intros.
+apply append_is_cons.
+apply is_cons_s_DnU2npsin_DSnU2SnpsiSn.
+intuition.
+Qed.
 
 Lemma wf_s_psi_DSnU2SnpsiSn :
   forall n : nat, wf (s_psi_DSnU2SnpsiSn n).
@@ -1556,9 +1569,9 @@ apply wf_s_psi_DSnU2SnpsiSn.
 intros n m H.
 induction H; simpl.
 apply embed_strict_append_DnU2npsin_DSnU2SnpsiSn.
-apply embed_strict_trans with psi (Dnt m (Unt (2 * m) (psi' m))) (s_psi_DnU2npsin m).
+apply (embed_strict_trans (q := s_psi_DSnU2SnpsiSn m)).
 apply IHle.
-apply embed_strict_append_DnU2npsin_DSnUS2npsiSn.
+apply embed_strict_append_DnU2npsin_DSnU2SnpsiSn.
 Qed.
 
 Lemma UD_no_unique_normal_forms :
