@@ -18,7 +18,7 @@ Set Implicit Arguments.
   Because we have S as nat constructor, we rename the function symbol
   to D and U (up, down).
 
-  Let psi = U^1 D^2 U^3 D^4, we show:
+  Let psi = U^1 D^2 U^3 D^4. We show:
 
   * This TRS is weakly orthogonal
   * psi rewrites to DDD...
@@ -90,11 +90,6 @@ CoFixpoint repeat_U : term :=
 (* DDD... *)
 CoFixpoint repeat_D : term :=
   D @ repeat_D.
-
-(* DUDU... *)
-(* TODO: better to define repeat_DU and repeat_UD together? *)
-CoFixpoint repeat_DU : term :=
-  D @ U @ repeat_DU.
 
 (* U^n t *)
 Fixpoint Unt (n : nat) t :=
@@ -205,30 +200,6 @@ Lemma term_bis_Dnt :
 Proof.
 induction n; intros t s H; simpl.
 assumption.
-apply term_bis_D.
-apply IHn.
-assumption.
-Qed.
-
-Lemma term_bis_U2nt :
-  forall n t s,
-    t [~] s -> U2nt n t [~] U2nt n s.
-Proof.
-induction n; intros t s H; simpl.
-assumption.
-apply term_bis_U.
-apply term_bis_U.
-apply IHn.
-assumption.
-Qed.
-
-Lemma term_bis_D2nt :
-  forall n t s,
-    t [~] s -> D2nt n t [~] D2nt n s.
-Proof.
-induction n; intros t s H; simpl.
-assumption.
-apply term_bis_D.
 apply term_bis_D.
 apply IHn.
 assumption.
@@ -567,7 +538,7 @@ Definition varx : X := tt.
 Definition DU_l : fterm := D @@ U @@ varx!.
 Definition DU_r : fterm := varx!.
 
-Lemma DU_wf :
+Lemma wf_DU :
   is_var DU_l = false /\
   incl (vars DU_r) (vars DU_l).
 Proof.
@@ -577,13 +548,13 @@ intros a H.
 assumption.
 Qed.
 
-Definition DU : rule := Rule DU_l DU_r DU_wf.
+Definition DU : rule := Rule DU_l DU_r wf_DU.
 
 (* UDx -> x *)
 Definition UD_l : fterm := U @@ D @@ varx!.
 Definition UD_r : fterm := varx!.
 
-Lemma UD_wf :
+Lemma wf_UD :
   is_var UD_l = false /\
   incl (vars UD_r) (vars UD_l).
 Proof.
@@ -593,11 +564,11 @@ intros a H.
 assumption.
 Qed.
 
-Definition UD : rule := Rule UD_l UD_r UD_wf.
+Definition UD : rule := Rule UD_l UD_r wf_UD.
 
 Definition UD_trs : trs := DU :: UD :: nil.
 
-Lemma UD_left_linear :
+Lemma left_linear_UD :
   trs_left_linear UD_trs.
 Proof.
 constructor; [| constructor];
@@ -609,7 +580,7 @@ intro; assumption.
 constructor.
 Qed.
 
-Lemma UD_critical_pairs_trivial :
+Lemma critical_pairs_trivial_UD :
   forall t1 t2,
     critical_pair UD_trs t1 t2 ->
     t1 [~] t2.
@@ -654,12 +625,12 @@ assumption.
 inversion i.
 Qed.
 
-Lemma UD_weakly_orthogonal :
+Lemma weakly_orthogonal_UD :
   weakly_orthogonal UD_trs.
 Proof.
 split.
-exact UD_left_linear.
-exact UD_critical_pairs_trivial.
+exact left_linear_UD.
+exact critical_pairs_trivial_UD.
 Qed.
 
 (* DDD... is a normal form *)
@@ -1303,8 +1274,8 @@ apply snoc_finite.
 apply IH.
 Qed.
 
-(* it is very unclear to me why we have to take this statement apart *)
-Lemma bleh :
+(* It is very unclear to me why we have to take this statement apart *)
+Lemma finite_s_DnU2npsin_DSnU2SnpsiSn_helper :
   forall n,
        finite
      (eq_rect
@@ -1336,9 +1307,10 @@ Proof.
 intro n.
 unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
 unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-apply bleh.
+apply finite_s_DnU2npsin_DSnU2SnpsiSn_helper.
 Qed.
 
+(* We use this predicate and the following lemmas to prove well-formedness. *)
 Fixpoint is_cons s t (r : s ->> t) : Prop :=
   match r with
   | Nil _          => False
@@ -1382,8 +1354,8 @@ apply is_cons_snoc.
 apply IH.
 Qed.
 
-(* it is very unclear to me why we have to take this statement apart *)
-Lemma bleh2 :
+(* It is very unclear to me why we have to take this statement apart *)
+Lemma is_cons_s_DnU2npsin_DSnU2SnpsiSn_helper :
   forall n,
    is_cons
      (eq_rect
@@ -1424,11 +1396,11 @@ unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
 unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 destruct n.
 inversion H.
-apply bleh2.
+apply is_cons_s_DnU2npsin_DSnU2SnpsiSn_helper.
 Qed.
 
-(* it is very unclear to me why we have to take this statement apart *)
-Lemma blegh :
+(* It is very unclear to me why we have to take this statement apart *)
+Lemma finite_s_psi_DSnU2SnpsiSn_helper :
    finite
      (eq_rect (DnUnt 1 (U @ psi' 1))
         (fun y : term => y ->> (D @ U @ U @ psi' 1))
@@ -1443,7 +1415,8 @@ Lemma finite_s_psi_DSnU2SnpsiSn :
 Proof.
 induction n as [| n IH]; simpl.
 unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
-unfold eq_rect_r; repeat (elim_eq_rect; simpl); apply blegh.
+unfold eq_rect_r; repeat (elim_eq_rect; simpl).
+apply finite_s_psi_DSnU2SnpsiSn_helper.
 apply append_finite.
 exact IH.
 exact (finite_s_DnU2npsin_DSnU2SnpsiSn (S n)).
@@ -1470,16 +1443,6 @@ exists p.
 reflexivity.
 Qed.
 
-Lemma plus_SnO :
-  forall n,
-    n + S (n + 0) = S (n + n).
-Proof.
-intro n.
-rewrite <- plus_n_O.
-rewrite plus_n_Sm.
-reflexivity.
-Qed.
-
 Lemma embed_strict_append_Unpsin_USnpsiSn :
   forall t n (r : t ->> Unt n (psi' n)),
     embed_strict r (append r (s_Unpsin_USnpsiSn n)).
@@ -1490,7 +1453,8 @@ unfold s_Unpsin_USnpsiSn; simpl; unfold eq_rect_r; repeat (elim_eq_rect ; simpl)
 exists (inl _ tt).
 apply embed_refl.
 revert r.
-rewrite (plus_SnO n).
+rewrite <- (plus_n_Sm n).
+rewrite <- plus_n_O.
 intro r.
 destruct (s_UmDnUnt_Umt_is_cons (S n) (n + n) (U @ psi' (S (S n)))) as [s [q [p H]]].
 rewrite H.
@@ -1574,7 +1538,7 @@ apply IHle.
 apply embed_strict_append_DnU2npsin_DSnU2SnpsiSn.
 Qed.
 
-Lemma UD_no_unique_normal_forms :
+Lemma no_unique_normal_forms_UD :
   ~ unique_normal_forms UD_trs.
 Proof.
 intro H.
@@ -1586,11 +1550,11 @@ exact normal_form_repeat_D.
 exact normal_form_repeat_U.
 Qed.
 
-Lemma unwo :
+Lemma no_unique_normal_forms_wo :
   ~ forall F X trs, weakly_orthogonal (F := F) (X := X) trs -> unique_normal_forms trs.
 Proof.
 intro H.
-apply UD_no_unique_normal_forms.
+apply no_unique_normal_forms_UD.
 apply H.
-apply UD_weakly_orthogonal.
+apply weakly_orthogonal_UD.
 Qed.

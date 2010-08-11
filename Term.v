@@ -42,16 +42,6 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
   | FFun f args => Fun f (vmap finite_term_as_term args)
   end.
 
-(*
-   TODO: I don't think this is a usefull definition, we probably can never
-   prove a term to be infinite?
-   I guess we could use bisimilarity instead of Coq convertibility.
-*)
-(*
-Definition infinite (t : term) : Prop :=
-  exists t' : fterm, finite_term_as_term t' [=] t.
-*)
-
 End Term.
 
 
@@ -101,18 +91,20 @@ Fixpoint finite_subterm (t : fterm) (p : position) {struct p} : option fterm :=
               end
   end.
 
-(*
-   TODO: maybe we should build in inductive Finite and/or coinductive
-   Infinite property (as in A Tutorial on (Co)Inductive Types)
-*)
+(* Coinductive infinite predicate (as in A Tutorial on (Co)Inductive Types) *)
+CoInductive term_inf : term -> Prop :=
+  | Fun_inf : forall f v i, term_inf (v i) -> term_inf (Fun f v).
+
+(* Alternative infinite predicate *)
 Definition infinite (t : term) : Prop :=
   forall d,
     exists p : position,
       position_depth p = d /\ subterm t p <> None.
 
-(* So here is a coinductive predicate *)
-CoInductive term_inf : term -> Prop :=
-  | Fun_inf : forall f v i, term_inf (v i) -> term_inf (Fun f v).
+(*
+   I guess we should be able to prove these predicates to define the same
+   subset of infinite terms, but my (small tries) below did not succeed.
+*)
 
 Require Import Equality.
 
@@ -128,7 +120,6 @@ destruct H as [[| a p] [D H]].
 inversion D.
 contradict H.
 reflexivity.
-
 (*
    We need to establish that there is an n such that
    for every depth there exists a p with n::p etc.
