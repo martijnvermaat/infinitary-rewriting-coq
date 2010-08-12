@@ -1,3 +1,22 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                     Dimitri Hendriks <diem@cs.vu.nl>                 *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines two equalities on infinite terms:
+    - Bisimilarity by [term_bis]
+    - Pointwise equality by [term_eq]
+
+    These two relations are proved to be the same and to be equivalences.
+
+    In the last section, a third equality via positions is introduced,
+    but it is not yet proven equal to the first two. *)
+
+
 Require Import Signature.
 Require Import Variables.
 Require Import Term.
@@ -15,14 +34,14 @@ Variable X : variables.
 Notation term := (term F X).
 Notation terms := (vector term).
 
-(* Bisimilarity on terms *)
+(** Bisimilarity on terms. *)
 CoInductive term_bis : term -> term -> Prop :=
   | Var_bis : forall x, term_bis (Var x) (Var x)
   | Fun_bis : forall f v w,
               (forall i, term_bis (v i) (w i)) ->
               term_bis (Fun f v) (Fun f w).
 
-(* Equality of infinite terms up to a given depth *)
+(** Equality of infinite terms up to a given depth. *)
 Inductive term_eq_up_to : nat -> term -> term -> Prop :=
   | teut_0   : forall t u, term_eq_up_to 0 t u
   | teut_var : forall d x, term_eq_up_to d (Var x) (Var x)
@@ -30,12 +49,12 @@ Inductive term_eq_up_to : nat -> term -> term -> Prop :=
                (forall i, term_eq_up_to d (v i) (w i)) ->
                term_eq_up_to (S d) (Fun f v) (Fun f w).
 
+(** Pointwise equality by generalising equality up to a given depth. *)
 Definition term_eq (t u : term) :=
   forall d, term_eq_up_to d t u.
 
-(* We do not see how to prove the following lemma without appeal to JMeq
-   (as used by the tactic [dependent destruction]):
-*)
+(** Some inversion lemmas on pointwise equality. *)
+
 Lemma teut_fun_inv :
   forall d f v w,
   term_eq_up_to (S d) (Fun f v) (Fun f w) ->
@@ -55,6 +74,19 @@ intros f v w H i n.
 apply teut_fun_inv with (1 := H (S n)).
 Qed.
 
+Lemma term_eq_fun_inv_symbol :
+  forall (f g : F) (v : terms (arity f)) (w : terms (arity g)),
+  term_eq (Fun f v) (Fun g w) -> f = g.
+Proof.
+intros f g v w H.
+assert (H0 := H 1).
+inversion_clear H0; simpl.
+reflexivity.
+Qed.
+
+(** We now prove that bisimilarity is the same as pointwise equality. *)
+
+(** Bisimilarity implies pointwise equality. *)
 Lemma term_bis_implies_term_eq :
   forall (t u : term), term_bis t u -> term_eq t u.
 Proof.
@@ -69,16 +101,7 @@ intro i.
 apply IHd with (1:=(H i)).
 Qed.
 
-Lemma term_eq_fun_inv_symbol :
-  forall (f g : F) (v : terms (arity f)) (w : terms (arity g)),
-  term_eq (Fun f v) (Fun g w) -> f = g.
-Proof.
-intros f g v w H.
-assert (H0 := H 1).
-inversion_clear H0; simpl.
-reflexivity.
-Qed.
-
+(** Pointwise equality implies bisimilarity. *)
 Lemma term_eq_implies_term_bis : forall (t u : term), term_eq t u -> term_bis t u.
 Proof.
 cofix eq2bis.
@@ -104,6 +127,8 @@ apply term_bis_implies_term_eq.
 apply term_eq_implies_term_bis.
 Qed.
 
+(** Pointwise equality is an equivalence. *)
+
 Lemma term_eq_up_to_trans :
   forall d t u v,
     term_eq_up_to d t u ->
@@ -121,25 +146,10 @@ intro i.
 apply IH with (u := w i); trivial.
 Qed.
 
-(* TODO: define term_eq_refl and term_eq_symm using the
-   term_eq_up_to_* equivalents, just like the *_trans case. *)
 Lemma term_eq_up_to_refl :
   forall d t,
     term_eq_up_to d t t.
 Proof.
-Admitted.
-
-Lemma term_eq_up_to_symm :
-  forall d t u,
-    term_eq_up_to d t u ->
-    term_eq_up_to d u t.
-Proof.
-Admitted.
-
-Lemma term_eq_refl : forall t, term_eq t t.
-Proof.
-intros t d.
-revert t.
 induction d as [| d IH]; intro t.
 constructor.
 destruct t.
@@ -149,20 +159,32 @@ intro.
 apply IH.
 Qed.
 
+Lemma term_eq_up_to_symm :
+  forall d t u,
+    term_eq_up_to d t u ->
+    term_eq_up_to d u t.
+Proof.
+induction d as [| d IH]; intros t u H.
+constructor.
+inversion_clear H.
+constructor.
+constructor.
+intro.
+apply IH.
+apply H0.
+Qed.
+
+Lemma term_eq_refl : forall t, term_eq t t.
+Proof.
+intros t d.
+apply (term_eq_up_to_refl d t).
+Qed.
+
 Lemma term_eq_symm :
   forall t u, term_eq t u -> term_eq u t.
 Proof.
 intros t u H d.
-assert (H' := H d). clear H.
-revert t u H'.
-induction d; intros.
-constructor.
-inversion_clear H'.
-constructor.
-constructor.
-intro.
-apply IHd.
-apply H.
+apply (term_eq_up_to_symm (H d)).
 Qed.
 
 Lemma term_eq_trans :
@@ -171,6 +193,8 @@ Proof.
 intros t u v H1 H2 d.
 apply (term_eq_up_to_trans (H1 d) (H2 d)).
 Qed.
+
+(** Bisimilarity is an equivalence. *)
 
 Lemma term_bis_refl :
   forall t, term_bis t t.
@@ -198,15 +222,13 @@ cofix.
 destruct 1 as [x|f xs ys H1].
 intro. assumption.
 intro H2.
-(*
-generalize H1; clear H1 .
-inversion H2 as [|g ys' zs].
-*)
 dependent destruction H2.
 rename w into zs, H into H2.
 constructor; intro i.
 apply term_bis_trans with (1:=(H1 i)) (2:=(H2 i)).
 Qed.
+
+(** Two weakening lemmas on pointwise equality follow. *)
 
 Lemma term_eq_up_to_weaken :
   forall t u d, term_eq_up_to (S d) t u -> term_eq_up_to d t u.
@@ -245,12 +267,16 @@ Infix " [=] " := term_eq (no associativity, at level 70).
 
 Section PositionEquality.
 
+(** We introduce a third equality via positions, but we did not yet succeed
+   at proving it equal to the first two. *)
+
 Variable F : signature.
 Variable X : variables.
 
 Notation term := (term F X).
 Notation terms := (vector term).
 
+(** Equality of terms at a given position. *)
 Definition pos_eq (p : position) (t u : term) :=
   match subterm t p, subterm u p with
   | None,   None   => True
@@ -258,6 +284,7 @@ Definition pos_eq (p : position) (t u : term) :=
   | _,      _      => False
   end.
 
+(** Equality of terms at all positions. *)
 Definition all_pos_eq (t u : term) :=
   forall p : position, pos_eq p t u.
 
@@ -275,19 +302,21 @@ unfold subterm in H'.
 destruct (Bool_nat.lt_ge_dec 0 (arity f)).
 unfold pos_eq.
 unfold subterm.
-assert (vnth_fact : vnth l v = v i0 /\ vnth l w = w i0). (* TODO: vnth should do this *)
-admit.
+assert (vnth_fact : vnth l v = v i0 /\ vnth l w = w i0).
+admit. (** vnth should do this *)
 rewrite (proj1 vnth_fact), (proj2 vnth_fact) in H'.
 assumption.
 assert (Habsurd : arity f = 0).
 auto with arith.
-rewrite Habsurd in *|-. (* The ugly thing is that dependent destruction i uses different names x0 (Coq 8.3) and H (Coq 8.2) *)
+rewrite Habsurd in *|-.
+(** The ugly thing is that dependent destruction i uses different names x0
+   (Coq 8.3) and H (Coq 8.2). *)
 discriminate.
-(* TODO: i don't know if we're on the right track here *)
+(** I don't know if we're on the right track here. *)
 Admitted.
 
-(* TODO: this lemma gives universe inconsitency in coq trunk 2010-05-13 *)
-(*Lemma all_pos_eq_implies_term_bis :
+(** This lemma gives universe inconsitency in Coq trunk 2010-05-13! *)
+Lemma all_pos_eq_implies_term_bis :
   forall (t u : term), all_pos_eq t u -> t [~] u.
 Proof.
 cofix pos2bis.
@@ -299,12 +328,12 @@ destruct t; destruct u. (* "destruct t, u." syntax is Coq 8.3 only *)
 injection H1; intro e; rewrite e; apply term_bis_refl.
 discriminate H1.
 discriminate H1.
-dependent destruction H1. (*injection H1; clear H1; intro e; rewrite e.*)
+dependent destruction H1. (* injection H1; clear H1; intro e; rewrite e. *)
 constructor.
 intro i.
 apply pos2bis.
 apply (all_pos_eq_fun_inv H).
-Qed.*)
+Qed.
 
 Lemma term_bis_implies_all_pos_eq :
   forall (t u : term), t [~] u -> all_pos_eq t u.
@@ -319,7 +348,7 @@ exact I.
 
 unfold pos_eq; simpl; destruct (Bool_nat.lt_ge_dec a (arity f)).
 
-(* TODO: vnth should do this of course *)
+(** vnth should do this of course *)
 assert (vnth_fact : exists i : Fin (arity f), vnth l v = v i /\ vnth l w = w i).
 admit.
 
