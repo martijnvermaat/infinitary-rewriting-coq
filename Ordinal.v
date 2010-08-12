@@ -412,7 +412,7 @@ exists j.
 apply ord_le_trans with beta; [apply ord_le_pd_right with i |]; assumption.
 Qed.
 
-(** < is irreflexive. *)
+(** [<] is irreflexive. *)
 Lemma ord_lt_irrefl :
   forall alpha, ~ alpha < alpha.
 Proof.
@@ -421,7 +421,7 @@ destruct H as [i H].
 exact (ord_le_not_pd_right_weak i H).
 Qed.
 
-(** < is asymmetric. *)
+(** [<] is asymmetric. *)
 Lemma ord_lt_asymm :
   forall alpha beta,
     alpha < beta ->
@@ -432,6 +432,25 @@ destruct H1 as [i H1].
 destruct H2 as [j H2].
 apply (@ord_le_not_pd_right alpha beta j);
   [apply ord_le_pd_right with i |]; assumption.
+Qed.
+
+(** [pd_type] is closed under transitivity. *)
+Lemma pd_trans :
+  forall alpha i j,
+    exists k, pd alpha k = pd (pd alpha i) j.
+Proof.
+induction alpha as [| alpha IH | f IH]; intros.
+elim i.
+destruct i as [[] | i]; simpl in j |- *.
+exists (inr _ j).
+reflexivity.
+destruct (IH i j) as [k H].
+exists (inr _ k).
+assumption.
+destruct i as [n i]; simpl in j |- *.
+destruct (IH n i j) as [k H].
+exists (existT (fun n => pd_type (f n)) n k).
+assumption.
 Qed.
 
 (** If the successor of alpha < beta, alpha < beta. *)

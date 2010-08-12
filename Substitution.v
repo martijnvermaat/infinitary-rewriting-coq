@@ -37,6 +37,11 @@ Fixpoint substitution_eq (vars : list X) (sigma sigma' : substitution) :=
   | x :: xs => (substitution_eq xs sigma sigma') /\ (sigma x = sigma' x)
   end.
 
+(** Equality of substitutions on a list of variables is invariant under
+   list inclusion.
+
+   We have not yet proven this lemma. This taints the lemma [step_eq__target]
+   in [Rewriting]. *)
 Lemma substitution_eq_incl :
   forall sigma theta l l',
     incl l' l ->
@@ -64,7 +69,7 @@ left; reflexivity.
 rewrite H in H2.
 apply H2.
 simpl in H2.
-(* this should be possible *)
+(** This should not be too hard. (Problem is whether [x] is in [l']. *)
 Admitted.
 
 Lemma substitution_eq_app_left :

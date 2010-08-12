@@ -182,8 +182,9 @@ assumption.
 assumption.
 Qed.
 
-(** Note that this lemma is tainted by [substitution_eq_substitute], which
-   is not proved yet. See the [Substitution] library. *)
+(** Note that this lemma is tainted by [substitution_eq_substitute] and
+   [substitution_eq_incl, which are not proved yet. See the [Substitution]
+   library. *)
 Lemma step_eq_target :
   forall `(p : s [>] t, o : u [>] v),
     step_eq p o ->
@@ -197,7 +198,7 @@ destruct H as [H1 [H2 H3]].
 rewrite <- H2.
 apply term_bis_trans with (fill c (substitute b (rhs r))).
 apply fill_term_bis.
-apply substitution_eq_substitute. (* this is admitted *)
+apply substitution_eq_substitute.
 apply substitution_eq_incl with (vars (lhs r)).
 apply rule_wf.
 assumption.
@@ -288,37 +289,27 @@ Definition normal_form t :=
 
 (** An alternative formulation would be [~exists p : t [>] _, True]. *)
 
+(** The type [s ->> t] of rewrite sequences is parameterised by source and
+   target terms [s] and [t]. This structure is based on that of the tree
+   ordinals (see the [Ordinal] library). *)
+
 Reserved Notation "s ->> t" (no associativity, at level 40).
 
-(*
-   TODO: shouldn't Cons actually ask for bisimilarity?
-   | Cons  : forall `(r : s ->> t, p : u [>] v), t [=] u -> s ->> v
-*)
-(* We would have defined the Lim with a sig type, but then we end up with a
-   non strictly positive occurrence... *)
-(*
-Inductive sequence : term -> term -> Type :=
-  | Nil   : forall t, t ->> t
-  | Cons  : forall `(r : s ->> t, p : t [>] u), s ->> u
-  | Lim   : forall s t (f : nat -> { t' : term & s ->> t'}), converges (fun n => $ f n $) t -> s ->> t
-where "s ->> t" := (sequence s t).
-*)
 Inductive sequence : term -> term -> Type :=
   | Nil   : forall t, t ->> t
   | Cons  : forall `(r : s ->> t, p : t [>] u), s ->> u
   | Lim   : forall `(f : (forall n, s ->> ts n), c : converges ts t), s ->> t
 where "s ->> t" := (sequence s t).
 
-(*
-   Coq ignores the recursive call in the Lim constructor and therefore
+(** Coq ignores the recursive call in the [Lim] constructor and therefore
    the induction principle is missing a hypothesis. We reset the
    generated induction principle and create a new one below.
 
-   UPDATE: This was only true for our Sigma type definition, Coq generates
-   a perfectly fine induction principle now. For the moment, we keep our
-   own induction principle though, because the order of parameters is
-   different (this affects all proofs with 'induction r as [...]').
-*)
+   UPDATE: This was only true for our old [Sigma] type definition, Coq
+   generates a perfectly fine induction principle now. For the moment, we
+   keep our own induction principle though, because the order of parameters
+   is different (this affects all proofs with [induction r as [...]]). *)
+
 Reset sequence_rect.
 
 Notation "s ->> t" := (sequence s t).
@@ -340,8 +331,6 @@ Hypothesis H3 :
     (forall n, P (f n)) ->
     P (Lim f c).
 
-(* TODO: scope for notations *)
-(* TODO: is Lim the best constructor name (compare Limit in ord)? *)
 Fixpoint sequence_rect `(r : s ->> t) : P r :=
   match r return P r with
   | Nil t          => H1 t
@@ -354,12 +343,14 @@ End InductionPrinciple.
 Definition sequence_ind (P : `(s ->> t -> Prop)) :=
   sequence_rect P.
 
+(** We can [Cons] steps that fit by bisimilarity. *)
 Definition cons_term_bis `(r : s ->> t, p : u [>] v) : u [~] t -> s ->> v :=
   match p in u [>] v return u [~] t -> s ->> v with
   | Step u v rul c sub Hr Hs Ht =>
       fun H => Cons r (Step rul c sub Hr (term_bis_trans Hs H) Ht)
   end.
 
+(** Trivial image of rewrite sequences in ordinals. *)
 Fixpoint length `(r : s ->> t) : ord :=
   match r with
   | Nil _          => Zero
@@ -367,17 +358,8 @@ Fixpoint length `(r : s ->> t) : ord :=
   | Lim _ _ f _ _  => Limit (fun n => length (f n))
   end.
 
-(* TODO: maybe we should delete this unsighty lemma *)
-Lemma length_limit_discriminate :
-  forall `(r : s ->> t) f,
-    length r = Limit f ->
-    exists ts : nat -> term, exists g, exists c, r = Lim (ts := ts) g c.
-Proof.
-intros s t [| | u v g] f H.
-discriminate H.
-discriminate H.
-exists v; exists g; exists c; reflexivity.
-Qed.
+(** We lift [pd_type], [pd], and [ord_le] from ordinals to rewrite sequences.
+   See the [Ordinal] library for the original definitions. *)
 
 Fixpoint pred_type `(r : s ->> t) : Type :=
   match r with
@@ -388,6 +370,14 @@ Fixpoint pred_type `(r : s ->> t) : Type :=
 
 Reserved Notation "r [ i ]" (at level 60).
 
+(** The difference with ordinals is that [Succ] constructors carry no
+   additional information, whereas [Cons] constructors carry a rewrite
+   step. The predecessor indices of a rewrite sequence always point to
+   a [Cons] constructor and it is useful to get both the predecessor
+   rewrite sequence and the rewrite step pointed to by the predecessor
+   index. Therefore, [pred] returns a pair (rewrite sequence, rewrite
+   step). The pair is wrapped in a [Sigma] type that includes the
+   source and target terms of the rewrite step. *)
 Fixpoint pred `(r : s ->> t) :
   pred_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } :=
   match r in s ->> t return pred_type r -> { ts : (term * term)%type & ((s ->> (fst ts)) * ((fst ts) [>] (snd ts)))%type } with
@@ -408,6 +398,7 @@ Notation "r [2 i ]" := (snd (projT1 (pred r i))) (at level 60).
 Notation "r [seq i ]" := (fst (projT2 (pred r i))) (at level 60).
 Notation "r [stp i ]" := (snd (projT2 (pred r i))) (at level 60).
 
+(** [pred_type] is transitively closed. *)
 Lemma pred_trans :
   forall `(r : s ->> t, i : pred_type r, j : pred_type (r[seq i])),
     exists k : pred_type r, r[k] = r[seq i][j].
@@ -428,7 +419,9 @@ Qed.
 
 Implicit Arguments pred_trans [s t r].
 
-(* maybe this could be a coercion *)
+(** Image of [pred_type] (on rewrite sequences) in [pd_type] (on ordinals).
+   Maybe we should make this a coercion. *)
+
 Fixpoint pred_type_as_pd_type `(r : s ->> t) : pred_type r -> pd_type (length r) :=
   match r in s ->> t return pred_type r -> pd_type (length r) with
   | Nil _          => !
@@ -456,6 +449,9 @@ apply IH.
 destruct i as [n i].
 apply IH.
 Qed.
+
+(** Image of [pd_type] (on ordinals) in [pred_type] (on rewrite sequences).
+   Maybe we should make this a coercion. *)
 
 Fixpoint pd_type_as_pred_type `(r : s ->> t) : pd_type (length r) -> pred_type r :=
   match r in s ->> t return pd_type (length r) -> pred_type r with
@@ -498,17 +494,9 @@ rewrite <- (IH n i).
 reflexivity.
 Qed.
 
-(* Embeddings of reductions
-   Idea by Vincent, this is all still a very rough try *)
-(* TODO: maybe should Nil s <= q only hold for q : s ->> _ ? *)
-(*
-   In the Cons case, the target term of p (q[2 i]) could be relaxed to any
-   term, but we stick with the design that source and target terms of steps
-   and sequences are not relevant modulo bisimilarity. A step p' with a
-   different target term can always be modified to one with the fitting
-   target term (q[2 i]), because they would be bisimilar anyway.
-   UPDATE: changed it anyway, looks better this way :)
-*)
+(** The order [ord_le] on ordinals lifted to rewrite sequences is an embedding
+   relation on rewrite sequences. *)
+
 Inductive embed : forall `(r : s ->> t, q : u ->> v), Prop :=
   | Embed_Nil  : forall s `(q : u ->> v),
                    Nil s <= q
@@ -525,6 +513,10 @@ Definition embed_strict `(r : s ->> t, q : u ->> v) := exists i, r <= q[seq i].
 Infix " < " := embed_strict (no associativity, at level 70).
 
 (* TODO: define equality based on embed *)
+
+(** Some lemmas on rewrite sequences and relations follow. Most of them are
+   analoguous to lemmas on ordinals that can be found in the [Ordinal]
+   library. *)
 
 Lemma embed_length :
   forall `(r : s ->> t, q : u ->> v),
@@ -700,10 +692,9 @@ intro n.
 exact (IH n w z x H2).
 Qed.
 
-(*
-   This lemma seems very hard to prove directly, but fortunately we can use
-   our results on ordinals with the length of sequences.
-*)
+(** This lemma is surprisingly hard to prove directly due to complexities
+   with dependent types. Fortunately we can use our results on ordinals with
+   the length of rewrite sequences to make a shortcut. *)
 Lemma embed_not_cons :
   forall `(r : s ->> t, p : t [>] u),
     ~ Cons r p <= r.
@@ -774,29 +765,8 @@ exists j.
 apply embed_trans with u v q; [apply embed_pred_right with i |]; assumption.
 Qed.
 
-(* TODO: move to Ordinal *)
-Lemma pd_trans :
-  forall alpha i j,
-    exists k, pd alpha k = pd (pd alpha i) j.
-Proof.
-induction alpha as [| alpha IH | f IH]; intros.
-elim i.
-destruct i as [[] | i]; simpl in j |- *.
-exists (inr _ j).
-reflexivity.
-destruct (IH i j) as [k H].
-exists (inr _ k).
-assumption.
-destruct i as [n i]; simpl in j |- *.
-destruct (IH n i j) as [k H].
-exists (existT (fun n => pd_type (f n)) n k).
-assumption.
-Qed.
-
-(*
-   Well-formed sequences have limit functions f where n < m implies
-   that (f n) is strictly embedded in (f m).
-*)
+(** Well-formed rewrite sequences have limit functions [f] where [n < m]
+   implies that [f n] is strictly embedded in [f m]. *)
 Fixpoint wf s t (r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
@@ -806,11 +776,15 @@ Fixpoint wf s t (r : s ->> t) : Prop :=
     forall n m, (n < m)%nat -> f n < f m
   end.
 
-(*
-   Weakly convergent sequences have limit functions f where for
-   any depth d, from some n, the end term of r is equal up to
-   depth d where (|f n|) <= r and r is contained in the limit.
-*)
+(** The following convergence definitions are not at all useful. It is
+   unclear whether there exist more natural translations of convergence
+   to our representation of rewrite sequences. We define some lemmas on
+   these definitions below, but have not been able to really work with
+   them. *)
+
+(** Weakly convergent sequences have limit functions [f] where for
+   any depth [d], from some [n], the end term of [r] is equal up to
+   depth [d] where [f n <= r] and [r] is contained in the limit. *)
 Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
@@ -822,6 +796,9 @@ Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
       term_eq_up_to d (r[1 j]) t
   end.
 
+(** Strongly convergent sequences have limit functions [f] where for
+   any depth [d], from some [n], the step after [r] is below depth
+   [d] where [f n <= r] and [r] is contained in the limit. *)
 Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   weakly_convergent r /\
   match r with
@@ -829,10 +806,15 @@ Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
   | Cons _ _ q _ _ => strongly_convergent q
   | Lim _ _ f t _  =>
     (forall n, strongly_convergent (f n)) /\
-    forall d, exists i, forall j,
-      r[seq i] <= r[seq j] ->
+    forall d, exists n, forall j,
+      f n <= r[seq j] ->
       (depth (r[stp j]) > d)%nat
   end.
+
+(** We should probably be able to prove that [weakly_converent] implies
+   [strongly_converent]. Note that this is not true in the traditional
+   theory of infinitary rewriting, the relevant difference is that we
+   have a condition in the definition of rewrite sequences. *)
 
 Fixpoint all_terms_eq_up_to d `(r : s ->> t) u : Prop :=
   match r with
@@ -856,97 +838,11 @@ intro n; apply IH.
 constructor.
 Qed.
 
-(*
-   Another idea worth checking: define an order on pred
-   indices ('i' is included in 'inr i' etc) and define
-   weak convergence using this order instead of <= on the
-   sequences.
-   This might be closer to what we would do if the indices
-   were natural numbers.
-*)
+(** Predicate saying that a rewrite sequence is finite. This is useful to
+   prove certain properties via a shortcut.
 
-(*
-   TODO: increasing in strength, should these properties on sequences also
-   include the weaker properties?
-   Now we always have to state all of them, e.g.
-
-     wf r /\ weakly_convergent r /\ strongly_convergent r
-
-   (Note that weak convergence does not imply strong convergence.)
-*)
-
-(*
-Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => weakly_convergent q
-  | Lim _ t f      =>
-    (forall n, weakly_convergent (|f n|)) /\
-    forall d, exists i, forall j,
-      fst (|pred r i|) <= fst (|pred r j|) ->
-      term_eq_up_to d (fst ($ pred r j $)) t
-  end.
-*)
-
-(*
-   Weakly convergent sequences have limit functions f where for
-   any depth d, from some n, end terms of (f m) with m > n are
-   equal up to depth d to the limit term.
-*)
-(*
-Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
-  good r /\
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => weakly_convergent q
-  | Lim _ t f      =>
-    (forall n, weakly_convergent (|f n|)) /\
-    forall d, exists n, forall m, (n < m)%nat -> term_eq_up_to d ($ f m $) t
-  end.
-*)
-(*
-   The commented-out definition for weak convergence above is not strong
-   enough: (f m) and (f m+1) might differ more than one step, so we are
-   not done by just checking the end terms for all (f m).
-
-   In the alternative definition below, it is stated that the end terms
-   of all predixes of such an (f m) having at leas length (f n) should be
-   equal to t up to depth d.
-*)
-(*
-Fixpoint weakly_convergent `(r : s ->> t) : Prop :=
-  good r /\
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => weakly_convergent q
-  | Lim _ t f      =>
-    (forall n, weakly_convergent (|f n|)) /\
-    forall d, exists i, forall j,
-      (|pred r i|) <= (|pred r j|) ->
-      term_eq_up_to d ($ pred r j $) t
-  end.
-
-Definition step_below d `(r : s ->> t) : Prop :=
-  match r with
-  | Cons _ _ _ _ p => (depth p > d)%nat
-  | _              => True
-  end.
-
-(* TODO: is this strong convergence? *)
-Fixpoint strongly_convergent `(r : s ->> t) : Prop :=
-  weakly_convergent r /\
-  match r with
-  | Nil _          => True
-  | Cons _ _ q _ _ => strongly_convergent q
-  | Lim _ t f      =>
-    (forall n, strongly_convergent (|f n|)) /\
-    forall d, exists i, forall j,
-      (|pred r i|) <= (|pred r j|) ->
-      step_below d (|pred r j|)
-  end.
-*)
-
-(* TODO: maybe it's cleaner to define this via ordinal length *)
+   Maybe it's cleaner to define this via the length of the rewrite
+   sequence? *)
 Fixpoint finite `(r : s ->> t) : Prop :=
   match r with
   | Nil _          => True
@@ -954,6 +850,7 @@ Fixpoint finite `(r : s ->> t) : Prop :=
   | Lim _ _ f t c  => False
   end.
 
+(** Finite rewrite sequences are well-formed. *)
 Lemma wf_finite :
   forall `(r : s ->> t),
     finite r ->
@@ -966,6 +863,7 @@ assumption.
 elim H.
 Qed.
 
+(** Finite rewrite sequences are weakly convergent. *)
 Lemma weakly_convergent_finite :
   forall `(r : s ->> t),
     finite r ->
@@ -977,6 +875,13 @@ apply IH.
 assumption.
 elim H.
 Qed.
+
+(** [snoc] prepends (not appends) a rewrite step to a rewrite sequence. It
+   is analoguous to 1 + alpha on ordinals.
+
+   We define [snoc] via an auxiliary function [snoc_rec] to escape some
+   type-checker problems (due to [snoc] being recursive in its right
+   argument). *)
 
 Fixpoint snoc_rec (s t u : term) (r : t ->> u) : s [>] t -> s ->> u :=
   match r in t ->> u return s [>] t -> s ->> u with
@@ -1008,23 +913,6 @@ apply Hr.
 apply Hr.
 Qed.
 
-(* TODO: i don't think this is a meaningfull lemma *)
-Lemma pred_snoc :
-  forall `(p : s [>] t, r : t ->> u),
-    exists i, (snoc p r)[i] = Cons (Nil s) p [(inl _ tt)].
-Proof.
-induction r as [u | t u r v o IH | t us f u c IH].
-exists (inl _ tt); reflexivity.
-specialize IH with p.
-destruct IH as [i IH].
-exists (inr _ i); simpl.
-rewrite IH; reflexivity.
-specialize IH with 0 p.
-destruct IH as [i IH].
-exists (existT (fun n => pred_type (snoc p (f n))) 0 i); simpl.
-rewrite IH; reflexivity.
-Qed.
-
 Lemma embed_snoc_right :
   forall `(r : s ->> t, p : u [>] s),
     r <= snoc p r.
@@ -1040,12 +928,12 @@ apply embed_lim_right with n.
 apply IH.
 Qed.
 
-(* This proof is quite hairy and ad-hoc *)
 Lemma snoc_embed :
   forall `(p : s [>] t, r : t ->> u, q : t ->> v),
     r <= q ->
     snoc p r <= snoc p q.
 Proof.
+(** This is a very ad-hoc and hairy proof. *)
 intros s t p u r v q H.
 dependent induction H.
 induction q as [t | t v q w o IH | t vs f v c IH]; simpl.
@@ -1124,15 +1012,6 @@ contradict H.
 apply IH.
 Qed.
 
-Lemma embed_snoc_elim_strong :
-  forall `(p : s [>] t, r : t ->> u, o : v [>] w, q : w ->> z),
-    snoc p r <= snoc o q ->
-    r <= q.
-Proof.
-(* TODO: not sure if this can be proved, not even sure if it is true... *)
-Admitted.
-
-(* TODO: tidy *)
 Lemma embed_snoc_elim :
   forall `(p : s [>] t, r : t ->> u, q : t ->> v),
     snoc p r <= snoc p q ->
@@ -1259,17 +1138,10 @@ apply H.
 apply M.
 Qed.
 
-(* TODO: why is jmeq_refl needed here, and can we write it ourselves? *)
-(*
-Program Fixpoint program_append `(r : s ->> t, q : t ->> u) : s ->> u :=
-  match q with
-  | Nil t0         => r
-  | Cons _ _ q _ p => Cons (program_append r q) p
-  | Lim _ u f      => Lim u (fun o => existT (fun u => s ->> u) ($ f o $) (program_append r (|f o|)))
-  end.
-*)
+(** [append] concatenates two rewrite sequences. Like [snoc], it is recursive
+   in its right argument and defined via a [append_rec] helper function. It
+   is the analogue of [add] on ordinals. *)
 
-(* yes we can *)
 Fixpoint append_rec (s t u : term) (q : t ->> u) : s ->> t -> s ->> u :=
   match q in t ->> u return s ->> t -> s ->> u with
   | Nil t0         => fun r => r
@@ -1305,15 +1177,15 @@ apply embed_lim_right with 0.
 apply IH.
 Qed.
 
-(* TODO: So this proof is a verbatim copy of snoc_embed an thus is
-   also quite hairy and ad-hoc
-   There might be a way to at least not repeat ourselves here... same
-   goes for snoc_embed_strict and append_embed_strict by the way *)
 Lemma append_embed :
   forall `(r : s ->> t, q : t ->> u, z : t ->> v),
     q <= z ->
     append r q <= append r z.
 Proof.
+(** So this proof is a verbatim copy of [snoc_embed] an thus is also quite
+   hairy and ad-hoc.
+   There should be a way to at least not repeat ourselves here. The same
+   goes for [snoc_embed_strict] and [append_embed_strict] by the way. *)
 intros s t r u q v z H.
 dependent induction H.
 induction z as [t | t v z w o IH | t vs f v c IH]; simpl.
@@ -1420,52 +1292,6 @@ exists (existT (fun n => pred_type (append r (f n))) 0 j).
 assumption.
 Qed.
 
-(*
-   Rough idea: if we could proof something like the following lemma then
-   we could use it to prove weak convergence for ExampleUNWO.
-*)
-Lemma aaa :
-  forall `(r : (forall n, s ->> ts n), q : (forall n, ts n ->> ts (S n))) t,
-    (forall n, r (S n) = append (r n) (q n)) ->
-    (forall n, all_terms_eq_up_to n (q n) t) ->
-    forall d n i,
-      r d <= (r n)[seq i] ->
-      term_eq_up_to d ((r n)[1 i]) t.
-Proof.
-intros.
-destruct n.
-(* d must be 0 *)
-admit.
-revert i H1.
-rewrite H.
-intros.
-generalize dependent (q n).
-intros.
-dependent induction s0.
-(* no idea how to deal with this *)
-Admitted.
-
-(* can we use this in append_weakly_convergent? *)
-Lemma sdfsfsdf :
-  forall d x `(r : s ->> t, q : t ->> u) (i : pred_type (append r q)),
-
-  (forall j : pred_type q,
-    q <= q[seq j] ->
-    term_eq_up_to d (q[1 j]) x) ->
-
-  append r q <= (append r q)[seq i] ->
-
-  term_eq_up_to d ((append r q)[1 i]) x.
-Proof.
-intros d x s t r u q i H1 H2.
-induction q as [u | t u q w p IH | t us f u c IH].
-contradict H2.
-apply embed_not_pred_right.
-destruct i as [[] | i].
-simpl in H2 |- *.
-clear H1.
-Admitted.
-
 Lemma embed_not_append_pred_left :
   forall `(r : s ->> t, q : t ->> u, j : pred_type r),
     ~ append r q <= r[seq j].
@@ -1485,74 +1311,11 @@ contradict H0.
 apply H.
 Qed.
 
-Lemma append_weakly_convergent_helper :
-  forall d x `(r : s ->> t, q : t ->> u, y : t ->> v, j : pred_type (append r y)),
-    append r q <= (append r y)[seq j] ->
-    exists i : pred_type y,
-      q <= y[seq i] /\
-      (term_eq_up_to d (y[1 i]) x ->
-        term_eq_up_to d ((append r y)[1 j]) x).
-Proof.
-induction y as [v | t v y w o IH | t vs f v c IH]; simpl; intros j H.
-contradict H.
-apply embed_not_append_pred_left.
-destruct j as [[] | j]; simpl in H.
-exists (inl _ tt). simpl.
-split.
-(* TODO: hm this doesn't seem to hold *)
+(** The infinitary unique normal forms property (UN-inf).
 
-(*
-apply append_snoc_elim with p s p.
-assumption.
-trivial.
-specialize IH with p r j.
-destruct IH as [i H1].
-assumption.
-exists (inr _ i).
-assumption.
-destruct j as [n j].
-specialize IH with n p r j.
-destruct IH as [i H1].
-assumption.
-exists (existT _ n i).
-assumption.
-*)
-Admitted.
+   Note that this defines uniqueness of normal forms with respect to
+   rewriting, not the more general unique normal forms property. *)
 
-Lemma append_weakly_convergent :
-  forall `(r : s ->> t, q : t ->> u),
-    weakly_convergent r ->
-    weakly_convergent q ->
-    weakly_convergent (append r q).
-Proof.
-induction q as [u | t u q v p IH | t us f u c IH]; simpl.
-trivial.
-apply IH.
-intros H1 [H2 H3].
-split.
-intro n.
-apply IH.
-assumption.
-apply H2.
-intro d.
-specialize H3 with d.
-destruct H3 as [n H3].
-exists n.
-intros [m j] H.
-(* TODO: this depends on the helper lemma, which is probably not correct *)
-destruct (append_weakly_convergent_helper d u r (f n) (f m) j) as [i M].
-assumption.
-specialize H3 with (existT (fun n => pred_type (f n)) m i).
-simpl in H3.
-apply M.
-apply H3.
-apply M.
-Qed.
-
-(*
-   Not that this defines uniqueness of normal forms with respect to
-   rewriting, not the more general unique normal forms property.
-*)
 Definition unique_normal_forms : Prop :=
   forall t u v (r : t ->> u) (q : t ->> v),
     wf r ->
