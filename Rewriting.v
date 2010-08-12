@@ -21,9 +21,9 @@
    The lifting of ordinal addition yields a concatenation function on
    rewrite sequences.
 
-   For more information, see the Master thesis on this formalisation by
-   Martijn Vermaat:
+   For more information, see:
 
+     Martijn Vermaat.
      Infinitary Rewriting in Coq.
      Master Thesis, VU University Amsterdam, 2010.
 
@@ -151,7 +151,8 @@ where "s [>] t" := (step s t).
    - bisimilarity of contexts
    - equality of rules
    - equality of substitutions for all variables in the rule.
-   This would imply bisimilarity of source and target terms. *)
+
+   This implies bisimilarity of source and target terms. *)
 
 Definition step_eq `(p : s [>] t, o : u [>] v) :=
   match p, o with
@@ -159,6 +160,8 @@ Definition step_eq `(p : s [>] t, o : u [>] v) :=
     context_bis c c' /\ r = r' /\ substitution_eq (vars (lhs r)) u u'
   end.
 
+(** Note that this lemma is tainted by [substitution_eq_substitute], which
+   is not proved yet. See the [Substitution] library. *)
 Lemma step_eq_source :
   forall `(p : s [>] t, o : u [>] v),
     step_eq p o ->
@@ -168,14 +171,42 @@ intros _ _ [s t r c a Hr Hs Ht] _ _ [u v r' c' b Hr' Hu Hv] H.
 apply term_bis_trans with (fill c (substitute a (lhs r))).
 apply term_bis_symm; assumption.
 apply term_bis_trans with (fill c' (substitute b (lhs r'))).
-
-
-
-admit.
+destruct H as [H1 [H2 H3]].
+rewrite <- H2.
+apply term_bis_trans with (fill c (substitute b (lhs r))).
+apply fill_term_bis.
+apply substitution_eq_substitute.
 assumption.
+apply fill_context_bis.
+assumption.
+assumption.
+Qed.
 
-(* TODO: this should be possible, but requires some work *)
-Admitted.
+(** Note that this lemma is tainted by [substitution_eq_substitute], which
+   is not proved yet. See the [Substitution] library. *)
+Lemma step_eq_target :
+  forall `(p : s [>] t, o : u [>] v),
+    step_eq p o ->
+    t [~] v.
+Proof.
+intros _ _ [s t r c a Hr Hs Ht] _ _ [u v r' c' b Hr' Hu Hv] H.
+apply term_bis_trans with (fill c (substitute a (rhs r))).
+apply term_bis_symm; assumption.
+apply term_bis_trans with (fill c' (substitute b (rhs r'))).
+destruct H as [H1 [H2 H3]].
+rewrite <- H2.
+apply term_bis_trans with (fill c (substitute b (rhs r))).
+apply fill_term_bis.
+apply substitution_eq_substitute. (* this is admitted *)
+apply substitution_eq_incl with (vars (lhs r)).
+apply rule_wf.
+assumption.
+apply fill_context_bis.
+assumption.
+assumption.
+Qed.
+
+(** [step_eq_refl] is an equivalence. *)
 
 Lemma step_eq_refl :
   forall `(p : s [>] t), step_eq p p.
@@ -188,22 +219,54 @@ reflexivity.
 apply substitution_eq_refl.
 Qed.
 
+Lemma step_eq_symm :
+  forall `(p : s [>] t, o : u [>] v),
+    step_eq p o ->
+    step_eq o p.
+Proof.
+intros.
+destruct p, o.
+constructor.
+apply context_bis_symm.
+apply H.
+destruct H as [_ [H H']].
+split.
+rewrite H.
+reflexivity.
+apply substitution_eq_symm.
+rewrite <- H.
+assumption.
+Qed.
+
 Lemma step_eq_trans :
   forall `(p : s [>] t, o : u [>] v, m : w [>] z),
     step_eq p o ->
     step_eq o m ->
     step_eq p m.
 Proof.
-(* TODO *)
-Admitted.
+intros.
+destruct p, o, m.
+constructor.
+apply context_bis_trans with c0.
+apply H.
+apply H0.
+destruct H as [_ [H H']].
+split.
+rewrite H.
+apply H0.
+apply substitution_eq_trans with u.
+apply H'.
+rewrite H.
+apply H0.
+Qed.
 
-(* Depth of rule application in rewriting step *)
+(** Depth of rule application in a rewriting step. *)
 Definition depth s t (p : s [>] t) : nat :=
   match p with
   | Step _ _ _ c _ _ _ _ => hole_depth c
   end.
 
-(* Source and target are equal up to the depth of the rewrite step *)
+(** Source and target terms are equal up to the depth of the rewrite step. *)
 Lemma eq_up_to_rewriting_depth :
   forall `(p : s [>] t) n,
     n <= depth p ->
@@ -218,29 +281,12 @@ exact (term_eq_up_to_trans
     ((term_bis_implies_term_eq Ht) n))).
 Qed.
 
-Lemma project_match :
-  forall (t : term) (c : context) (u : substitution) (f : fterm),
-    term_eq_up_to (hole_depth c + pattern_depth f) t (fill c (substitute u f)) ->
-    exists c' : context, exists u' : substitution,
-      t [=] fill c' (substitute u' f) /\
-      hole_position c = hole_position c'.
-Proof.
-intros t c u f H.
-(* exists (dig t (hole_position c)). *)
-Admitted.
-
-(* Normal form if no left-hand side matches *)
-(* TODO: perhaps just define this as ~exists p : t [>] _, True? *)
+(** A term is a normal form if no rule left-hand side matches. *)
 Definition normal_form t :=
   ~ exists c : context, exists r, exists u,
     In r system /\ fill c (substitute u (lhs r)) [~] t.
 
-(* f converges to t *)
-(* TODO: probably move to Term or TermEquality *)
-Definition converges (f : nat -> term) (t : term) : Prop :=
-  forall d, exists n, forall m,
-    n <= m ->
-    term_eq_up_to d (f m) t.
+(** An alternative formulation would be [~exists p : t [>] _, True]. *)
 
 Reserved Notation "s ->> t" (no associativity, at level 40).
 

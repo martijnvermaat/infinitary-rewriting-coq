@@ -13,6 +13,7 @@
 Require Import Prelims.
 Require Export Term.
 Require Export TermEquality.
+Require Import Equality.
 
 
 Set Implicit Arguments.
@@ -103,6 +104,33 @@ intros v e k.
 destruct k; repeat (rewrite vcast_vcons).
 apply term_eq_refl.
 apply IHi.
+Qed.
+
+(** Filling a context with bisimilar terms yields bisimilar terms. *)
+Lemma fill_term_bis :
+  forall (c : context) t u,
+    t [~] u ->
+    fill c t [~] fill c u.
+Proof.
+intros c t u H.
+induction c as [| f i j H1 v1 c IH v2]; simpl.
+assumption.
+constructor.
+intro k.
+destruct H1.
+simpl.
+induction i as [| i IHi].
+simpl in k.
+simpl.
+dependent destruction k.
+simpl.
+assumption.
+apply term_bis_refl.
+dependent destruction k.
+apply term_bis_refl.
+specialize IHi with (vtail v1) k.
+simpl.
+assumption.
 Qed.
 
 Require Import Arith.

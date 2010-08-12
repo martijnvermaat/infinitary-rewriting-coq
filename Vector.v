@@ -233,4 +233,16 @@ Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=
   end.
 *)
 
+(** Introduce a [vcast] in a binary predicate on [A]. *)
+Lemma vcast_intro :
+  forall R n m (v1 v2 : vector A m) (H1 H2 : m = n) i,
+    (forall i, R (v1 i) (v2 i)) ->
+    R (vcast v1 H1 i) (vcast v2 H2 i).
+Proof.
+intros R n m v1 v2 H1 H2 i H.
+dependent destruction H1.
+dependent destruction H2.
+apply H.
+Qed.
+
 End Cast.

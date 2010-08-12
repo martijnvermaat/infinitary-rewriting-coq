@@ -13,6 +13,7 @@ Require Export List.
 Require Export FiniteTerm.
 Require Export Term.
 Require Import TermEquality.
+Require Import Equality.
 
 
 Set Implicit Arguments.
@@ -36,21 +37,64 @@ Fixpoint substitution_eq (vars : list X) (sigma sigma' : substitution) :=
   | x :: xs => (substitution_eq xs sigma sigma') /\ (sigma x = sigma' x)
   end.
 
-Lemma substitution_eq_app :
+Lemma substitution_eq_incl :
+  forall sigma theta l l',
+    incl l' l ->
+    substitution_eq l sigma theta ->
+    substitution_eq l' sigma theta.
+Proof.
+intros sigma theta l l' H1 H2.
+revert l' H1.
+induction l as [| x l IH]; intros l' H1; simpl.
+destruct l' as [| y l'].
+exact I.
+elim (H1 y).
+left; reflexivity.
+
+induction l' as [| y l' IH']; simpl.
+exact I.
+split.
+apply IH'.
+intros z H.
+apply H1.
+right.
+assumption.
+destruct (H1 y).
+left; reflexivity.
+rewrite H in H2.
+apply H2.
+simpl in H2.
+(* this should be possible *)
+Admitted.
+
+Lemma substitution_eq_app_left :
   forall sigma theta l l',
     substitution_eq (l ++ l') sigma theta ->
     substitution_eq l sigma theta.
 Proof.
 intros sigma theta l l' H.
-induction l as [| x l]; simpl.
+induction l as [| x l IH]; simpl.
 exact I.
 split.
-apply IHl.
+apply IH.
 apply H.
 apply H.
 Qed.
 
-Implicit Arguments substitution_eq_app [l l'].
+Lemma substitution_eq_app_right :
+  forall sigma theta l l',
+    substitution_eq (l ++ l') sigma theta ->
+    substitution_eq l' sigma theta.
+Proof.
+intros sigma theta l l' H.
+induction l as [| x l IH]; simpl.
+assumption.
+apply IH.
+apply H.
+Qed.
+
+Implicit Arguments substitution_eq_app_left [l l'].
+Implicit Arguments substitution_eq_app_right [l l'].
 
 (** We show [substitution_eq] is an equivalence. *)
 
@@ -146,17 +190,25 @@ intro i.
 apply IH; clear IH.
 simpl in H.
 unfold vmap in H.
-destruct (arity f); clear f.
+induction (arity f) as [| n IH]; clear f.
 inversion i.
-destruct i.
+dependent destruction i.
 simpl in H.
 unfold vhead in H.
 unfold vtail in H.
-apply (substitution_eq_app sigma theta H).
-simpl in H.
-unfold vhead in H.
-unfold vtail in H.
-(** Here we are stuck, need some more lemmas on [vector]. *)
+apply (substitution_eq_app_left sigma theta H).
+specialize IH with (vtail args) i.
+apply IH.
+unfold vtail.
+(** Here we are stuck, need some more lemmas on [vector], for example:
+
+[[
+Lemma a :
+  forall x n v,
+    In x (vfold nil app (fun i0 : Fin n => vars (v (Next i0)))) ->
+    In x (vfold nil app (fun i : Fin (S n) => vars (v i))).
+]]
+*)
 Admitted.
 
 (** Apply a substitution to an infinite term. Note that this definition is

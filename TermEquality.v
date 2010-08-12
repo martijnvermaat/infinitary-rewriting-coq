@@ -258,6 +258,13 @@ apply term_eq_up_to_weaken.
 assumption.
 Qed.
 
+(** Cauchy-converence for a sequence of terms. This is used in the definition
+   of rewrite sequences in the library [Rewriting]. *)
+Definition converges (f : nat -> term) (t : term) : Prop :=
+  forall d, exists n, forall m,
+    n <= m ->
+    term_eq_up_to d (f m) t.
+
 End TermEquality.
 
 

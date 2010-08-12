@@ -262,6 +262,45 @@ Qed.
 
 (* For completeness, we could also show context_eq is an equivalence. *)
 
+(** Filling two bisimilar contexts with the same term yields bisimilar
+   contexts. *)
+Lemma fill_context_bis :
+  forall (c d : context) t,
+    context_bis c d ->
+    fill c t [~] fill d t.
+Proof.
+intros c d t H.
+revert d H.
+induction c as [| f i j H1 v1 c IH v2]; intros d H; destruct d as [| g n m H2 w1 d w2]; simpl.
+apply term_bis_refl.
+inversion H.
+inversion H.
+dependent destruction H.
+constructor.
+intro i.
+clear H H'.
+apply vcast_intro.
+intro k.
+clear H1.
+clear i H2 g.
+induction n as [| n IHn].
+simpl in k.
+simpl.
+dependent destruction k.
+simpl.
+apply IH.
+assumption.
+apply H4.
+dependent destruction k.
+apply H0.
+simpl.
+specialize IHn with (vtail v1) (vtail w1) k.
+apply IHn.
+intro i.
+unfold vtail.
+apply H0.
+Qed.
+
 End ContextEquality.
 
 
