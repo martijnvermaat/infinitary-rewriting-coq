@@ -1,3 +1,15 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines the type [context] of infinite one-hole contexts
+   whose holes are at a finite depth. *)
+
+
 Require Import Prelims.
 Require Export Term.
 Require Export TermEquality.
@@ -8,14 +20,16 @@ Set Implicit Arguments.
 
 Section Context.
 
+(** Contexts are defined inductively over a signature [F] and a set of
+   variables [X]. *)
+
 Variable F : signature.
 Variable X : variables.
 
 Notation term := (term F X).
 Notation terms := (vector term).
 
-(* One-hole contexts where a hole can occur at any finite depth *)
-(* TODO: Alternatively define this as term over variables extended with a hole (option variable) *)
+(** One-hole contexts where a hole can occur at any finite depth. *)
 Inductive context : Type :=
   | Hole : context
   | CFun : forall (f : F) (i j : nat),
@@ -23,53 +37,21 @@ Inductive context : Type :=
 
 Implicit Arguments CFun [i j].
 
-(* TODO: We use context_ind2 in ExampleUNWO. Define it there? *)
-Section InductionPrinciple.
-
-  Variable P : context -> Type.
-
-  Hypothesis H1 : P Hole.
-
-  Hypothesis H2 :
-    forall (f : F) (i j : nat) (e : i + S j = arity f) (v : terms i)
-      (w : terms j),
-      P (CFun f e v Hole w).
-
-  Hypothesis H3 :
-    forall (f : F) (i j : nat) (e : i + S j = arity f) (v : terms i)
-      (w : terms j)
-      (g : F) (n m : nat) (a : n + S m = arity g) (x : terms n)
-      (c : context) (z : terms m),
-      P c ->
-      P (CFun f e v (CFun g a x c z) w).
-
-  Fixpoint context_rect2 c : P c :=
-    match c return P c with
-    | Hole                                  => H1
-    | CFun f i j e v Hole w                 => H2 f e v w
-    | CFun f i j e v (CFun g n m a x c z) w => H3 f e v w g a x z (context_rect2 c)
-    end.
-
-End InductionPrinciple.
-
-Definition context_ind2 (P : context -> Prop) :=
-  context_rect2 P.
-
-(* Depth of hole *)
+(** Depth of a hole. *)
 Fixpoint hole_depth c : nat :=
   match c with
   | Hole                => 0
   | CFun _ _ _ _ _ c' _ => 1 + hole_depth c'
   end.
 
-(* Position of hole *)
+(** Position of a hole. *)
 Fixpoint hole_position c : position :=
   match c with
   | Hole                => nil
   | CFun _ i _ _ _ c' _ => i :: (hole_position c')
   end.
 
-(* Depth of a hole is depth of its position *)
+(** Depth of a hole is depth of its position. *)
 Lemma hole_position_depth :
   forall c,
     hole_depth c = position_depth (hole_position c).
@@ -77,7 +59,7 @@ Proof.
 induction c; simpl; try (rewrite IHc); reflexivity.
 Qed.
 
-(* Fill a hole in a context with a term *)
+(** Fill a hole in a context with a term. *)
 Fixpoint fill (c : context) (t : term) : term :=
   match c with
   | Hole                  => t
@@ -89,8 +71,7 @@ Fixpoint fill (c : context) (t : term) : term :=
    casts but prove equalities with Program.
    Unfortunately this gives us problems I cannot solve in proofs like
    fill_eq_up_to below.
-*)
-(*
+
 Program Fixpoint fill (c : context) (t : term) : term :=
   match c with
   | Hole                  => t
@@ -98,7 +79,7 @@ Program Fixpoint fill (c : context) (t : term) : term :=
   end.
 *)
 
-(* Filling a context gives terms equal up to the hole depth *)
+(** Filling a context gives terms equal up to the hole depth. *)
 Lemma fill_eq_up_to :
   forall (c : context) t u n,
   n <= hole_depth c -> term_eq_up_to n (fill c t) (fill c u).
@@ -136,7 +117,7 @@ Qed.
 Require Import Lt.
 Require Import Bool_nat.
 
-(* Create a context from a term by making a hole *)
+(** Create a context from a term by making a hole. *)
 Fixpoint dig (t : term) (p : position) {struct p} : option context :=
   match p with
   | nil    => Some Hole
@@ -155,7 +136,7 @@ Fixpoint dig (t : term) (p : position) {struct p} : option context :=
               end
   end.
 
-(* Digging a hole and filling it with the same gets you nothing new *)
+(** Digging a hole and filling it with the same gets you nothing new. *)
 Lemma dig_fill :
   forall t p,
     match dig t p, subterm t p with
@@ -169,41 +150,40 @@ apply term_eq_refl.
 admit.
 Qed.
 
-(* By the way, CoLoR states the previous lemma like this: *)
+(**
+   By the way, CoLoR states the previous lemma like this:
+
+[[
 Lemma subterm_elim : forall p t s, subterm t p = Some s ->
   {c | dig s p = Some c /\ s [=] fill c s}.
-Admitted.
-
+]]
+*)
 
 (*
-(* TODO: waarom eigenlijk niet de diepte van een context in het type? als volgt: *)
+   TODO: waarom eigenlijk niet de diepte van een context in het type? als
+   volgt:
 
 Inductive context : nat -> Type :=
   | Hole : context 0
   | CFun : forall (d : nat) (f : F) (n m : nat), n + S m = arity f ->
            vector term n -> context d -> vector term m -> context (S d).
 
-(* dan natuurlijk:
-Definition hole_depth (d : nat) (c : context d) := d.
-*)
+   dan natuurlijk:
 
-(* Fill a hole in a context with a term *)
+Definition hole_depth (d : nat) (c : context d) := d.
+
 Fixpoint fill (d : nat) (c : context d) (t : term) : term :=
   match c with
   | Hole                  => t
   | CFun _ f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
   end.
 
-(*
+   - een gevolg zal dan zijn, dat ook steps geparameteriseerd worden met de
+     diepte (is dat handig?)
 
-- een gevolg zal dan zijn, dat ook steps geparameteriseerd worden met de diepte
-(is dat handig?)
-
-- een andere vraag die opkomt is: waarom parameteriseren we niet meteen met de positie van de hole ...
-
+   - een andere vraag die opkomt is: waarom parameteriseren we niet meteen
+     met de positie van de hole ...
 *)
-*)
-
 
 End Context.
 

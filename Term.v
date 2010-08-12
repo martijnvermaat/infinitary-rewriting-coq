@@ -1,3 +1,14 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines the type [term] of infinite terms. *)
+
+
 Require Export List.
 Require Import Bool_nat.
 Require Export Vector.
@@ -11,10 +22,12 @@ Set Implicit Arguments.
 
 Section Term.
 
+(** Terms are defined coinductively over a signature [F] and a set of
+   variables [X]. *)
+
 Variable F : signature.
 Variable X : variables.
 
-(* Infinite terms *)
 CoInductive term : Type :=
   | Var : X -> term
   | Fun : forall f : F, vector term (arity f) -> term.
@@ -35,7 +48,7 @@ Definition is_var (t : term) : bool :=
   | _     => false
   end.
 
-(* Trivial image of finite_term in term *)
+(** Trivial image of [finite_term] in [term]. *)
 Fixpoint finite_term_as_term (t : fterm) : term :=
   match t with
   | FVar x      => Var x
@@ -45,10 +58,16 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
 End Term.
 
 
+Implicit Arguments Var [F X].
+
+Coercion finite_term_as_term : finite_term >-> term.
+
 Notation position := (list nat).
 
 
 Section Position.
+
+(** Positions in terms are lists of natural numbers. *)
 
 Variable F : signature.
 Variable X : variables.
@@ -59,12 +78,12 @@ Notation fterm := (finite_term F X).
 Definition position_depth (p : position) := length p.
 
 (*
-   TODO: instead of the definitions with option types, we could also define
-   the set of positions for a term and then require 'correct' positions by
+   Instead of the definitions with option types, we could also define the
+   set of positions for a term and then require 'correct' positions by
    typing.
 *)
 
-(* Subterm at position *)
+(** Subterm of a term at some position. *)
 Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
   match p with
   | nil    => Some t
@@ -77,8 +96,9 @@ Fixpoint subterm (t : term) (p : position) {struct p} : option term :=
               end
   end.
 
-(* Finite subterm at position *)
-(* TODO: this is a quick hack so substitutions can work on subterms *)
+(* This is a quick hack so substitutions can work on subterms *)
+
+(** Subterm of a finite term at some position is again finite. *)
 Fixpoint finite_subterm (t : fterm) (p : position) {struct p} : option fterm :=
   match p with
   | nil    => Some t
@@ -91,20 +111,21 @@ Fixpoint finite_subterm (t : fterm) (p : position) {struct p} : option fterm :=
               end
   end.
 
-(* Coinductive infinite predicate (as in A Tutorial on (Co)Inductive Types) *)
+(* The term_inf predicate is defined as in A Tutorial on (Co)Inductive
+   Types. *)
+
+(** Coinductive infinite predicate. *)
 CoInductive term_inf : term -> Prop :=
   | Fun_inf : forall f v i, term_inf (v i) -> term_inf (Fun f v).
 
-(* Alternative infinite predicate *)
+(** Alternative infinite predicate via positions. *)
 Definition infinite (t : term) : Prop :=
   forall d,
     exists p : position,
       position_depth p = d /\ subterm t p <> None.
 
-(*
-   I guess we should be able to prove these predicates to define the same
-   subset of infinite terms, but my (small tries) below did not succeed.
-*)
+(** I guess we should be able to prove these predicates to define the same
+    subset of infinite terms, but my (small) tries below did not succeed. *)
 
 Require Import Equality.
 
@@ -120,14 +141,12 @@ destruct H as [[| a p] [D H]].
 inversion D.
 contradict H.
 reflexivity.
-(*
-   We need to establish that there is an n such that
+(** We need to establish that there is an n such that
    for every depth there exists a p with n::p etc.
 
    I don't see how to get there, but it ought to be
    possible since (arity f) is finite, using something
-   akin to the pigeon hole principle.
-*)
+   akin to the pigeon hole principle. *)
 Admitted.
 
 Lemma term_inf_implies_infinite :
@@ -159,13 +178,7 @@ simpl.
 unfold vhead.
 admit. (* Don't know what to do here *)
 intro IH.
-(* Don't know what to do here either *)
+(** And we are stuck. *)
 Admitted.
 
 End Position.
-
-
-Implicit Arguments Var [F X].
-
-
-Coercion finite_term_as_term : finite_term >-> term.

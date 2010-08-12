@@ -1,3 +1,24 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                     Dimitri Hendriks <diem@cs.vu.nl>                 *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines the type [vector] of dependently typed lists. *)
+
+(** Thanks to Adam Chlipala for suggesting this representation of vector,
+   and for showing how easy some constructions (cons, map) over them can
+   be defined. See the following thread in the archive of the Coq-club
+   mailing list:
+
+   % \url{http://logical.saclay.inria.fr/coq-puma/messages/9978d9af68461f02} %
+   # <a href="http://logical.saclay.inria.fr/coq-puma/messages/9978d9af68461f02">http://logical.saclay.inria.fr/coq-puma/messages/9978d9af68461f02</a> #
+*)
+
+
 Require Import Prelims.
 Require Import Arith.
 Require Import Equality.
@@ -6,13 +27,7 @@ Require Import Equality.
 Set Implicit Arguments.
 
 
-(*
-  Thanks to Adam Chlipala for suggesting this representation of vector,
-  and for showing how easy some constructions (cons,map) over them can be defined;
-  see the following thread in the archive of the coqclub mailing list:
-  http://logical.saclay.inria.fr/coq-puma/messages/9978d9af68461f02
-*)
-
+(** Finite sets. *)
 Inductive Fin : nat -> Type :=
   | First : forall n, Fin (S n)
   | Next  : forall n, Fin n -> Fin (S n).
@@ -23,6 +38,9 @@ Qed.
 
 
 Section Vector.
+
+(** Vectors are functions from finite sets to elements. A vector of length
+   [n] is a function from [Fin n] to [A]. *)
 
 Variable A : Type.
 
@@ -50,7 +68,9 @@ Definition vhead (n : nat) (v : vector (S n)) : A :=
 Definition vtail (n : nat) (v : vector (S n)) : vector n :=
   fun i : Fin n => v (Next i).
 
-(* TODO: use some vector equality? *)
+(** The useful equivalence on vectors is equality of elements (we could
+   define it seperately). *)
+
 Lemma vcons_vhead_vtail :
   forall n (v : vector (S n)) (i : Fin (S n)),
   vcons (vhead v) (vtail v) i = v i.
@@ -58,7 +78,6 @@ Proof.
 dependent destruction i; reflexivity.
 Qed.
 
-(* TODO: use some vector equality? *)
 Lemma vtail_vcons :
   forall a n (v : vector n) (i : (Fin n)),
   vtail (vcons a v) i = v i.
@@ -75,7 +94,6 @@ Program Fixpoint vtake (n m : nat) : n <= m -> vector m -> vector n :=
            end
   end.
 
-(* TODO: is the m-n in the return type really the way to do this? *)
 Program Fixpoint vdrop (n m : nat) {struct n} : n <= m -> vector m -> vector (m - n) :=
   match n return n <= m -> vector m -> vector (m - n) with
   | O   => fun _ v => v
@@ -103,23 +121,25 @@ Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   | S n' => fun v w => vcons (vhead v) (vappend (vtail v) w)
   end.
 
-(*
-   TODO: This does not type check, possible solutions:
-   * write this with a cast
-   * with Program (done below)
-   * use what Program makes of it (ugly)
+(**
+   The following does not type check:
 
-   I would prefer to avoid using an explicit cast function (i.e. solution 2)
-   but this gives me more troubles than I can handle (see also fill in
-   Context).
-*)
-(*
+[[
 Lemma vtake_vdrop_vappend :
   forall n m (H : n <= m) (v : vector m) (i : Fin m),
     vappend (vtake H v) (vdrop H v) i = v i.
+]]
+
+   Possible solutions:
+   - write this with a cast (see below)
+   - with [Program] (defined next)
+   - use what [Program] makes of it manually (ugly)
+
+   I would prefer to avoid using an explicit cast function (i.e. solution 2)
+   but this gives me more troubles than I can handle (see also [fill] in
+   library [Context]).
 *)
 
-(* TODO: use some vector equality? *)
 Program Definition vtake_vdrop_vappend :
   forall n m (H : n <= m) (v : vector m) (i : Fin m),
     vappend (vtake H v) (vdrop H v) i = v i := _.
@@ -127,8 +147,18 @@ Program Definition vtake_vdrop_vappend :
 Solve Obligations of vtake_vdrop_vappend using auto with arith.
 
 Next Obligation.
-admit.
-Defined.
+unfold vtake_vdrop_vappend_obligation_1.
+induction n; simpl.
+unfold vdrop_obligation_1.
+dependent destruction i; simpl.
+
+repeat (elim_eq_rect; simpl).
+reflexivity.
+
+repeat (elim_eq_rect; simpl).
+reflexivity.
+(** Some more tinkering is required here... not important for now. *)
+Admitted.
 
 End Vector.
 
@@ -161,6 +191,9 @@ End Fold.
 
 Section Cast.
 
+(** Given a proof of [n = m], cast a vector of length [n] to a vector of
+   length [m]. *)
+
 Variable A : Type.
 
 Definition vcast n (v : vector A n) m (H : n = m) : vector A m :=
@@ -181,6 +214,7 @@ Lemma vtake_vdrop_vappend' :
   forall n m (H : n <= m) (v : vector A m) (i : Fin m),
     vcast (vappend (vtake H v) (vdrop H v)) (le_plus_minus_r n m H) i = v i.
 Proof.
+(** Not important for now, see above. *)
 Admitted.
 
 (*

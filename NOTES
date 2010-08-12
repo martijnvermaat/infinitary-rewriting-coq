@@ -3,7 +3,10 @@ COMPILATION
 coq_makefile -no-install -I . *.v -o Makefile
 make
 
+coqdoc --html --toc --coqlib http://coq.inria.fr/stdlib/ -d coqdoc *.v
 coqdoc --latex -s -g --coqlib http://coq.inria.fr/stdlib/ -d coqdoc *.v
+
+hmm probeer eens --glob-from *.glob voor coqdoc
 
 
 CODING
