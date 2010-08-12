@@ -1468,38 +1468,6 @@ Definition unique_normal_forms : Prop :=
     normal_form v ->
     u [~] v.
 
-Lemma compression :
-  trs_left_linear system ->
-  forall `(r : s ->> t),
-    strongly_convergent r ->
-    exists r' : s ->> t,
-      strongly_convergent r' /\
-      (length r' <= omega)%ord.
-Proof.
-intros LL s t r SC.
-induction r as [t | s t r u p IH | s ts f t c IH].
-
-(* Case (Nil t) *)
-exists (Nil t).
-split.
-trivial.
-apply Ord_le_Zero.
-
-(* Case (Cons r p) *)
-assert (IH' := (IH (proj2 SC))); clear r SC IH.
-destruct IH' as [r [SC IH]].
-destruct (ord_le_omega_elim IH) as [[i H] | H]; clear IH.
-exists (Cons r p).
-split.
-admit. (* apply SCr'. *)
-apply Ord_le_Succ with i.
-assumption.
-admit.
-
-(* Case (Lim t f) *)
-admit.
-Qed.
-
 End TRS.
 
 

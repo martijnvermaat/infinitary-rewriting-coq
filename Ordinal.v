@@ -1,21 +1,27 @@
-(*
-  Formalisation of tree ordinals based on the notes:
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
 
-    Peter Hancock, "Ordinal theoretic proof theory"
 
-  http://personal.cis.strath.ac.uk/~ph/
+(** This library defines the type [ord] of tree ordinals.
+
+   This formalisation of tree ordinals is based on notes by Peter Hancock:
+
+     (Ordinal-theoretic) Proof Theory.
+     Course notes from Midlands Graduate School, 2008.
+
+     % \url{http://personal.cis.strath.ac.uk/~ph/} %
+     # <a href="http://personal.cis.strath.ac.uk/~ph/">http://personal.cis.strath.ac.uk/~ph/</a> #
+
+     % http://events.cs.bham.ac.uk/mgs2008/notes/proofTheory.pdf %
+     # <a href="http://events.cs.bham.ac.uk/mgs2008/notes/proofTheory.pdf">http://events.cs.bham.ac.uk/mgs2008/notes/proofTheory.pdf</a> #
 
   See also the formalisation in Isabelle by Michael Compton:
-  http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html
-*)
-
-(*
-Definition fam (A : Type) : Type := { I : Set & I -> A }.
-Definition pow (A : Type) : Type := A -> Set.
-
-Definition zero z := pd_type z -> False.
-
-Definition pd (alpha : ord) : fam ord := existT _ (pd_type alpha) (pred alpha).
+  % http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html %
+  # <a href="http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html">http://www4.informatik.tu-muenchen.de/~isabelle/html-data/library/HOL/Induct/Tree.html</a> #
 *)
 
 
@@ -26,11 +32,22 @@ Delimit Scope ord_scope with ord.
 Open Scope ord_scope.
 
 
+(** Inductive type for tree ordinals. *)
 Inductive ord : Set :=
   | Zero  : ord
   | Succ  : ord -> ord
   | Limit : (nat -> ord) -> ord.
 
+(** The intuition is that the [Limit] constructor represents the least
+   upper bound of its argument sequence.
+
+   We might like to exclude sequences such as (4,4,4,...), since they would
+   not necessarily represent a limit ordinal. A way to do this is by
+   imposing a monotonicity property on the [Limit] arguments. We first
+   define an ordering on [ord] and, using that, define a subset of [ord]
+   where the [Limit] arguments are monotone (in library [WfOrdinal]). *)
+
+(** Type of predecessor indices of an ordinal. *)
 Fixpoint pd_type (alpha : ord) : Set :=
   match alpha with
   | Zero       => False
@@ -40,6 +57,11 @@ Fixpoint pd_type (alpha : ord) : Set :=
 
 Reserved Notation "alpha [ i ]" (at level 60).
 
+(** Predecessor indices of an ordinal are essentially the paths on its tree
+   structure starting from the root that cross at least one [Succ]
+   constructor. *)
+
+(** Predecessor of an ordinal for a given predecessor index. *)
 Fixpoint pd (alpha : ord) : pd_type alpha -> ord :=
   match alpha with
   | Zero       => False_rect _
@@ -53,6 +75,10 @@ Fixpoint pd (alpha : ord) : pd_type alpha -> ord :=
   end
 where "alpha [ i ]" := (pd alpha i) : ord_scope.
 
+(** [pd_type] and [pd] can be seen as defining a 'subtree' partial order on
+   [ord]. We use it to define an extensional non-strict order on [ord]. *)
+
+(** Non-strict order on [ord]. *)
 Inductive ord_le : ord -> ord -> Prop :=
   | Ord_le_Zero  : forall beta,
                       Zero <= beta
@@ -64,26 +90,24 @@ Inductive ord_le : ord -> ord -> Prop :=
                       Limit f <= beta
 where "alpha <= beta" := (ord_le alpha beta) : ord_scope.
 
-(*Definition ord_lt (alpha beta : ord) := { t : pd_type beta & ord_le alpha (pd beta t) }.*)
-(*Definition ord_lt alpha beta := alpha <= beta /\ ~ beta <= alpha.*)
+(** Strict order on [ord]. *)
 Definition ord_lt (alpha beta : ord) := exists i, alpha <= beta[i].
 Infix " < " := ord_lt : ord_scope.
 
-(* Should we use this as our ordinal equality? Then <= is trivially
-   antisymmetric, while it is not for structural equality.
-   (I think this is fixed though, if we impose the increasing restriction
-   of the limit functions) *)
+(** Equality on [ord]. *)
 Definition ord_eq alpha beta := alpha <= beta /\ beta <= alpha.
 Infix " == " := ord_eq (no associativity, at level 75) : ord_scope.
 
-(* First pdecessor of a successor is the original ordinal. *)
+(** We proceed with some useful lemmas about these relations. *)
+
+(** First predecessor of a successor is the original ordinal. *)
 Lemma first_pd_after_succ_id :
   forall alpha, alpha = Succ alpha [inl (pd_type alpha) tt].
 Proof.
 trivial.
 Qed.
 
-(* No successor ordinal <= zero *)
+(** No successor ordinal <= zero. *)
 Lemma ord_le_not_succ_zero :
   forall alpha, ~ Succ alpha <= Zero.
 Proof.
@@ -92,7 +116,7 @@ inversion_clear H.
 destruct i.
 Qed.
 
-(* No double successor <= 1 *)
+(** No double successor <= 1. *)
 Lemma ord_le_not_succ_succ_one :
   forall alpha, ~ Succ (Succ alpha) <= Succ Zero.
 Proof.
@@ -105,7 +129,7 @@ assumption.
 assumption.
 Qed.
 
-(* If alpha <= zero, alpha <= any ordinal *)
+(** If alpha <= zero, alpha <= any ordinal. *)
 Lemma ord_le_zero_right :
   forall alpha beta,
     alpha <= Zero ->
@@ -122,7 +146,7 @@ apply IH.
 trivial.
 Qed.
 
-(* If alpha <= a pdecessor of beta, alpha <= beta *)
+(** If alpha <= a predecessor of beta, alpha <= beta. *)
 Lemma ord_le_pd_right :
   forall alpha beta (i : pd_type beta),
     alpha <= beta[i] ->
@@ -141,7 +165,7 @@ apply IH with i.
 trivial.
 Qed.
 
-(* If alpha <= beta, all pdecessors of alpha <= beta *)
+(** If alpha <= beta, all predecessors of alpha <= beta. *)
 Lemma ord_le_pd_left :
   forall alpha beta (i : pd_type alpha),
     alpha <= beta ->
@@ -157,7 +181,7 @@ destruct i.
 apply IH.
 Qed.
 
-(* If alpha <= beta, alpha <= the successor of beta *)
+(** If alpha <= beta, alpha <= the successor of beta. *)
 Lemma ord_le_succ_right :
   forall alpha beta,
     alpha <= beta ->
@@ -175,7 +199,7 @@ inversion_clear H.
 trivial.
 Qed.
 
-(* If the successor of alpha <= beta, alpha <= beta *)
+(** If the successor of alpha <= beta, alpha <= beta. *)
 Lemma ord_le_succ_left :
   forall alpha beta,
     Succ alpha <= beta ->
@@ -187,7 +211,7 @@ apply ord_le_pd_left.
 assumption.
 Qed.
 
-(* If the successor of alpha <= the successor of beta, alpha <= beta *)
+(** If the successor of alpha <= the successor of beta, alpha <= beta. *)
 Lemma ord_le_succ_elim :
   forall alpha beta,
     Succ alpha <= Succ beta ->
@@ -197,7 +221,7 @@ inversion_clear 1.
 destruct i as [[] |]; [| apply ord_le_pd_right with p]; assumption.
 Qed.
 
-(* If the alpha <= beta, the successor of alpha <= the successor of beta *)
+(** If the alpha <= beta, the successor of alpha <= the successor of beta. *)
 Lemma ord_le_succ_intro :
   forall alpha beta,
     alpha <= beta ->
@@ -208,7 +232,7 @@ apply Ord_le_Succ with (inl (pd_type beta) tt).
 assumption.
 Qed.
 
-(* No successor of alpha is <= alpha *)
+(** No successor of alpha is <= alpha. *)
 Lemma ord_le_not_succ :
   forall alpha, ~ Succ alpha <= alpha.
 Proof.
@@ -225,8 +249,8 @@ apply Ord_le_Succ with i.
 apply H.
 Qed.
 
-(* Suggested by Bruno Barras *)
-(* If alpha <= a function value, alpha <= the limit of that function *)
+(** If alpha <= a function value, alpha <= the limit of that function.
+   Suggested by Bruno Barras. *)
 Lemma ord_le_limit_right :
   forall alpha f n,
     alpha <= f n ->
@@ -244,7 +268,7 @@ inversion_clear H.
 trivial.
 Qed.
 
-(* If a limit <= alpha, any value value of the function <= alpha *)
+(** If a limit <= alpha, any value value of the function <= alpha. *)
 Lemma ord_le_limit_left :
   forall alpha f n,
     Limit f <= alpha ->
@@ -255,7 +279,7 @@ inversion_clear H.
 trivial.
 Qed.
 
-(* <= is reflexive *)
+(** [<=] is reflexive. *)
 Lemma ord_le_refl :
   forall alpha, alpha <= alpha.
 Proof.
@@ -269,7 +293,7 @@ apply ord_le_limit_right with n.
 apply IH.
 Qed.
 
-(* <= is transitive *)
+(** [<=] is transitive. *)
 Lemma ord_le_trans :
   forall alpha beta gamma,
     alpha <= beta ->
@@ -295,8 +319,7 @@ intro n.
 exact (IH n gamma H2).
 Qed.
 
-(* We cannot prove this for = *)
-(* <= is antisymmetric *)
+(** [<=] is antisymmetric (for [==]). *)
 Lemma ord_le_antisymm :
   forall alpha beta,
     alpha <= beta ->
@@ -310,14 +333,14 @@ Qed.
 
 (* TODO: Can we prove <= is total? *)
 
-(* == is reflexive *)
+(** [==] is reflexive. *)
 Lemma ord_eq_refl :
   forall alpha, alpha == alpha.
 Proof.
 split; apply ord_le_refl.
 Qed.
 
-(* == is symmetric *)
+(** [==] is symmetric. *)
 Lemma ord_eq_symm :
   forall alpha beta,
     alpha == beta ->
@@ -326,7 +349,7 @@ Proof.
 split; apply H.
 Qed.
 
-(* == is transitive *)
+(** [==] is transitive. *)
 Lemma ord_eq_trans :
   forall alpha beta gamma,
     alpha == beta ->
@@ -338,21 +361,7 @@ destruct 1.
 split; apply ord_le_trans with beta; assumption.
 Qed.
 
-(* < is transitive *)
-Lemma ord_lt_trans :
-  forall alpha beta gamma,
-    alpha < beta ->
-    beta < gamma ->
-    alpha < gamma.
-Proof.
-intros alpha beta gamma.
-destruct 1 as [i].
-destruct 1 as [j].
-exists j.
-apply ord_le_trans with beta; [apply ord_le_pd_right with i |]; assumption.
-Qed.
-
-(* TODO: find appropriate place for this lemma *)
+(** Not zero < zero. *)
 Lemma ord_lt_zero_zero :
   ~ Zero < Zero.
 Proof.
@@ -361,8 +370,8 @@ destruct H as [i H].
 elim i.
 Qed.
 
-(* TODO: move this lemma to a better place *)
-Lemma ord_le_not_pd_right_strong :
+(** If alpha <= beta, not beta <= a predecessor of alpha. *)
+Lemma ord_le_not_pd_right :
   forall alpha beta i,
     alpha <= beta ->
     ~ beta <= alpha[i].
@@ -379,25 +388,40 @@ inversion_clear H1.
 exact (IH x beta p (H x) H2).
 Qed.
 
-(* TODO: move this lemma too *)
-Lemma ord_le_not_pd_right :
+(** Not alpha <= a predecessor of alpha. *)
+Lemma ord_le_not_pd_right_weak :
   forall alpha i, ~ alpha <= alpha[i].
 Proof.
 intros.
-apply ord_le_not_pd_right_strong.
+apply ord_le_not_pd_right.
 apply ord_le_refl.
 Qed.
 
-(* < is irreflexive *)
+
+(** [<] is transitive. *)
+Lemma ord_lt_trans :
+  forall alpha beta gamma,
+    alpha < beta ->
+    beta < gamma ->
+    alpha < gamma.
+Proof.
+intros alpha beta gamma.
+destruct 1 as [i].
+destruct 1 as [j].
+exists j.
+apply ord_le_trans with beta; [apply ord_le_pd_right with i |]; assumption.
+Qed.
+
+(** < is irreflexive. *)
 Lemma ord_lt_irrefl :
   forall alpha, ~ alpha < alpha.
 Proof.
 intros alpha H.
 destruct H as [i H].
-exact (ord_le_not_pd_right i H).
+exact (ord_le_not_pd_right_weak i H).
 Qed.
 
-(* < is asymmetric *)
+(** < is asymmetric. *)
 Lemma ord_lt_asymm :
   forall alpha beta,
     alpha < beta ->
@@ -406,11 +430,11 @@ Proof.
 intros alpha beta H1 H2.
 destruct H1 as [i H1].
 destruct H2 as [j H2].
-apply (@ord_le_not_pd_right_strong alpha beta j);
+apply (@ord_le_not_pd_right alpha beta j);
   [apply ord_le_pd_right with i |]; assumption.
 Qed.
 
-(* If the successor of alpha < beta, alpha < beta *)
+(** If the successor of alpha < beta, alpha < beta. *)
 Lemma ord_lt_succ_left :
   forall alpha beta,
     Succ alpha < beta ->
@@ -423,7 +447,7 @@ apply ord_le_succ_left.
 assumption.
 Qed.
 
-(* If alpha < beta, alpha < the successor of beta *)
+(** If alpha < beta, alpha < the successor of beta. *)
 Lemma ord_lt_succ_right :
   forall alpha beta,
     alpha < beta ->
@@ -436,7 +460,7 @@ apply ord_le_pd_right with i.
 assumption.
 Qed.
 
-(* If alpha < beta, alpha <= beta *)
+(** If alpha < beta, alpha <= beta. *)
 Lemma ord_lt_ord_le :
   forall alpha beta, alpha < beta -> alpha <= beta.
 Proof.
@@ -446,7 +470,7 @@ apply ord_le_pd_right with i.
 assumption.
 Qed.
 
-(* If alpha < beta, the successor of alpha <= beta *)
+(** If alpha < beta, the successor of alpha <= beta. *)
 Lemma ord_lt_ord_le_succ :
   forall alpha beta,
     alpha < beta ->
@@ -458,15 +482,7 @@ apply Ord_le_Succ with i.
 assumption.
 Qed.
 
-(* TODO: move *)
-Lemma ord_lt_pd_right :
-  forall alpha beta (i : pd_type beta),
-    alpha < beta[i] ->
-    alpha < beta.
-Proof.
-(* TODO *)
-Admitted.
-
+(** If alpha < beta, not beta <= alpha. *)
 Lemma ord_lt_not_ord_le :
   forall alpha beta,
     alpha < beta ->
@@ -474,15 +490,16 @@ Lemma ord_lt_not_ord_le :
 Proof.
 intros alpha beta H1 H2.
 destruct H1 as [i H1].
-apply (@ord_le_not_pd_right_strong beta alpha i); assumption.
+apply (@ord_le_not_pd_right beta alpha i); assumption.
 Qed.
 
-(* TODO: this needs cleanup *)
-Lemma sdfsdf :
+(** If alpha <= a predecessor of the successor of beta, alpha <= beta. *)
+Lemma ord_le_succ_pd_right :
   forall alpha beta i,
     alpha <= Succ beta [i] ->
     alpha <= beta.
 Proof.
+(* This is a messy proof *)
 induction alpha; intros.
 simpl in H.
 destruct i.
@@ -523,29 +540,7 @@ apply H with i.
 apply H1.
 Qed.
 
-(* If alpha < beta and beta <= gamma, alpha < gamma *)
-(* TODO: variations and move to appropriate place *)
-Lemma ord_lt_trans_ord_le_right :
-  forall alpha beta gamma,
-    alpha < beta ->
-    beta <= gamma ->
-    alpha < gamma.
-Proof.
-intros.
-destruct H.
-destruct gamma.
-assert (H1 := ord_le_zero_right (beta[x]) H0).
-destruct (ord_le_not_pd_right x H1).
-destruct H0.
-destruct x.
-exists i.
-apply ord_le_trans with alpha0.
-simpl in H.
-apply sdfsdf with x.
-assumption.
-assumption.
-(* TODO: we need this *)
-Admitted.
+(** Ordinal arithmetic. *)
 
 Fixpoint add (alpha beta : ord) : ord :=
   match beta with
@@ -568,7 +563,67 @@ Fixpoint exp (alpha beta : ord) : ord :=
   | Limit f   => Limit (fun o => exp alpha (f o))
   end.
 
-(* Image of naturals in pre-ordinals *)
+Lemma ord_le_add_right :
+  forall alpha beta,
+    alpha <= add alpha beta.
+Proof.
+intros alpha beta.
+induction beta as [| beta IH | f IH].
+apply ord_le_refl.
+apply ord_le_succ_right.
+exact IH.
+apply ord_le_limit_right with 0.
+apply IH.
+Qed.
+
+Lemma ord_le_add :
+  forall alpha beta gamma,
+    beta <= gamma ->
+    add alpha beta <= add alpha gamma.
+Proof.
+intros alpha beta gamma H.
+induction H as [gamma | beta gamma i H IH | f gamma H IH].
+apply ord_le_add_right.
+induction gamma as [| gamma IHg | f IHg]; simpl.
+elim i.
+destruct i as [[] | i].
+apply Ord_le_Succ with (inl (pd_type (add alpha gamma)) tt).
+apply IH.
+apply ord_le_succ_right.
+apply IHg with i; assumption.
+destruct i as [n i].
+apply ord_le_limit_right with n.
+apply IHg with i; assumption.
+constructor.
+intro n.
+apply IH.
+Qed.
+
+Lemma ord_lt_add :
+  forall alpha beta gamma,
+    beta < gamma ->
+    add alpha beta < add alpha gamma.
+Proof.
+intros alpha beta gamma H.
+unfold ord_lt; destruct H as [i H].
+induction gamma as [| gamma _ | f IH]; simpl.
+destruct i.
+exists (inl _ tt); simpl.
+apply ord_le_add.
+destruct i as [[] | i].
+assumption.
+apply ord_le_pd_right with i.
+assumption.
+destruct i as [n i].
+specialize IH with n i.
+destruct IH as [j IH].
+assumption.
+exists (existT (fun n => pd_type (add alpha (f n))) n j).
+assumption.
+Qed.
+
+(** The natural numbers can be coerced into finite ordinals. *)
+
 Fixpoint nat_as_ord (n : nat) : ord :=
   match n with
   | O   => Zero
@@ -577,7 +632,11 @@ Fixpoint nat_as_ord (n : nat) : ord :=
 
 Coercion nat_as_ord : nat >-> ord.
 
+(** The smallest infinite ordinal is the limit of the natural numbers. *)
 Definition omega := Limit (fun n => n).
+
+(** We show that [<=] and [<] on ordinals are the same as [<=] and [<] on
+   natural numbers. *)
 
 Require Import Le.
 
@@ -661,8 +720,11 @@ apply lt_implies_ord_lt.
 apply ord_lt_implies_lt.
 Qed.
 
-Lemma aaaa :
-  Limit (fun n => S n) == Limit (fun n => n).
+(** We now prove two simple facts about our equality [==] containing
+   different representations of omega. *)
+
+Lemma fact_a :
+  Limit (fun n => S n) == omega.
 Proof.
 split; constructor; intro n.
 apply Ord_le_Succ with (existT (fun n:nat => pd_type n) (S n) (inl _ tt)).
@@ -673,8 +735,8 @@ apply Ord_le_Succ with (existT (fun n:nat => pd_type (S n)) n (inl _ tt)).
 apply ord_le_refl.
 Qed.
 
-Lemma bbbb :
-  Limit (fun n => n * 2) == Limit (fun n => n).
+Lemma fact_b :
+  Limit (fun n => n * 2) == omega.
 Proof.
 split; constructor; intro n.
 destruct n as [| n]; simpl.
@@ -692,61 +754,7 @@ apply ord_le_succ_intro.
 exact IH.
 Qed.
 
-Lemma ord_le_omega_elim :
-  forall alpha,
-    alpha <= omega ->
-    alpha < omega \/ alpha == omega.
-Proof.
-intros alpha H. unfold ord_lt.
-induction alpha as [| alpha IH | f IH].
-left.
-exists (existT (fun (n:nat) => pd_type n) 1 (inl _ tt)).
-constructor.
-left.
-destruct IH as [[[n j] H1] | H1].
-apply (ord_le_succ_left H).
-simpl in H1.
-exists (existT (fun (n:nat) => pd_type n) (S n) (inl _ tt)); simpl.
-destruct n as [| n].
-elim j.
-destruct j as [[] | j]; simpl in H1; apply ord_le_succ_intro.
-assumption.
-apply ord_le_pd_right with j.
-assumption.
-contradiction ord_le_not_pd_right_strong with (Succ alpha) omega (inl (pd_type alpha) tt).
-apply H1.
-right.
-split.
-assumption.
-constructor.
-(* TODO: monotonicity of f assumed *)
-assert (G : forall n m, (n < m)%nat -> f n < f m).
-admit.
-(* TODO: cleanup, below is a mess *)
-induction n as [| n IHn]; simpl.
-constructor.
-assert (J := G n (S n)).
-destruct J as [i J].
-auto.
-apply Ord_le_Succ with (existT (fun (n:nat) => pd_type (f n)) (S n) i).
-simpl.
-apply ord_le_trans with (f n).
-induction n as [| n IHnn]; simpl.
-constructor.
-assert (K := G n (S n)).
-destruct K as [k K].
-auto.
-apply Ord_le_Succ with k.
-apply ord_le_trans with (f n).
-apply IHnn with k.
-apply ord_le_succ_left.
-assumption.
-assumption.
-assumption.
-assumption.
-Qed.
-
-(* TODO: can we strengthen this, say, to f:nat->nat ? *)
+(** A weak inversion property of ordinals equal to omega. *)
 Lemma ord_eq_omega_discriminate :
   forall alpha,
     alpha == omega ->
@@ -758,7 +766,7 @@ contradict (ord_le_not_succ_zero (H 1)).
 inversion_clear H1.
 inversion_clear H2.
 destruct i as [n i].
-contradict (ord_le_not_pd_right_strong i (ord_le_succ_elim (H0 (S n))) H).
+contradict (ord_le_not_pd_right i (ord_le_succ_elim (H0 (S n))) H).
 exists f; reflexivity.
 Qed.
 

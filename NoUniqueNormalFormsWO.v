@@ -75,6 +75,7 @@ Definition X : variables := Variables beq_var_ok.
 
 Notation term := (term F X).
 Notation fterm := (finite_term F X).
+Notation terms := (vector term).
 
 (* Variables *)
 Notation "x !" := (@FVar F X x) (at level 75).
