@@ -1,3 +1,16 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                     Dimitri Hendriks <diem@cs.vu.nl>                 *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines some preliminaries, mostly used in the [Vector]
+   library. *)
+
+
 Set Implicit Arguments.
 
 Notation "!" := (False_rect _).

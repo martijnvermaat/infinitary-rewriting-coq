@@ -55,6 +55,20 @@ Fixpoint finite_term_as_term (t : fterm) : term :=
   | FFun f args => Fun f (vmap finite_term_as_term args)
   end.
 
+(** The following definition and lemma seem quite pointless. However, they
+   can be used to take apart a coinductive term up to depth 1, i.e. unfold
+   its corecursive definition. *)
+
+Definition peek (t : term) : term :=
+  match t with
+  | Var x      => Var x
+  | Fun f args => Fun f args
+  end.
+
+Lemma peek_eq : forall (t : term), t = peek t.
+  destruct t; reflexivity.
+Qed.
+
 End Term.
 
 

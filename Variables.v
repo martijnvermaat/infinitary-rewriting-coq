@@ -1,7 +1,14 @@
-(*
-  A decidable set of variables.
-*)
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
 
+
+(** This library defines sets of variables.
+
+   Equality of variables in the set must be decidable. *)
 
 Record variables : Type := Variables {
   variable :> Type;

@@ -1,8 +1,15 @@
-(*
-  A signature contains a decidable set of function symbols and
-  an arity function on them.
-*)
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
 
+
+(** This library defines signatures.
+
+   A signature contains a decidable set of function symbols and an arity
+   function on them. *)
 
 Record signature : Type := Signature {
   symbol :> Type;

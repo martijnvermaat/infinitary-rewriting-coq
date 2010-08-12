@@ -1,3 +1,18 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines two equalities on contexts:
+    - Bisimilarity by [context_bis]
+    - Pointwise equality by [context_eq]
+
+    These two relations are proved to be the same and to be equivalences. *)
+
+
 Require Import Signature.
 Require Import Variables.
 Require Import Context.
@@ -37,6 +52,8 @@ Inductive context_eq_up_to : nat -> context -> context -> Prop :=
 
 Definition context_eq (c c' : context) :=
   forall d, context_eq_up_to d c c'.
+
+(** First, some inversion lemmas for pointwise equality of contexts. *)
 
 Lemma ceut_fun_inv :
   forall d f i j H H' (v v' : terms i) c c' (w w': terms j),
@@ -128,6 +145,8 @@ inversion_clear H1; simpl.
 reflexivity.
 Qed.
 
+(** We show pointwise equality and bisimilarity are the same relations. *)
+
 Lemma context_bis_implies_context_eq :
   forall c c', context_bis c c' -> context_eq c c'.
 Proof.
@@ -180,23 +199,68 @@ apply context_bis_implies_context_eq.
 apply context_eq_implies_context_bis.
 Qed.
 
+(** We show pointwise equality of contexts is an equivalence. *)
+
 Lemma context_bis_refl :
   forall c, context_bis c c.
 Proof.
-(* TODO *)
-Admitted.
+induction c as [|f i j H v c IH w].
+constructor.
+constructor.
+intro k.
+apply term_bis_refl.
+exact IH.
+intro k.
+apply term_bis_refl.
+Qed.
 
 Lemma context_bis_symm :
   forall c c', context_bis c c' -> context_bis c' c.
 Proof.
-(* TODO *)
-Admitted.
+induction c as [|f i j H v c IH w]; intros [|f' i' j' H' v' c' w'] H1.
+constructor.
+inversion H1.
+inversion H1.
+dependent destruction H1.
+constructor.
+intro i.
+apply term_bis_symm.
+apply H1.
+apply IH.
+assumption.
+intro i.
+apply term_bis_symm.
+apply H3.
+Qed.
 
 Lemma context_bis_trans :
   forall c1 c2 c3, context_bis c1 c2 -> context_bis c2 c3 -> context_bis c1 c3.
 Proof.
-(* TODO *)
-Admitted.
+induction c1 as [|f i j H v c IH w]; intros [|f' i' j' H' v' c' w'] [|f'' i'' j'' H'' v'' c'' w''] H1 H2.
+constructor.
+inversion H2.
+constructor.
+inversion H1.
+inversion H1.
+inversion H1.
+inversion H2.
+dependent destruction H1.
+dependent destruction H2.
+constructor.
+intro.
+apply term_bis_trans with (v' i).
+apply H1.
+apply H5.
+apply IH with c'.
+assumption.
+assumption.
+intro.
+apply term_bis_trans with (w' i).
+apply H4.
+apply H7.
+Qed.
+
+(* For completeness, we could also show context_eq is an equivalence. *)
 
 End ContextEquality.
 
