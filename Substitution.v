@@ -36,7 +36,23 @@ Fixpoint substitution_eq (vars : list X) (sigma sigma' : substitution) :=
   | x :: xs => (substitution_eq xs sigma sigma') /\ (sigma x = sigma' x)
   end.
 
-(** We show this equality is an equivalence. *)
+Lemma substitution_eq_app :
+  forall sigma theta l l',
+    substitution_eq (l ++ l') sigma theta ->
+    substitution_eq l sigma theta.
+Proof.
+intros sigma theta l l' H.
+induction l as [| x l]; simpl.
+exact I.
+split.
+apply IHl.
+apply H.
+apply H.
+Qed.
+
+Implicit Arguments substitution_eq_app [l l'].
+
+(** We show [substitution_eq] is an equivalence. *)
 
 Lemma substitution_eq_refl :
   forall vars sigma, substitution_eq vars sigma sigma.
@@ -111,6 +127,37 @@ apply term_bis_refl.
 constructor.
 assumption.
 Qed.
+
+(** Applying equal substitutions yields equal terms.
+
+   We have not yet proven this lemma. This taints the lemmas
+   [step_eq_source] and [step_eq_target] in [Rewriting]. *)
+Lemma substitution_eq_substitute :
+  forall sigma theta t,
+    substitution_eq (vars t) sigma theta ->
+    substitute sigma t [~] substitute theta t.
+Proof.
+intros sigma theta t H.
+induction t as [x | f args IH]; simpl.
+rewrite (proj2 H).
+apply term_bis_refl.
+constructor.
+intro i.
+apply IH; clear IH.
+simpl in H.
+unfold vmap in H.
+destruct (arity f); clear f.
+inversion i.
+destruct i.
+simpl in H.
+unfold vhead in H.
+unfold vtail in H.
+apply (substitution_eq_app sigma theta H).
+simpl in H.
+unfold vhead in H.
+unfold vtail in H.
+(** Here we are stuck, need some more lemmas on [vector]. *)
+Admitted.
 
 (** Apply a substitution to an infinite term. Note that this definition is
    not in guarded form if we were to use the inductive vector type from the

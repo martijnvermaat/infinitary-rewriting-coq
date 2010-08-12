@@ -1,4 +1,35 @@
-(* Inductive defintion for rewriting sequences *)
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library defines the type [s ->> t] of transfinite rewrite
+   sequences.
+
+   The inductive definition of rewrite sequences is based on that of the
+   tree ordinals (see the [Ordinal] library). A rewrite sequence of ordinal
+   length alpha is represented by the tree structure of (the tree ordinal)
+   alpha where all [Succ] constructors are labeled with rewrite steps.
+
+   The notion of predecessor index and the order on [ord] are lifted to
+   [sequence]. The order then becomes an embedding relation on rewrite
+   sequences.
+
+   The lifting of ordinal addition yields a concatenation function on
+   rewrite sequences.
+
+   For more information, see the Master thesis on this formalisation by
+   Martijn Vermaat:
+
+     Infinitary Rewriting in Coq.
+     Master Thesis, VU University Amsterdam, 2010.
+
+   % http://martijn.vermaat.name/master-project %
+   # <a href="http://martijn.vermaat.name/master-project">http://martijn.vermaat.name/master-project</a> #
+*)
 
 
 Require Import Prelims.
@@ -10,8 +41,6 @@ Require Export Context.
 Require Export ContextEquality.
 Require Export Ordinal.
 Require Export TermEquality.
-
-(* TODO: figure out what to import exactly (Equality imports PI axiom) *)
 Require Import Equality.
 
 
@@ -20,33 +49,31 @@ Set Implicit Arguments.
 
 Section Rule.
 
+(** We define rewrite rules as pairs of finite terms with the usual
+   restrictions. A term rewriting system (TRS) is a list of rewrite
+   rules (where the order of no importance). *)
+
 Variable F : signature.
 Variable X : variables.
 
 Notation fterm := (finite_term F X).
 
-(* Rewriting rules of finite terms *)
+(** Rewrite rules of finite terms. *)
 Record rule : Type := Rule {
   lhs     : fterm;
   rhs     : fterm;
   rule_wf : is_var lhs = false /\ incl (vars rhs) (vars lhs)
 }.
 
-(* Left hand side is linear *)
+(** Left hand side is linear. *)
 Definition left_linear (r : rule) : Prop :=
   linear (lhs r).
 
-(* A Term Rewriting System as a finite list of of rewriting rules *)
+(** A Term Rewriting System as a finite list of of rewrite rules. *)
 Definition trs := list rule.
 
-(* All rules are left-linear *)
+(** All rules are left-linear. *)
 Definition trs_left_linear (s : trs) : Prop := Forall left_linear s.
-
-(*Fixpoint trs_left_linear (s : trs) : Prop :=
-  match s with
-  | nil   => True
-  | r::rs => left_linear r /\ trs_left_linear rs
-  end.*)
 
 End Rule.
 
@@ -55,6 +82,10 @@ Implicit Arguments rule [F X].
 
 
 Section TRS.
+
+(** We consider a TRS and define rewrite steps over its rewrite rules.
+   The rewrite steps are then used to construct transfinite rewrite
+   sequences. *)
 
 Variable F : signature.
 Variable X : variables.
@@ -70,10 +101,12 @@ Variable system : trs.
 (* Only needed in Coq 8.3 *)
 Generalizable All Variables.
 
-(* Alternatively via positions *)
-(* TODO: is the r1=r2 the right equality condiction on the rules? seems to work *)
-(* TODO: mgci, minimality and freshness conditions *)
-(* TODO: finite_subterm is a quick hack, substitute should be generalized *)
+(** Critical pairs denote overlap of rewrite rules. Note that we do not
+   consider most general common instances, minimality of substitutions, and
+   freshness conditions in the defition of [critical_pair]. This definition
+   suffices for our present purposes and is not too complex. *)
+
+(* finite_subterm is a quick hack, substitute should be generalized *)
 Definition critical_pair (t1 t2 : term) : Prop :=
   exists r1 : rule, exists r2 : rule,
     exists p : position,
@@ -89,6 +122,9 @@ Definition critical_pair (t1 t2 : term) : Prop :=
       | _, _           => False
       end.
 
+(** An orthogonal TRS is left-linear and has no critical pairs. A weakly
+   orthogonal TRS is left-linear and has only trivial critical pairs. *)
+
 Definition orthogonal : Prop :=
   trs_left_linear system /\
   forall t1 t2, ~ critical_pair t1 t2.
@@ -96,6 +132,10 @@ Definition orthogonal : Prop :=
 Definition weakly_orthogonal : Prop :=
   trs_left_linear system /\
   forall t1 t2, critical_pair t1 t2 -> t1 [~] t2.
+
+(** The type [s [>] t] of rewrite steps is parameterised by source and
+   target terms [s] and [t]. We allow some flexivility in [s] and [t] in
+   the form of bisimilarity. *)
 
 Reserved Notation "s [>] t" (no associativity, at level 40).
 
@@ -107,13 +147,11 @@ Inductive step : term -> term -> Type :=
              s [>] t
 where "s [>] t" := (step s t).
 
-(*
-   TODO: equality on steps, where we require:
-   * equality of contexts (based on term_bis)
-   * equality of rules (coq equality because they are finite?)
-   * equality of substitutions for all variables in rule
-   This would imply bisimilarity of source and target.
-*)
+(** Equality of steps [step_eq] requires;
+   - bisimilarity of contexts
+   - equality of rules
+   - equality of substitutions for all variables in the rule.
+   This would imply bisimilarity of source and target terms. *)
 
 Definition step_eq `(p : s [>] t, o : u [>] v) :=
   match p, o with
@@ -127,6 +165,15 @@ Lemma step_eq_source :
     s [~] u.
 Proof.
 intros _ _ [s t r c a Hr Hs Ht] _ _ [u v r' c' b Hr' Hu Hv] H.
+apply term_bis_trans with (fill c (substitute a (lhs r))).
+apply term_bis_symm; assumption.
+apply term_bis_trans with (fill c' (substitute b (lhs r'))).
+
+
+
+admit.
+assumption.
+
 (* TODO: this should be possible, but requires some work *)
 Admitted.
 
