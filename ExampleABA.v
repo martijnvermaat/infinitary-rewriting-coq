@@ -1,18 +1,28 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** We construct the TRS with one rule
+
+     ABA : A -> B(A)
+
+   and a convergent reduction of length omega
+
+     A ->> B(B(B(..)))
+*)
+
+
 Require Import Rewriting.
 
 Set Implicit Arguments.
 
-(*
-  We construct the TRS with one rule
 
-    ABA : A -> B(A)
+(** * Signature *)
 
-  and a convergent reduction of length Omega
-
-    A ->> B(B(B(..)))
-*)
-
-(* Signature *)
 
 Inductive symbol : Set := A | B.
 
@@ -40,7 +50,9 @@ Definition arity (f : symbol) : nat :=
   | B => 1
   end.
 
-(* Variables *)
+
+(** * Variables *)
+
 
 Definition variable : Set := nat.
 
@@ -59,7 +71,9 @@ induction x as [|x IH]; destruct y;
   apply (proj2 (IH _)). inversion H. reflexivity.
 Qed.
 
-(* Terms *)
+
+(** * Terms *)
+
 
 Definition F : signature := Signature arity beq_symb_ok.
 Definition X : variables := Variables beq_var_ok.
@@ -67,42 +81,46 @@ Definition X : variables := Variables beq_var_ok.
 Notation term := (term F X).
 Notation fterm := (finite_term F X).
 
-(* Function application with no arguments *)
+(** Function application with no arguments. *)
 Notation "f !" := (@Fun F X f (vnil fterm)) (at level 70).
 Notation "f !!" := (@FFun F X f (vnil fterm)) (at level 70).
 
-(* Function application with one argument *)
+(** Function application with one argument. *)
 Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
 Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
 
-(* Some terms *)
+(** Some terms. *)
 Definition test_A : term := A!.
 Definition test_BA : term := B @ A!.
 Definition test_BBA : term := B @ B @ A!.
 
-(* Finite versions *)
+(** Finite versions. *)
 Definition ftest_A : fterm := A!!.
 Definition ftest_BA : fterm := B @@ A!!.
 Definition ftest_BBA : fterm := B @@ B @@ A!!.
 
-(* B(B(B(...))) *)
+(** B(B(B(...))). *)
 CoFixpoint repeat_B : term :=
   B @ repeat_B.
 
-(* Contexts *)
+
+(** * Contexts *)
+
 
 Notation context := (context F X).
 
-(* Function application with one argument *)
+(** Function application with one argument. *)
 Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity B)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
 Notation id_sub := (empty_substitution F X).
 
-(* Rewriting *)
+
+(** * Rewriting *)
+
 
 Notation trs := (trs F X).
 
-(* A -> B(A) *)
+(** Rewrite rule A -> B(A). *)
 
 Definition ABA_l : fterm := A!!.
 Definition ABA_r : fterm := B @@ A!!.
@@ -126,7 +144,10 @@ Proof.
 constructor; constructor.
 Qed.
 
-(* Reductions *)
+
+(** * Rewrite sequences *)
+
+
 Notation Step := (Step ABA_trs).
 Notation Nil := (Nil ABA_trs).
 
@@ -139,7 +160,7 @@ Proof.
 left. reflexivity.
 Qed.
 
-(* Zero-step reduction A ->> A *)
+(** Zero-step rewrite sequence A ->> A. *)
 Definition s_A : (A!) ->> (A!) := Nil (A!).
 
 Lemma fact_term_bis_A :
@@ -162,10 +183,10 @@ apply fact_term_bis_A.
 contradiction (vnil False).
 Qed.
 
-(* Step A -> B(A) *)
+(** Step A -> B(A). *)
 Definition p_A_BA : (A!) [>] (B @ A!) := Step ABA Hole id_sub ABA_in fact_term_bis_A fact_term_bis_BA.
 
-(* Single-step reduction A ->> B(A) *)
+(** Single-step rewrite sequence A ->> B(A). *)
 Definition s_A_BA : (A!) ->> (B @ A!) := Cons s_A p_A_BA.
 
 Lemma fact_term_bis_BA' :
@@ -190,20 +211,20 @@ apply fact_term_bis_BA.
 contradiction (vnil False).
 Qed.
 
-(* Step B(A) -> B(B(A)) *)
+(** Step B(A) -> B(B(A)). *)
 Definition p_BA_BBA : (B @ A!) [>] (B @ B @ A!) := Step ABA (B @@@ Hole) id_sub ABA_in fact_term_bis_BA' fact_term_bis_BBA.
 
-(* Two-step reduction A ->> B(B(A)) *)
+(** Two-step reduction A ->> B(B(A)). *)
 Definition s_A_BBA : (A!) ->> (B @ B @ A!) := Cons s_A_BA p_BA_BBA.
 
-(* B(B(...(A)...)) with n applications of B *)
+(** B(B(...(A)...)) with n applications of B. *)
 Fixpoint nB_A (n : nat) : term :=
   match n with
   | 0   => A!
   | S n => B @ (nB_A n)
   end.
 
-(* B(B(...(Hole)...)) with n applications of B *)
+(** B(B(...(Hole)...)) with n applications of B. *)
 Fixpoint nB_Hole (n : nat) : context :=
   match n with
   | 0   => Hole
@@ -236,30 +257,48 @@ apply IH.
 contradiction (vnil False).
 Qed.
 
-(* Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at left side *)
+(** Step B(B(...(A)...)) -> B(B(B(...(A)...))) with n applications of B at
+   left side. *)
 Definition p_nBA_nBBA (n : nat) : (nB_A n) [>] (B @ (nB_A n)) := Step ABA (nB_Hole n) id_sub ABA_in (fact_term_bis_nBA n) (fact_term_bis_BnBA n).
 
-(* n-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... -n-> B(B(B(...(A)...))) with n applications of B at right side *)
+(** n-step rewrite sequence A -1-> B(A) -2-> B(B(A)) -3-> ... -n-> B(B(B(...(A)...)))
+   with n applications of B at right side. *)
 Fixpoint s_A_nBA (n : nat) : (A!) ->> (nB_A n) :=
   match n as m in nat return (A!) ->> (nB_A m) with
   | 0   => Nil (A!)
   | S n => Cons (s_A_nBA n) (p_nBA_nBBA n)
   end.
 
+Lemma term_eq_up_to_n_nB_A_repeat_B :
+  forall n,
+    term_eq_up_to n (nB_A n) repeat_B.
+Proof.
+induction n as [| n IH]; simpl.
+constructor.
+rewrite (peek_eq repeat_B); simpl.
+constructor.
+intro i.
+dependent destruction i.
+apply IH.
+dependent destruction i.
+Qed.
+
 Lemma converges_nB_A : converges nB_A repeat_B.
 Proof.
-(* TODO *)
-Admitted.
+intro d.
+exists d.
+intros m H.
+simpl.
+apply term_eq_up_to_weaken_generalized with m.
+assumption.
+apply term_eq_up_to_n_nB_A_repeat_B.
+Qed.
 
-(* Omega-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... B(B(B(...))) *)
+(** Omega-step reduction A -1-> B(A) -2-> B(B(A)) -3-> ... B(B(B(...))). *)
 Definition s_A_repeat_B : (A!) ->> repeat_B :=
   Lim s_A_nBA converges_nB_A.
 
-(* Ugly notation *)
-Notation "| s |" := (projT2 s) (no associativity, at level 75).
-Notation "$ s $" := (projT1 s) (no associativity, at level 75).
-
-(* This reduction is well-formed *)
+(** This rewrite sequence is well-formed *)
 Lemma wf_s_A_repeat_B :
   wf s_A_repeat_B.
 Proof.
@@ -274,50 +313,11 @@ exists (inr _ i).
 assumption.
 Qed.
 
-(*
-Lemma sfdsf :
-  forall (n : nat) (i : pref_type (s_A_nBA (S n))),
-    ($ pref (s_A_nBA (S n)) i $) = (B @ ($ pref (s_A_nBA n) i $)).
-*)
-
-Lemma finite_s_A_nBA :
-  forall n : nat, finite (s_A_nBA n).
-Proof.
-intro n.
-induction n as [| n IH]; simpl; trivial.
-Qed.
-
-Lemma weakly_convergent_s_A_nBA :
-  forall n : nat, weakly_convergent (s_A_nBA n).
-Proof.
-intro n.
-simpl.
-apply weakly_convergent_finite.
-apply finite_s_A_nBA.
-Qed.
-
-(* This reduction is weakly convergent *)
-(* TODO: generalize proofs like these as much as possible in the general theory *)
-Lemma weakly_convergent_s_A_repeat_B :
-  weakly_convergent s_A_repeat_B.
-Proof.
-split.
-exact weakly_convergent_s_A_nBA.
-intro d.
-exists d.
-intros [n j] H.
-simpl in * |- *.
-Admitted.
-
-(* This reduction is weakly convergent *)
-Lemma strongly_convergent_s_A_repeat_B :
-  strongly_convergent s_A_repeat_B.
-Proof.
-Admitted.
 
 Open Scope ord_scope.
 
-(* Compression lemma is meaningless for this reduction, but
+
+(** Compression lemma is meaningless for this reduction, but
    maybe we should show just that. *)
 Lemma length_s_A_repeat_B_le_omega :
   length s_A_repeat_B <= omega.
@@ -333,7 +333,7 @@ apply Ord_le_Succ with (inl (pd_type n) tt).
 assumption.
 Qed.
 
-(* Let's also show the other direction *)
+(** Let's also show the other direction. *)
 Lemma omega_le_length_s_A_repeat_B :
   omega <= length s_A_repeat_B.
 Proof.
@@ -348,7 +348,7 @@ apply Ord_le_Succ with (inl (pd_type (length (s_A_nBA n))) tt).
 assumption.
 Qed.
 
-(* Just because both directions are so similar *)
+(** Just because both directions are so similar. *)
 Lemma length_s_A_repeat_B_eq_omega :
   length s_A_repeat_B == omega.
 Proof.
@@ -363,5 +363,6 @@ split; simpl;
   | constructor
   | apply Ord_le_Succ with (inl (pd_type (length (s_A_nBA n))) tt); assumption ].
 Qed.
+
 
 Close Scope ord_scope.

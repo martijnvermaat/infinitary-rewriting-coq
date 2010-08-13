@@ -1,27 +1,31 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library contains some additional lemmas on the TRS used in the
+   counterexample to uniqueness of normal forms (UN) implied by weak
+   orthogonality (WO) in the [NoUniqueNormalFormsWO] library. *)
+
+
 Require Import Rewriting.
 Require Import Equality.
 Require Import NoUniqueNormalFormsWO.
 
 Set Implicit Arguments.
 
-(*
-  We show some properties in the weakly orthogonal TRS with rules
 
-    PS : P(S(x)) -> x
-    SP : S(P(x)) -> x
-
-  and do it in this file to keep the proof of no_unique_normal_forms_wo
-  somewhat consise.
-*)
-
-(* Trivial substitution *)
+(** Trivial substitution. *)
 Notation id_sub := (empty_substitution F X).
 
-(* DUDU... *)
+(** The infinite term DUDU... *)
 CoFixpoint repeat_DU : term :=
   D @ U @ repeat_DU.
 
-(* (Ux, UX) is a critical pair *)
+(** As an example, we prove that (Ux, UX) is a critical pair in [UD_trs]. *)
 Lemma critical_pair_Ux_Ux : critical_pair UD_trs (U @@ varx!) (U @@ varx!).
 Proof.
 unfold critical_pair.
@@ -68,7 +72,9 @@ inversion i.
 apply term_bis_refl.
 Qed.
 
-(* DDD... is infinite (using the coinductive term_inf predicate *)
+(** * DDD... and UUU... are infinite normal forms *)
+
+(** DDD... is infinite (using the coinductive [term_inf] predicate. *)
 Lemma term_inf_repeat_D :
   term_inf repeat_D.
 Proof.
@@ -78,7 +84,7 @@ apply Fun_inf with (First (n := 0)).
 assumption.
 Qed.
 
-(* UUU... is infinite (using the coinductive term_inf predicate *)
+(** UUU... is infinite (using the coinductive [term_inf] predicate. *)
 Lemma term_inf_repeat_U :
   term_inf repeat_U.
 Proof.
@@ -88,7 +94,7 @@ apply Fun_inf with (First (n := 0)).
 assumption.
 Qed.
 
-(* DDD... is infinite (using the alternative infinite predicate *)
+(** DDD... is infinite (using the alternative [infinite] predicate. *)
 Lemma infinite_repeat_D :
   infinite repeat_D.
 Proof.
@@ -111,7 +117,7 @@ rewrite (proj2 S).
 discriminate.
 Qed.
 
-(* UUU... is infinite (using the alternative infinite predicate *)
+(** UUU... is infinite (using the alternative [infinite] predicate. *)
 Lemma infinite_repeat_U :
   infinite repeat_U.
 Proof.
@@ -134,28 +140,29 @@ rewrite (proj2 S).
 discriminate.
 Qed.
 
-(* DDD... is an infinite normal form *)
+(** DDD... is an infinite normal form. *)
 Lemma infinite_nf_repeat_D :
   term_inf repeat_D /\ normal_form UD_trs repeat_D.
 Proof.
 exact (conj term_inf_repeat_D normal_form_repeat_D).
 Qed.
 
-(* UUU... is an infinite normal form *)
+(** UUU... is an infinite normal form. *)
 Lemma infinite_nf_repeat_U :
   term_inf repeat_U /\ normal_form UD_trs repeat_U.
 Proof.
 exact (conj term_inf_repeat_U normal_form_repeat_U).
 Qed.
 
-(* DDD... and UUU... are the only infinite normal forms *)
-(* Using coinductive infinite predicate *)
+(** * DDD... and UUU... are the only infinite normal forms *)
+
+(** Using coinductive infinite predicate *)
 Lemma repeat_D_repeat_U_only_infinite_normal_forms :
   forall t,
     term_inf t /\ normal_form UD_trs t ->
     t [~] repeat_D \/ t [~] repeat_U.
 Proof.
-(* this is a very ugly proof *)
+(** This is a very ugly proof by the way. *)
 intros [x | [] args] [It Nt].
 
 inversion It.
@@ -251,7 +258,7 @@ reflexivity.
 inversion i.
 inversion i.
 
-(* Same argument follows *)
+(** Same argument follows. *)
 
 right.
 assert (H : term_eq_up_to 1 (@Fun F X U args) repeat_U).
@@ -345,14 +352,13 @@ inversion i.
 inversion i.
 Qed.
 
-(* DDD... and UUU... are the only infinite normal forms *)
-(* Using alternative infinite predicate via positions *)
+(** Using alternative infinite predicate via positions. *)
 Lemma repeat_D_repeat_U_only_infinite_normal_forms_alt :
   forall t,
     infinite t /\ normal_form UD_trs t ->
     t [~] repeat_D \/ t [~] repeat_U.
 Proof.
-(* this is a very ugly proof *)
+(** This is a very ugly proof by the way. *)
 intros [x | [] args] [It Nt].
 
 destruct (It 1) as [p [Dp Hp]].
@@ -467,7 +473,7 @@ reflexivity.
 inversion H1.
 inversion i.
 
-(* Same argument follows *)
+(** Same argument follows. *)
 
 right.
 assert (H : term_eq_up_to 1 (@Fun F X U args) repeat_U).
@@ -575,7 +581,10 @@ inversion H1.
 inversion i.
 Qed.
 
-(* We use context_ind2 in the following proof. *)
+(** * DUDU... has no normal form *)
+
+(** We use [context_ind2] in the following proof. *)
+
 Section InductionPrinciple.
 
   Variable P : context -> Type.
@@ -607,7 +616,7 @@ End InductionPrinciple.
 Definition context_ind2 (P : context -> Prop) :=
   context_rect2 P.
 
-(* DUDU... rewrites only to itself *)
+(** DUDU... rewrites only to itself. *)
 Lemma repeat_DU_rewrites_to_itself :
   forall t (p : repeat_DU [>] t),
     t [~] repeat_DU.
@@ -696,7 +705,7 @@ apply term_bis_symm.
 assumption.
 clear H H0.
 
-(* TODO: This should be a separate lemma *)
+(** This should be a separate lemma. *)
 generalize dependent (substitute u (varx!)).
 generalize dependent (substitute u (D @@ U @@ varx!)).
 generalize dependent repeat_DU.
@@ -752,7 +761,7 @@ assumption.
 assumption.
 inversion i.
 
-(* This case is the same as the previous *)
+(** Same case as the previous. *)
 
 unfold UD, lhs, UD_l in t0.
 unfold UD, rhs, UD_r in t1.
@@ -860,7 +869,7 @@ simpl.
 clear v0.
 change (fill c (substitute u (varx!)) [~] (U @ repeat_DU)).
 
-(* TODO: This should be a separate lemma *)
+(** This should be a separate lemma. *)
 generalize dependent (substitute u (varx!)).
 generalize dependent (substitute u (U @@ D @@ varx!)).
 generalize dependent (U @ repeat_DU).
@@ -918,12 +927,12 @@ inversion i.
 inversion i.
 Qed.
 
-(* Now some example rewrite sequences *)
+(** * Some example rewrite sequences *)
 
-(* Zero-step reduction psi ->> psi *)
+(** Zero-step reduction psi ->> psi. *)
 Definition s_psi_psi : psi ->> psi := Nil' psi.
 
-(* Substitution for step psi -> U @ psi' 1 *)
+(** Substitution for step psi -> U @ psi' 1. *)
 Definition sub_psi_Upsi1 (x : X) : term := U @ psi' 1.
 
 Lemma fact_term_bis_psi :
@@ -936,7 +945,6 @@ intro i; simpl in i.
 dependent destruction i; [idtac | inversion i].
 unfold vmap.
 simpl.
-(* this is really annoying, but i guess there's no way around it... *)
 rewrite (peek_eq ((cofix U2nt (u : nat) : term :=
       match u with
       | 0 => psi' 1
@@ -959,15 +967,15 @@ rewrite (peek_eq (psi' 1)).
 apply term_bis_refl.
 Qed.
 
-(* Step psi -> U @ psi' 1 *)
+(** Step psi -> U @ psi' 1. *)
 Definition p_psi_Upsi1 : psi [>] (U @ psi' 1) :=
   Step DU Hole sub_psi_Upsi1 DU_in fact_term_bis_psi (term_bis_refl (U @ psi' 1)).
 
-(* Single-step reduction psi ->> U @ psi' 1 *)
+(** Single-step reduction psi ->> U @ psi' 1. *)
 Definition s_psi_Upsi1 : psi ->> (U @ psi' 1) :=
   Cons s_psi_psi p_psi_Upsi1.
 
-(* Substitution for step U @ psi' 1 -> U D D U U U @ psi' 2 *)
+(** Substitution for step U @ psi' 1 -> U D D U U U @ psi' 2. *)
 Definition sub_Upsi1_UDDUUUpsi2 (x : X) : term := U @ U @ U @ psi' 2.
 
 Lemma fact_term_bis_Upsi1 :
@@ -1043,14 +1051,17 @@ simpl.
 destruct t; apply term_bis_U; apply term_bis_refl.
 Qed.
 
-(* Step U @ psi' 1 -> U D D U U U @ psi' 2 *)
+(** Step U @ psi' 1 -> U D D U U U @ psi' 2. *)
 Definition p_Upsi1_UDDUUUpsi2 : (U @ psi' 1) [>] (U @ D @ D @ U @ U @ U @ psi' 2) :=
   Step DU (U @@@ D @@@ D @@@ Hole) sub_Upsi1_UDDUUUpsi2 DU_in fact_term_bis_Upsi1 (term_bis_refl (U @ D @ D @ U @ U @ U @ psi' 2)).
 
-(* Two-step reduction psi ->> U D D U U U @ psi' 2 *)
+(** Two-step reduction psi ->> U D D U U U @ psi' 2. *)
 Definition s_psi_UDDUUUpsi2 : psi ->> (U @ D @ D @ U @ U @ U @ psi' 2) := Cons s_psi_Upsi1 p_Upsi1_UDDUUUpsi2.
 
-(* Helper lemma for the following *)
+(** * An additional property of the infinite rewrite sequence from psi
+   to UUU... *)
+
+(** Helper lemma for the following. *)
 Lemma all_terms_eq_up_to_d_s_UdDnUnt_Udt_repeat_U :
   forall d n t,
     all_terms_eq_up_to d (s_UmDnUnt_Umt d n t) repeat_U.
@@ -1063,7 +1074,7 @@ apply term_eq_up_to_n_Unt_repeat_U.
 apply IH.
 Qed.
 
-(* This would amount to most of weak convergence condition, except that it
+(** This would amount to most of weak convergence condition, except that it
    is not this easy to state. *)
 Lemma all_terms_eq_up_to_d_s_Udpsid_USdpsiSd_repeat_U :
   forall d,
@@ -1076,12 +1087,14 @@ apply term_eq_up_to_n_Unt_repeat_U.
 apply all_terms_eq_up_to_d_s_UdDnUnt_Udt_repeat_U.
 Qed.
 
-(*
-   What follows is an alternative (actually the original) definition of psi
-   and (almost) a proof that it is equal to the new psi used above.
-*)
+(** * Alternative definition for [psi].
 
-(* D^n U^Sn D^SSn U^SSSn ... *)
+   What follows is an alternative (actually the original) definition of [psi]
+   and (almost) a proof that it is equal to the new [psi].
+
+   This is actually a work in progress and the proof is not completed. *)
+
+(** D^n U^Sn D^SSn U^SSSn ... *)
 CoFixpoint oldpsi' n : term :=
   (cofix Dnt (d : nat) :=
     match d with
@@ -1093,7 +1106,7 @@ CoFixpoint oldpsi' n : term :=
     | S d => D @ (Dnt d)
     end) (S n).
 
-(* DUUDDDUUUU... *)
+(** DUUDDDUUUU... *)
 Definition oldpsi := oldpsi' 0.
 
 Lemma UUSnt_eq_USnUt :
@@ -1138,7 +1151,8 @@ rewrite IHn with t.
 reflexivity.
 Qed.
 
-(* Terrible lemma that should help proving psi n and oldpsi 2n equal *)
+(** Terrible lemma that should help proving [psi n] and [oldpsi 2n]
+   equal. *)
 Lemma helper :
   forall n t,
     (cofix D2nDt (d : nat) :=
@@ -1437,8 +1451,8 @@ Lemma psin_eq_oldpsi2n :
   forall n,
     psi' n [~] oldpsi' (2 * n).
 Proof.
-(* TODO: should be somehow possible to show, using lemma helper, but the
-   strategy below is faulty (not guarded) *)
+(** Should be somehow possible to show, using lemma [helper], but the
+   strategy below is faulty (not guarded). *)
 cofix c.
 intro n.
 rewrite (peek_eq (psi' n)).
@@ -1488,10 +1502,11 @@ rewrite plus_Sn_m.
 specialize c with (S n).
 simpl in c.
 exact c.
-(* so the proof is not guarded now *)
+(** So the proof is not guarded now, need to rethink this. *)
 Admitted.
 
-(* This increases confidence in correctness of psi :) *)
+(** This increases confidence in correctness of [psi] (if the proof was
+   complete ;) ). *)
 Lemma psi_eq_oldpsi :
   psi [~] oldpsi.
 Proof.
