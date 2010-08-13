@@ -1,34 +1,48 @@
+(************************************************************************)
+(* Copyright (c) 2010, Martijn Vermaat <martijn@vermaat.name>           *)
+(*                                                                      *)
+(* Licensed under the MIT license, see the LICENSE file or              *)
+(* http://en.wikipedia.org/wiki/Mit_license                             *)
+(************************************************************************)
+
+
+(** This library proofs that uniqueness of normal forms (UN) is not implied
+   by weak orthogonality (WO) by counterexample. *)
+
+
 Require Import Rewriting.
 Require Import Equality.
 
 Set Implicit Arguments.
 
-(*
-  We construct the weakly orthogonal TRS with rules
 
-    PS : P(S(x)) -> x
-    SP : S(P(x)) -> x
+(** We construct the weakly orthogonal TRS with rules
+    - PS : P(S(x)) -> x
+    - SP : S(P(x)) -> x
+    and show it is a counterexample to UN-inf.
 
-  and show it is a counterexample to UN-inf.
 
-  J. Endrullis, C. Grabmayer, D. Hendriks, J.W. Klop and V. van Oostrom
-  Unique Normal Forms in Infinitary Weakly Orthogonal Rewriting
-  Rewriting Techniques and Applications, 2010
+    J. Endrullis, C. Grabmayer, D. Hendriks, J.W. Klop and V. van Oostrom.
+    Unique Normal Forms in Infinitary Weakly Orthogonal Rewriting.
+    Rewriting Techniques and Applications, 2010.
 
-  Because we have S as nat constructor, we rename the function symbol
-  to D and U (up, down).
+    Because we have [S] as constructor for [nat], we rename the function
+    symbols to D and U ('up' and 'down').
 
-  Let psi = U^1 D^2 U^3 D^4. We show:
+    Let psi = U D D U U U D D D D... We show that
+    - this TRS is weakly orthogonal
+    - psi rewrites to DDD...
+    - psi rewrites to UUU...
+    - DDD... is a normal form
+    - UUU... is a normal form
+    - DDD... and UUU... are not bisimilar
 
-  * This TRS is weakly orthogonal
-  * psi rewrites to DDD...
-  * psi rewrites to UUU...
-  * DDD... is a normal form
-  * UUU... is a normal form
-  * DDD... and UUU... are not bisimilar
-*)
+    Together this gives a counterexample to (WO => UN). *)
 
-(* Signature *)
+
+(** * Signature
+
+   We have two unary function symbols [D] and [U]. *)
 
 Inductive symbol : Set := D | U.
 
@@ -56,9 +70,10 @@ Definition arity (f : symbol) : nat :=
   | U => 1
   end.
 
-(* Variables *)
+(** * Variables
 
-(* We only need one variable *)
+   We only need one variable that is used in both rewrite rules. *)
+
 Definition variable : Set := unit.
 
 Fixpoint beq_var (x y : variable) : bool := true.
@@ -68,7 +83,9 @@ Proof.
 intros [] []; split; reflexivity.
 Qed.
 
-(* Terms *)
+(** * Terms
+
+   Terms over the given signature and variable. *)
 
 Definition F : signature := Signature arity beq_symb_ok.
 Definition X : variables := Variables beq_var_ok.
@@ -77,64 +94,98 @@ Notation term := (term F X).
 Notation fterm := (finite_term F X).
 Notation terms := (vector term).
 
-(* Variables *)
+(** We define notational shortcuts for constructing terms:
+   - variable [x] by [x!]
+   - function application of [f] to [a] by [f @ a]
+   - function application of [f] to [a] by [f @@ a] for finite terms *)
+
 Notation "x !" := (@FVar F X x) (at level 75).
 
-(* Function application with one argument *)
 Notation "f @ a" := (@Fun F X f (vcons a (vnil term))) (right associativity, at level 75).
 Notation "f @@ a" := (@FFun F X f (vcons a (vnil fterm))) (right associativity, at level 75).
 
-(* UUU... *)
+(** UUU... *)
 CoFixpoint repeat_U : term :=
   U @ repeat_U.
 
-(* DDD... *)
+(** DDD... *)
 CoFixpoint repeat_D : term :=
   D @ repeat_D.
 
-(* U^n t *)
+(** U^n t *)
 Fixpoint Unt (n : nat) t :=
   match n with
   | O   => t
   | S n => U @ (Unt n t)
   end.
 
-(* D^n t *)
+(** D^n t *)
 Fixpoint Dnt (n : nat) t :=
   match n with
   | O   => t
   | S n => D @ (Dnt n t)
   end.
 
-(* U^2n t *)
+(** U^2n t *)
 Fixpoint U2nt (n : nat) t :=
   match n with
   | O   => t
   | S n => U @ U @ (U2nt n t)
   end.
 
-(* D^2n t *)
+(** D^2n t *)
 Fixpoint D2nt (n : nat) t :=
   match n with
   | O   => t
   | S n => D @ D @ (D2nt n t)
   end.
 
-(* D^n U^n t *)
+(** D^n U^n t *)
 Definition DnUnt n t : term :=
   Dnt n (Unt n t).
 
-(* U^n D^n t *)
+(** U^n D^n t *)
 Definition UnDnt n t : term :=
   Unt n (Dnt n t).
 
-(* D^2n U^2n t *)
+(** D^2n U^2n t *)
 Definition D2nU2nt n t : term :=
   D2nt n (U2nt n t).
 
-(* U^2n D^2n t *)
+(** U^2n D^2n t *)
 Definition U2nD2nt n t : term :=
   U2nt n (D2nt n t).
+
+(** We now define the term
+
+     [psi] = D U^2 D^3 U^4 ...
+
+   via an auxiliary parameterised term [psi'].
+
+   We would like to define psi' like this
+[[
+     CoFixpoint psi' n : term :=
+       Unt n (Dnt (S n) (psi' (S (S n)))).
+]]
+   but unfortunately this is not in guarded form. We therefore turn to a
+   more complex definition with anonymous cofixpoints. *)
+
+(** [psi' n] = D^n U^Sn D^SSn U^SSSn ... *)
+CoFixpoint psi' n : term :=
+  (cofix D2nDt (d : nat) :=
+    match d with
+    | O   => D @ (cofix U2nt (u : nat) :=
+               match u with
+               | O   => psi' (S n)
+               | S u => U @ U @ (U2nt u)
+               end) (S n)
+    | S d => D @ D @ (D2nDt d)
+    end) n.
+
+(* [psi] = D U^2 D^3 U^4 ... *)
+Definition psi := psi' 0.
+
+(** Some useful lemmas on bisimilarity and equality of common terms follow. *)
 
 Lemma term_bis_U :
   forall t s,
@@ -308,29 +359,8 @@ rewrite DSnUSnt_eq_DDnUnUt.
 reflexivity.
 Qed.
 
-(*
-   We would like to define psi' like this
-
-     CoFixpoint psi' n : term :=
-       Unt n (Dnt (S n) (psi' (S (S n)))).
-
-   but unfortunately this is not guarded.
-*)
-
-(* D^n U^Sn D^SSn U^SSSn ... *)
-CoFixpoint psi' n : term :=
-  (cofix D2nDt (d : nat) :=
-    match d with
-    | O   => D @ (cofix U2nt (u : nat) :=
-               match u with
-               | O   => psi' (S n)
-               | S u => U @ U @ (U2nt u)
-               end) (S n)
-    | S d => D @ D @ (D2nDt d)
-    end) n.
-
-(* DUUDDDUUUU... *)
-Definition psi := psi' 0.
+(** Some useful (but ugly) lemmas on bisimilarity and equality of psi and
+   (partial) unfoldings follow. *)
 
 Lemma UU2nt_eq_U2nUt_unfolded :
   forall n t,
@@ -433,24 +463,30 @@ rewrite DSnUSnt_eq_DDnUnUt.
 reflexivity.
 Qed.
 
-(* Contexts *)
+(** * Contexts
+
+   Contexts over the given signature and variable. *)
 
 Notation context := (context F X).
 
-(* Function application with one argument *)
+(** Notational shortcut for function application in contexts. *)
 Notation "f @@@ a" := (@CFun F X f 0 0 (@refl_equal nat (arity f)) (vnil term) a (vnil term)) (right associativity, at level 75).
 
+(** D^n c *)
 Fixpoint Dnc n c : context :=
   match n with
   | O   => c
   | S n => D @@@ (Dnc n c)
   end.
 
+(** U^n c *)
 Fixpoint Unc n c : context :=
   match n with
   | O   => c
   | S n => U @@@ (Unc n c)
   end.
+
+(** We prove some lemmas about filling contexts. *)
 
 Lemma fill_Dnc_t :
   forall n c t,
@@ -528,14 +564,18 @@ intros m n t.
 apply fill_UmDnc_t.
 Qed.
 
-(* Rewriting *)
+(** * Rewriting
+
+   We construct the rewrite rules for the TRS and show it is weakly
+   orthogonal. We also show that UUU... and DDD... are normal forms. *)
 
 Notation trs := (trs F X).
 
-(* We use this variable in the rewrite rules *)
+(** We use this variable in the rewrite rules *)
 Definition varx : X := tt.
 
-(* DUx -> x *)
+(** Rule [DU] : DUx -> x *)
+
 Definition DU_l : fterm := D @@ U @@ varx!.
 Definition DU_r : fterm := varx!.
 
@@ -551,7 +591,8 @@ Qed.
 
 Definition DU : rule := Rule DU_l DU_r wf_DU.
 
-(* UDx -> x *)
+(** Rule [UD] : UDx -> x *)
+
 Definition UD_l : fterm := U @@ D @@ varx!.
 Definition UD_r : fterm := varx!.
 
@@ -567,8 +608,11 @@ Qed.
 
 Definition UD : rule := Rule UD_l UD_r wf_UD.
 
+(** The TRS [UD_trs] as a list of its rules. *)
+
 Definition UD_trs : trs := DU :: UD :: nil.
 
+(** [UD_trs] is trivialy left-linear. *)
 Lemma left_linear_UD :
   trs_left_linear UD_trs.
 Proof.
@@ -581,6 +625,7 @@ intro; assumption.
 constructor.
 Qed.
 
+(** All critical pairs in [UD_trs] are trivial. *)
 Lemma critical_pairs_trivial_UD :
   forall t1 t2,
     critical_pair UD_trs t1 t2 ->
@@ -634,11 +679,11 @@ exact left_linear_UD.
 exact critical_pairs_trivial_UD.
 Qed.
 
-(* DDD... is a normal form *)
+(** DDD... is a normal form. *)
 Lemma normal_form_repeat_D :
   normal_form UD_trs repeat_D.
 Proof.
-(* TODO: a lot of this proof is a mess, cleanup
+(** TODO: a lot of this proof is a mess, cleanup.
    Also, I expect that this could be generalized and shortened quite a bit
    by using pos_eq. *)
 intros [c [r [u [H1 H2]]]].
@@ -737,7 +782,7 @@ intro e.
 constructor.
 constructor.
 
-(* almost the same argument as above for r=UD instead of r=DU *)
+(** Almost the same argument follows for [r=UD] instead of [r=DU]. *)
 
 rewrite <- H1 in *|-.
 clear H1.
@@ -788,11 +833,11 @@ apply term_eq_up_to_weaken.
 assumption.
 Qed.
 
-(* UUU... is a normal form *)
+(** UUU... is a normal form. *)
 Lemma normal_form_repeat_U :
   normal_form UD_trs repeat_U.
 Proof.
-(* This proof is just a copy of the repeat_D proof *)
+(** This proof is just a copy of the DDD... proof. *)
 intros [c [r [u [H1 H2]]]].
 destruct H1 as [H1 | [H1 | []]].
 
@@ -844,7 +889,7 @@ apply H.
 apply term_eq_up_to_weaken.
 assumption.
 
-(* almost the same argument as above for r=DU instead of r=UD *)
+(** Almost the same argument follows for [r=UD] instead of [r=DU]. *)
 
 rewrite <- H1 in *|-.
 clear H1.
@@ -941,7 +986,7 @@ constructor.
 constructor.
 Qed.
 
-(* DDD... and UUU... are different *)
+(** DDD... and UUU... are different. *)
 Lemma neq_repeat_D_repeat_U :
   ~ repeat_D [~] repeat_U.
 Proof.
@@ -950,7 +995,10 @@ rewrite (peek_eq repeat_D), (peek_eq repeat_U) in H.
 inversion H.
 Qed.
 
-(* Reductions *)
+(** * Rewrite sequences
+
+   We now build our infinite rewrite sequences. *)
+
 Notation Step := (Step UD_trs).
 Notation Nil' := (Nil UD_trs).
 
@@ -975,13 +1023,9 @@ Proof.
 right; left; reflexivity.
 Qed.
 
-(*
-   We now build our infinite rewrite sequences.
-*)
-
 Definition sub_t t (x : X) : term := t.
 
-(* 1) psi ->> UUU... *)
+(** ** psi ->> UUU... *)
 
 Lemma fact_term_bis_UmDSnUSnt :
   forall (m n : nat) (t : term),
@@ -1031,34 +1075,18 @@ rewrite fact_term_eq_UmDnUnt.
 apply term_bis_refl.
 Qed.
 
-(* Step U^m @ D^Sn @ U^Sn @ t -> U^m @ D^n @ U^n @ t *)
+(** Step from U^m D^Sn U^Sn to U^m D^n U^n t. *)
 Definition p_UmDSnUSnt_UmDnUnt m n t : Unt m (DnUnt (S n) t) [>] Unt m (DnUnt n t) :=
   Step DU (Unc m (Dnc n Hole)) (sub_t (Unt n t)) DU_in (fact_term_bis_UmDSnUSnt m n t) (fact_term_bis_UmDnUnt m n t).
 
-(* n-step reduction U^m @ D^n @ U^n @ t ->> U^m t *)
+(** n-step rewrite sequence from U^m D^n U^n t to U^m t. *)
 Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
   match n return Unt m (DnUnt n t) ->> Unt m t with
   | O   => Nil' (Unt m t)
   | S n => snoc (p_UmDSnUSnt_UmDnUnt m n t) (s_UmDnUnt_Umt m n t)
   end.
 
-(* Is the following error a bug in Program? *)
-(*
-Program Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)) :=
-  s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n)).
-Next Obligation.
-symmetry.
-unfold DnUnt.
-rewrite psin_eq_DS2nUS2nUpsiSn.
-reflexivity.
-Defined.
-Next Obligation.
-rewrite UUnt_eq_UnUt.
-reflexivity.
-Defined.
-*)
-
-(* This is the ugly but working alternative to the Program above *)
+(** 2n+1-step rewrite sequence from U^n [psi' n] to U^Sn [psi' Sn]. *)
 Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)).
 intro n.
 assert (H : Unt n (DnUnt (S (2 * n)) (U @ psi' (S n))) ->> Unt n (U @ psi' (S n))).
@@ -1073,7 +1101,27 @@ rewrite UUnt_eq_UnUt with n (psi' (S n)).
 exact H.
 Defined.
 
-(* psi ->> U^n @ psi' n *)
+(** We would have liked to define the above by the following definition
+   using [Program], but unfortunately it is not accepted by Coq. Is this
+   a bug in [Program]?
+
+[[
+Program Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)) :=
+  s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n)).
+Next Obligation.
+symmetry.
+unfold DnUnt.
+rewrite psin_eq_DS2nUS2nUpsiSn.
+reflexivity.
+Defined.
+Next Obligation.
+rewrite UUnt_eq_UnUt.
+reflexivity.
+Defined.
+]]
+*)
+
+(** Rewrite sequence from [psi] to U^n [psi' n]. *)
 Fixpoint s_psi_Unpsin n : psi ->> Unt n (psi' n) :=
   match n return psi ->> Unt n (psi' n) with
   | O   => Nil' psi
@@ -1091,11 +1139,11 @@ assumption.
 apply term_eq_up_to_n_Unt_repeat_U.
 Qed.
 
-(* Omega-step reduction psi ->> UUU... *)
+(** Omega-step rewrite sequence from [psi] to UUU... *)
 Definition s_psi_repeat_U : psi ->> repeat_U :=
   Lim s_psi_Unpsin converges_Unpsin.
 
-(* 2) psi ->> DDD... *)
+(** ** psi ->> DDD... *)
 
 Lemma fact_term_bis_DmUSnDSnt :
   forall (m n : nat) (t : term),
@@ -1145,19 +1193,42 @@ rewrite fact_term_eq_DmUnDnt.
 apply term_bis_refl.
 Qed.
 
-(* Step D^m @ U^Sn @ D^Sn @ t -> D^m @ U^n @ D^n @ t *)
+(* Step from D^m U^Sn D^Sn t to D^m U^n D^n t. *)
 Definition p_DmUSnDSnt_DmUnDnt m n t : Dnt m (UnDnt (S n) t) [>] Dnt m (UnDnt n t) :=
   Step UD (Dnc m (Unc n Hole)) (sub_t (Dnt n t)) UD_in (fact_term_bis_DmUSnDSnt m n t) (fact_term_bis_DmUnDnt m n t).
 
-(* n-step reduction D^m @ U^n @ D^n @ t ->> D^m t *)
+(* n-step rewrite sequence from D^m U^n D^n t to D^m t. *)
 Fixpoint s_DmUnDnt_Dmt m n t : Dnt m (UnDnt n t) ->> Dnt m t :=
   match n return Dnt m (UnDnt n t) ->> Dnt m t with
   | O   => Nil' (Dnt m t)
   | S n => snoc (p_DmUSnDSnt_DmUnDnt m n t) (s_DmUnDnt_Dmt m n t)
   end.
 
-(* Is the following error a bug in Program? *)
-(*
+(** 2n-step rewrite sequence from D^n U^2n [psi' n] to D^Sn U2Sn [psi' Sn]. *)
+Definition s_DnU2npsin_DSnU2SnpsiSn n : Dnt n (Unt (2 * n) (psi' n)) ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))).
+intro n.
+assert (H : Dnt n (UnDnt (2 * n) (D @ Unt (2 * (S n)) (psi' (S n)))) ->> Dnt n (D @ (Unt (2 * S n)) (psi' (S n)))).
+refine (s_DmUnDnt_Dmt n (2 * n) (D @ (Unt (2 * (S n)) (psi' (S n))))).
+unfold UnDnt in H.
+rewrite psin_eq_DS2nUS2nUpsiSn.
+unfold DnUnt.
+simpl.
+rewrite DDnt_eq_DnDt.
+simpl in H.
+rewrite <- plus_n_Sm in H.
+rewrite <- plus_n_Sm.
+simpl in H.
+simpl.
+rewrite <- UUnt_eq_UnUt.
+rewrite DDnt_eq_DnDt.
+exact H.
+Defined.
+
+(** We would have liked to define the above by the following definition
+   using [Program], but unfortunately it is not accepted by Coq. Is this
+   a bug in [Program]?
+
+[[
 Program Definition s_DnU2npsin_DSnU2SnpsiSn n : Dnt n (Unt (2 * n) (psi' n)) ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))) :=
   s_DmUnDnt_Dmt n (2 * n) (D @ (Unt (2 * (S n)) (psi' (S n)))).
 Next Obligation.
@@ -1175,37 +1246,10 @@ Next Obligation.
 rewrite DDnt_eq_DnDt.
 reflexivity.
 Defined.
+]]
 *)
 
-(* This is the ugly but working alternative to the Program above *)
-Definition s_DnU2npsin_DSnU2SnpsiSn n : Dnt n (Unt (2 * n) (psi' n)) ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))).
-intro n.
-assert (H : Dnt n (UnDnt (2 * n) (D @ Unt (2 * (S n)) (psi' (S n)))) ->> Dnt n (D @ (Unt (2 * S n)) (psi' (S n)))).
-refine (s_DmUnDnt_Dmt n (2 * n) (D @ (Unt (2 * (S n)) (psi' (S n))))).
-unfold UnDnt in H.
-rewrite psin_eq_DS2nUS2nUpsiSn.
-unfold DnUnt.
-simpl.
-rewrite DDnt_eq_DnDt.
-simpl in H.
-rewrite <- plus_n_Sm in H.
-rewrite <- plus_n_Sm.
-simpl in H.
-simpl.
-(*pattern (U @ Unt (n + (n + 0)) (psi' (S n))) at 1 in H.*)
-rewrite <- UUnt_eq_UnUt.
-rewrite DDnt_eq_DnDt.
-exact H.
-Defined.
-
-(* psi ->> D^n @ U^2n @ psi' n *)
-(*
-Fixpoint s_psi_DnU2npsin n : psi ->> Dnt n (Unt (2 * n) (psi' n)) :=
-  match n return psi ->> Dnt n (Unt (2 * n) (psi' n)) with
-  | O   => Nil' psi
-  | S n => append (s_psi_DnU2npsin n) (s_DnU2npsin_DSnU2SnpsiSn n)
-  end.
-*)
+(** Rewrite sequence from [psi] to D^Sn U^2Sn [psi' Sn]. *)
 Fixpoint s_psi_DSnU2SnpsiSn n : psi ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))) :=
   match n return psi ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))) with
   | O   => s_DnU2npsin_DSnU2SnpsiSn 0
@@ -1224,18 +1268,23 @@ rewrite DDnt_eq_DnDt.
 apply term_eq_up_to_n_Dnt_repeat_D.
 Qed.
 
-(* Omega-step reduction psi ->> DDD... *)
+(* Omega-step reduction from [psi] to DDD... *)
 Definition s_psi_repeat_D : psi ->> repeat_D :=
   Lim s_psi_DSnU2SnpsiSn converges_DSnU2SnpsiSn.
 
-(*
-   It should be noted that at this point, nothing has been said yet about
-   well-formedness of the rewrite sequences. Furthermore, it might not
-   converge.
+(** * Well-formedness of the rewrite sequences
 
-   So we proceed by proving the 'wf' property. Convergence seems our of
-   our reach at this point unfortunately.
-*)
+   It should be noted that at this point, nothing has been said yet about
+   well-formedness of the two rewrite sequences. Furthermore, they might
+   not be convergent.
+
+   So we proceed by proving the [wf] property for the rewrite sequences.
+   Convergence seems our of our reach at this point unfortunately. *)
+
+(** ** Well-formedness of psi ->> UUU...
+
+   We first prove all finite prefixes are indeed finite. Then we prove that
+   every branch of the [Lim] constructor is embedded in the next branch. *)
 
 Lemma finite_s_UmDnUnt_Umt :
   forall m n t, finite (s_UmDnUnt_Umt m n t).
@@ -1251,7 +1300,6 @@ Lemma finite_s_Unpsin_USnpsiSn :
 Proof.
 intro n.
 unfold s_Unpsin_USnpsiSn; simpl.
-(* http://www.lix.polytechnique.fr/coq/stdlib/Coq.Program.Equality.html *)
 unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
 apply finite_s_UmDnUnt_Umt.
 Qed.
@@ -1266,162 +1314,7 @@ exact IH.
 apply finite_s_Unpsin_USnpsiSn.
 Qed.
 
-Lemma finite_s_DmUnDnt_Dmt :
-  forall m n t, finite (s_DmUnDnt_Dmt m n t).
-Proof.
-induction n as [| n IH]; intro t; simpl.
-exact I.
-apply snoc_finite.
-apply IH.
-Qed.
-
-(* It is very unclear to me why we have to take this statement apart *)
-Lemma finite_s_DnU2npsin_DSnU2SnpsiSn_helper :
-  forall n,
-       finite
-     (eq_rect
-        (Dnt (n + (n + 0)) (D @ U @ Unt (n + (n + 0)) (U @ psi' (S n))))
-        (fun y : term =>
-         Dnt n (Unt (n + (n + 0)) y) ->>
-         Dnt n (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
-        (eq_rect (U @ Unt (n + (n + 0)) (psi' (S n)))
-           (fun t : term =>
-            Dnt n (Unt (n + (n + 0)) (Dnt (n + (n + 0)) (D @ U @ t))) ->>
-            Dnt n (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
-           (s_DmUnDnt_Dmt n (n + (n + 0))
-              (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
-           (Unt (n + (n + 0)) (U @ psi' (S n)))
-           (UUnt_eq_UnUt (n + (n + 0)) (psi' (S n))))
-        (D @ Dnt (n + (n + 0)) (U @ Unt (n + (n + 0)) (U @ psi' (S n))))
-        (eq_sym
-           (DDnt_eq_DnDt (n + (n + 0))
-              (U @ Unt (n + (n + 0)) (U @ psi' (S n)))))).
-Proof.
-intro n.
-repeat (elim_eq_rect ; simpl).
-apply finite_s_DmUnDnt_Dmt.
-Qed.
-
-Lemma finite_s_DnU2npsin_DSnU2SnpsiSn :
-  forall n, finite (s_DnU2npsin_DSnU2SnpsiSn n).
-Proof.
-intro n.
-unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
-unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-apply finite_s_DnU2npsin_DSnU2SnpsiSn_helper.
-Qed.
-
-(* We use this predicate and the following lemmas to prove well-formedness. *)
-Fixpoint is_cons s t (r : s ->> t) : Prop :=
-  match r with
-  | Nil _          => False
-  | Cons _ _ q _ _ => True
-  | Lim _ _ f t c  => False
-  end.
-
-Lemma is_cons_snoc :
-  forall s t u (p : s [>] t) (r : t ->> u),
-    is_cons r ->
-    is_cons (snoc p r).
-Proof.
-intros.
-destruct r; simpl.
-exact I.
-exact I.
-inversion H.
-Qed.
-
-Lemma append_is_cons :
-  forall s t u (r : s ->> t) (q : t ->> u),
-    is_cons q ->
-    embed_strict r (append r q).
-Proof.
-intros.
-destruct q.
-elim H.
-simpl.
-exists (inl _ tt).
-simpl.
-apply embed_append_right.
-elim H.
-Qed.
-
-Lemma is_cons_s_DmUnDnt_Dmt :
-  forall m n t, is_cons (s_DmUnDnt_Dmt m (S n) t).
-Proof.
-induction n as [| n IH]; intro t; simpl.
-exact I.
-apply is_cons_snoc.
-apply IH.
-Qed.
-
-(* It is very unclear to me why we have to take this statement apart *)
-Lemma is_cons_s_DnU2npsin_DSnU2SnpsiSn_helper :
-  forall n,
-   is_cons
-     (eq_rect
-        (Dnt (S n + (S n + 0))
-           (D @ U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n)))))
-        (fun y : term =>
-         Dnt (S n) (Unt (S n + (S n + 0)) y) ->>
-         Dnt (S n) (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
-        (eq_rect (U @ Unt (S n + (S n + 0)) (psi' (S (S n))))
-           (fun t : term =>
-            Dnt (S n)
-              (Unt (S n + (S n + 0)) (Dnt (S n + (S n + 0)) (D @ U @ t))) ->>
-            Dnt (S n) (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
-           (s_DmUnDnt_Dmt (S n) (S n + (S n + 0))
-              (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
-           (Unt (S n + (S n + 0)) (U @ psi' (S (S n))))
-           (UUnt_eq_UnUt (S n + (S n + 0)) (psi' (S (S n)))))
-        (D @
-         Dnt (S n + (S n + 0))
-           (U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n)))))
-        (eq_sym
-           (DDnt_eq_DnDt (S n + (S n + 0))
-              (U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n))))))).
-Proof.
-intro n.
-simpl.
-repeat (elim_eq_rect ; simpl).
-apply is_cons_snoc.
-rewrite <- plus_n_Sm.
-exact (is_cons_s_DmUnDnt_Dmt (S n) (n + (n + 0)) (D @ U @ U @ U @ Unt (S (n + (n + 0))) (psi' (S (S n))))).
-Qed.
-
-Lemma is_cons_s_DnU2npsin_DSnU2SnpsiSn :
-  forall n, 0 < n -> is_cons (s_DnU2npsin_DSnU2SnpsiSn n).
-Proof.
-intros n H.
-unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
-unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
-destruct n.
-inversion H.
-apply is_cons_s_DnU2npsin_DSnU2SnpsiSn_helper.
-Qed.
-
-(* It is very unclear to me why we have to take this statement apart *)
-Lemma finite_s_psi_DSnU2SnpsiSn_helper :
-   finite
-     (eq_rect (DnUnt 1 (U @ psi' 1))
-        (fun y : term => y ->> (D @ U @ U @ psi' 1))
-        (Nil' (D @ U @ U @ psi' 1)) (psi' 0) (eq_sym (psin_eq_DS2nUS2nUpsiSn 0))).
-Proof.
-elim_eq_rect; simpl.
-exact I.
-Qed.
-
-Lemma finite_s_psi_DSnU2SnpsiSn :
-  forall n : nat, finite (s_psi_DSnU2SnpsiSn n).
-Proof.
-induction n as [| n IH]; simpl.
-unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
-unfold eq_rect_r; repeat (elim_eq_rect; simpl).
-apply finite_s_psi_DSnU2SnpsiSn_helper.
-apply append_finite.
-exact IH.
-exact (finite_s_DnU2npsin_DSnU2SnpsiSn (S n)).
-Qed.
+(** The following lemmas help establish [wf]. They are not pretty. *)
 
 Lemma s_UmDnUnt_Umt_is_cons :
   forall m n t,
@@ -1472,7 +1365,6 @@ apply wf_finite.
 apply finite_s_psi_Unpsin.
 Qed.
 
-(* This reduction is well-formed *)
 Lemma wf_s_psi_repeat_U :
   wf s_psi_repeat_U.
 Proof.
@@ -1486,25 +1378,167 @@ apply IHle.
 apply embed_strict_append_Unpsin_USnpsiSn.
 Qed.
 
-Lemma s_DmUnDnt_Dmt_is_cons :
-  forall m n t,
-    exists s, exists r : _ ->> s, exists p : s [>] _,
-      s_DmUnDnt_Dmt m (S n) t = Cons r p.
+(** ** Well-formedness of psi ->> DDD...
+
+   We first prove all finite prefixes are indeed finite. Then we prove that
+   every branch of the [Lim] constructor is embedded in the next branch. *)
+
+Lemma finite_s_DmUnDnt_Dmt :
+  forall m n t, finite (s_DmUnDnt_Dmt m n t).
 Proof.
-induction n; intro t; simpl.
-exists (Dnt m (UnDnt 1 t)).
-exists (Nil' (Dnt m (UnDnt 1 t))).
-exists (p_DmUSnDSnt_DmUnDnt m 0 t).
-reflexivity.
-simpl in IHn.
-specialize IHn with t.
-destruct IHn as [s [r [p IH]]].
-rewrite IH.
+induction n as [| n IH]; intro t; simpl.
+exact I.
+apply snoc_finite.
+apply IH.
+Qed.
+
+(** It is very unclear to me why we have to take this statement apart. *)
+Lemma finite_s_DnU2npsin_DSnU2SnpsiSn_helper :
+  forall n,
+       finite
+     (eq_rect
+        (Dnt (n + (n + 0)) (D @ U @ Unt (n + (n + 0)) (U @ psi' (S n))))
+        (fun y : term =>
+         Dnt n (Unt (n + (n + 0)) y) ->>
+         Dnt n (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
+        (eq_rect (U @ Unt (n + (n + 0)) (psi' (S n)))
+           (fun t : term =>
+            Dnt n (Unt (n + (n + 0)) (Dnt (n + (n + 0)) (D @ U @ t))) ->>
+            Dnt n (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
+           (s_DmUnDnt_Dmt n (n + (n + 0))
+              (D @ U @ U @ Unt (n + (n + 0)) (psi' (S n))))
+           (Unt (n + (n + 0)) (U @ psi' (S n)))
+           (UUnt_eq_UnUt (n + (n + 0)) (psi' (S n))))
+        (D @ Dnt (n + (n + 0)) (U @ Unt (n + (n + 0)) (U @ psi' (S n))))
+        (eq_sym
+           (DDnt_eq_DnDt (n + (n + 0))
+              (U @ Unt (n + (n + 0)) (U @ psi' (S n)))))).
+Proof.
+intro n.
+repeat (elim_eq_rect ; simpl).
+apply finite_s_DmUnDnt_Dmt.
+Qed.
+
+Lemma finite_s_DnU2npsin_DSnU2SnpsiSn :
+  forall n, finite (s_DnU2npsin_DSnU2SnpsiSn n).
+Proof.
+intro n.
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
+unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+apply finite_s_DnU2npsin_DSnU2SnpsiSn_helper.
+Qed.
+
+(** It is very unclear to me why we have to take this statement apart. *)
+Lemma finite_s_psi_DSnU2SnpsiSn_helper :
+   finite
+     (eq_rect (DnUnt 1 (U @ psi' 1))
+        (fun y : term => y ->> (D @ U @ U @ psi' 1))
+        (Nil' (D @ U @ U @ psi' 1)) (psi' 0) (eq_sym (psin_eq_DS2nUS2nUpsiSn 0))).
+Proof.
+elim_eq_rect; simpl.
+exact I.
+Qed.
+
+Lemma finite_s_psi_DSnU2SnpsiSn :
+  forall n : nat, finite (s_psi_DSnU2SnpsiSn n).
+Proof.
+induction n as [| n IH]; simpl.
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
+unfold eq_rect_r; repeat (elim_eq_rect; simpl).
+apply finite_s_psi_DSnU2SnpsiSn_helper.
+apply append_finite.
+exact IH.
+exact (finite_s_DnU2npsin_DSnU2SnpsiSn (S n)).
+Qed.
+
+(** We use this predicate and the following lemmas to prove well-formedness.
+   Yes, this is ugly and a bit of a hack. *)
+Fixpoint is_cons s t (r : s ->> t) : Prop :=
+  match r with
+  | Nil _          => False
+  | Cons _ _ q _ _ => True
+  | Lim _ _ f t c  => False
+  end.
+
+Lemma is_cons_snoc :
+  forall s t u (p : s [>] t) (r : t ->> u),
+    is_cons r ->
+    is_cons (snoc p r).
+Proof.
+intros.
+destruct r; simpl.
+exact I.
+exact I.
+inversion H.
+Qed.
+
+Lemma append_is_cons :
+  forall s t u (r : s ->> t) (q : t ->> u),
+    is_cons q ->
+    embed_strict r (append r q).
+Proof.
+intros.
+destruct q.
+elim H.
 simpl.
-exists s.
-exists (snoc (p_DmUSnDSnt_DmUnDnt m (S n) t) r).
-exists p.
-reflexivity.
+exists (inl _ tt).
+simpl.
+apply embed_append_right.
+elim H.
+Qed.
+
+Lemma is_cons_s_DmUnDnt_Dmt :
+  forall m n t, is_cons (s_DmUnDnt_Dmt m (S n) t).
+Proof.
+induction n as [| n IH]; intro t; simpl.
+exact I.
+apply is_cons_snoc.
+apply IH.
+Qed.
+
+(** It is very unclear to me why we have to take this statement apart. *)
+Lemma is_cons_s_DnU2npsin_DSnU2SnpsiSn_helper :
+  forall n,
+   is_cons
+     (eq_rect
+        (Dnt (S n + (S n + 0))
+           (D @ U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n)))))
+        (fun y : term =>
+         Dnt (S n) (Unt (S n + (S n + 0)) y) ->>
+         Dnt (S n) (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
+        (eq_rect (U @ Unt (S n + (S n + 0)) (psi' (S (S n))))
+           (fun t : term =>
+            Dnt (S n)
+              (Unt (S n + (S n + 0)) (Dnt (S n + (S n + 0)) (D @ U @ t))) ->>
+            Dnt (S n) (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
+           (s_DmUnDnt_Dmt (S n) (S n + (S n + 0))
+              (D @ U @ U @ Unt (S n + (S n + 0)) (psi' (S (S n)))))
+           (Unt (S n + (S n + 0)) (U @ psi' (S (S n))))
+           (UUnt_eq_UnUt (S n + (S n + 0)) (psi' (S (S n)))))
+        (D @
+         Dnt (S n + (S n + 0))
+           (U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n)))))
+        (eq_sym
+           (DDnt_eq_DnDt (S n + (S n + 0))
+              (U @ Unt (S n + (S n + 0)) (U @ psi' (S (S n))))))).
+Proof.
+intro n.
+simpl.
+repeat (elim_eq_rect ; simpl).
+apply is_cons_snoc.
+rewrite <- plus_n_Sm.
+exact (is_cons_s_DmUnDnt_Dmt (S n) (n + (n + 0)) (D @ U @ U @ U @ Unt (S (n + (n + 0))) (psi' (S (S n))))).
+Qed.
+
+Lemma is_cons_s_DnU2npsin_DSnU2SnpsiSn :
+  forall n, 0 < n -> is_cons (s_DnU2npsin_DSnU2SnpsiSn n).
+Proof.
+intros n H.
+unfold s_DnU2npsin_DSnU2SnpsiSn; simpl.
+unfold eq_rect_r; repeat (elim_eq_rect ; simpl).
+destruct n.
+inversion H.
+apply is_cons_s_DnU2npsin_DSnU2SnpsiSn_helper.
 Qed.
 
 Lemma embed_strict_append_DnU2npsin_DSnU2SnpsiSn :
@@ -1525,7 +1559,6 @@ apply wf_finite.
 apply finite_s_psi_DSnU2SnpsiSn.
 Qed.
 
-(* This reduction is well-formed *)
 Lemma wf_s_psi_repeat_D :
   wf s_psi_repeat_D.
 Proof.
@@ -1538,6 +1571,12 @@ apply (embed_strict_trans (q := s_psi_DSnU2SnpsiSn m)).
 apply IHle.
 apply embed_strict_append_DnU2npsin_DSnU2SnpsiSn.
 Qed.
+
+(** * Conclusions
+
+   We conclude by taking our results together, showing this TRS does not
+   have the unique normal forms property. We then generalise this to
+   show that weak orthogonality does not imply unique normal forms. *)
 
 Lemma no_unique_normal_forms_UD :
   ~ unique_normal_forms UD_trs.
