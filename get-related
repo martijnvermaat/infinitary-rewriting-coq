@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Run to get some related Coq code (for studying or importing)
+#
+# Requires: svn, wget, tar
+#
+# Only code not downloaded yet gets downloaded, so you can run it more than
+# once safely. Downloaded directories are ignored by SVN, so not included in
+# the commits.
+#
+# * Coq 8.3 beta   Coq 8.3 beta version on which this development is built
+#                  http://coq.inria.fr/coq-83-beta-version
+#
+# * CoLoR          A library on rewriting and termination
+#                  http://color.inria.fr/
+#
+# * Rainbow        OCaml program for generating termination proofs using CoLoR
+#                  http://color.inria.fr/
+#
+# * Coccinelle     Terms, Rewriting, RPO, etc.
+#                  http://www.lri.fr/~contejea/Coccinelle/coccinelle.html
+#
+# * Coq theories   The Coq Standard library
+#                  http://coq.inria.fr/stdlib/
+#
+# * Cantor         Ordinals in Cantor Normal Form
+#                  http://www.labri.fr/perso/casteran/Cantor/
+#
+# * RecTutorial    Code from Tutorial on [co]-inductive types in Coq
+#                  http://www.labri.fr/perso/casteran/
+#
+# * CPDT           Certified Programming with Dependent Types
+#                  http://adam.chlipala.net/cpdt/
+#
+# * ConCoq         Surreal Numbers in Coq
+#                  http://www.mamane.lu/concoq/
+#
+# * ZFC            Zermelo-Fraenkel Set Theory
+#                  http://coq.inria.fr/distrib/current/contribs/ZFC.html
+
+
+[[ -e Coq-8.3-beta ]] || (mkdir Coq-8.3-beta && wget -O - http://www.lix.polytechnique.fr/coq/distrib/V8.3-beta0/files/coq-8.3-beta0-1.tar.gz | tar -zxf - --strip-components=1 -C Coq-8.3-beta)
+
+# http://coq.inria.fr/contribs/files/CoLoR.tar.gz
+[[ -e CoLoR ]] || svn co svn://scm.gforge.inria.fr/svn/color/trunk/color CoLoR
+svn up CoLoR
+
+# http://color.inria.fr/Rainbow.tar.gz
+[[ -e Rainbow ]] || svn co svn://scm.gforge.inria.fr/svn/rainbow/trunk/rainbow Rainbow
+svn up Rainbow
+
+# http://a3pat.ensiie.fr/pub/coccinelle-1.5-8.2-1.tar.gz
+[[ -e Coccinelle ]] || (mkdir Coccinelle && wget -O - http://a3pat.ensiie.fr/pub/coccinelle-8.2.tar.gz | tar -zxf - --strip-components=1 -C Coccinelle)
+
+[[ -e Coq-theories ]] || svn co svn://scm.gforge.inria.fr/svn/coq/trunk/theories Coq-theories
+svn up Coq-theories
+
+[[ -e Cantor ]] || (mkdir Cantor && wget -O - http://coq.inria.fr/distrib/v8.2/contribs/files/Cantor.tar.gz | tar -zxf - --strip-components=1 -C Cantor)
+
+[[ -e Other/RecTutorial.v ]] || (mkdir -p Other && wget -O Other/RecTutorial.v http://www.labri.fr/perso/casteran/RecTutorial.v)
+
+[[ -e CPDT ]] || (mkdir CPDT && wget -O - http://adam.chlipala.net/cpdt/cpdt.tgz | tar -zxf - --strip-components=1 -C CPDT)
+
+[[ -e ConCoq ]] || (mkdir ConCoq && wget -O - http://www.mamane.lu/concoq/surreal_code.tar.bz2 | tar -jxf - --strip-components=2 -C ConCoq)
+
+[[ -e ZFC ]] || (mkdir ZFC && wget -O - http://coq.inria.fr/distrib/current/contribs/files/ZFC.tar.gz | tar -zxf - --strip-components=1 -C ZFC)
