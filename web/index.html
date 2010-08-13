@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" type="text/css" media="screen" href="css/screen.css">
+    <title>Infinitary Rewriting in Coq</title>
+</head>
+<body id="martijn-vermaat-name-infinitary-rewriting-coq">
+
+
+<h1>Infinitary Rewriting in Coq</h1>
+
+<p>
+A <a href="http://coq.inria.fr/">Coq</a> formalisation of infinitary
+<a href="http://rewriting.loria.fr/">rewriting</a>.
+</p>
+
+
+<h2>Introduction</h2>
+
+<p>
+This is an attempt at formalising the basic notions from infinitary term
+rewriting in the Coq proof assistant, in a way that is natural for Coq
+(using dependent types and (co)induction). For more information, see
+my Master thesis on this project below.
+</p>
+
+<p>
+Together with the thesis, this formalisation constitutes my Master project,
+roughly a six months project concluding my Master in
+<a href="http://www.cs.vu.nl/~tcs/">theoretical computer science</a> at the
+<a href="http://www.vu.nl/">VU University Amsterdam</a>.
+</p>
+
+<p>
+Relevant literature can be found
+<a href="http://www.citeulike.org/user/mvermaat/tag/master-project">on my CiteULike page</a>
+(out of date).
+</p>
+
+<p>
+My supervisor was <a href="http://www.cs.vu.nl/~diem/">Dimitri Hendriks</a>.
+</p>
+
+
+<h2>Coq code</h2>
+
+<p>
+Download version 1.0, 2010-08-13:
+<a href="files/infinitary-rewriting-in-coq-0.1.tar.gz">infinitary-rewriting-in-coq-0.1.tar.gz</a>
+</p>
+
+<p>
+Or checkout the latest development version from SVN:
+</p>
+
+<pre><code>svn co http://svn.vermaat.name/master-project
+</code></pre>
+
+<p>
+<em>Or</em> browse the code online from the <a href="coqdoc/index.html">coqdoc index</a>.
+</p>
+
+
+<h2>Master thesis</h2>
+
+<p>
+This thesis describes our formalisation of the basic notions from
+the theory of infinitary term rewriting in the Coq proof
+assistant.
+Infinitary term rewriting is a generalisation of term rewriting where
+we allow terms to be infinitely deep and admit rewrite sequences of
+transfinite length.
+Coq is an interactive proof assistant based on constructive type
+theory with inductive types.
+The main contribution of our formalisation is an inductive
+definition of transfinite rewrite sequences, based on tree
+ordinals.
+</p>
+
+<p>
+The ordinal numbers are
+represented by tree ordinals, following the construction of an order
+on tree ordinals by \citet{hancock-08}. Infinite terms are defined by
+coinduction. A novel representation for rewrite sequences of ordinal
+length is defined, based on the inductive structure of the tree
+ordinals. The order on ordinals is then lifted to an embedding
+relation on rewrite sequences. We discuss an application of our
+formalisation in the verification of a counterexample to unique normal
+forms in weakly orthogonal infinitary TRSs, introduced
+by \citet{endrullis-10}.
+</p>
+
+<p>
+<a href="files/thesis.pdf">Infinitary Rewriting in Coq</a>.
+MSc thesis, VU University Amsterdam, 2010.
+</p>
+
+
+<h2>Author</h2>
+
+<p>
+<a href="http://martijn.vermaat.name/">Martijn Vermaat</a>
+(<a href="martijn@vermaat.name">martijn@vermaat.name</a>)
+</p>
+
+
+<h2>License</h2>
+
+<p>
+Licensed under the
+<a href="http://en.wikipedia.org/wiki/Mit_license">MIT license<a>.
+</p>
+
+
+</body>
+</html>

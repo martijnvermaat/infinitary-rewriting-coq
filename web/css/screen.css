@@ -1,0 +1,30 @@
+body {
+    width               :   650px;
+    margin              :   2em;
+    font-family         :   Verdana, Arial, Helvetica, sans-serif;
+    font-size           :   14px;
+    line-height         :   20px;
+}
+
+h1, h2, h3, h4, p, blockquote, pre {
+    margin              :   0;
+    padding             :   0;
+}
+
+h1, h2, h3, h4 {
+    padding             :   10px 0 10px 0;
+    font-family         :   Gentium, FreeSerif, Georgia, "Times New Roman", serif;
+}
+
+p, ul, ol, dl, blockquote, pre {
+    margin-bottom       :   20px;
+}
+
+pre {
+    padding-left        :   25px;
+    font-family         :   "Bitstream Vera Sans Mono", Courier, Monaco, monospace;
+}
+
+code {
+    font-family         :   "Bitstream Vera Sans Mono", Courier, Monaco, monospace;
+}
