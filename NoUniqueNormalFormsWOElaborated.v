@@ -66,6 +66,9 @@ unfold vcast.
 generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
 intro e.
 dependent destruction e.
+generalize (lt_plus_minus_r (Lt.lt_le_S 0 1 (Lt.lt_0_Sn 0))).
+intro e.
+dependent destruction e.
 simpl.
 constructor.
 inversion i.

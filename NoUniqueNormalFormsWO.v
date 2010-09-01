@@ -656,6 +656,9 @@ unfold vcast.
 generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
 intro e.
 dependent destruction e.
+generalize (lt_plus_minus_r (Lt.lt_le_S 0 1 (Lt.lt_0_Sn 0))).
+intro e.
+dependent destruction e.
 assumption.
 inversion i.
 
@@ -665,6 +668,9 @@ intro i.
 dependent destruction i.
 unfold vcast.
 generalize (lt_plus_minus_r (Gt.gt_le_S 0 1 (Lt.lt_0_Sn 0))).
+intro e.
+dependent destruction e.
+generalize (lt_plus_minus_r (Lt.lt_le_S 0 1 (Lt.lt_0_Sn 0))).
 intro e.
 dependent destruction e.
 assumption.
@@ -1088,7 +1094,8 @@ Fixpoint s_UmDnUnt_Umt m n t : Unt m (DnUnt n t) ->> Unt m t :=
 
 (** 2n+1-step rewrite sequence from U^n [psi' n] to U^Sn [psi' Sn]. *)
 Definition s_Unpsin_USnpsiSn n : Unt n (psi' n) ->> Unt (S n) (psi' (S n)).
-intro n.
+(** Coq 8.3-rc1 does the 'intro n' automatically, but 8.3-beta0-1 needs it. *)
+intros.
 assert (H : Unt n (DnUnt (S (2 * n)) (U @ psi' (S n))) ->> Unt n (U @ psi' (S n))).
 refine (s_UmDnUnt_Umt n (S (2 * n)) (U @ psi' (S n))).
 unfold DnUnt in H.
@@ -1206,7 +1213,8 @@ Fixpoint s_DmUnDnt_Dmt m n t : Dnt m (UnDnt n t) ->> Dnt m t :=
 
 (** 2n-step rewrite sequence from D^n U^2n [psi' n] to D^Sn U2Sn [psi' Sn]. *)
 Definition s_DnU2npsin_DSnU2SnpsiSn n : Dnt n (Unt (2 * n) (psi' n)) ->> Dnt (S n) (Unt (2 * (S n)) (psi' (S n))).
-intro n.
+(** Coq 8.3-rc1 does the 'intro n' automatically, but 8.3-beta0-1 needs it. *)
+intros.
 assert (H : Dnt n (UnDnt (2 * n) (D @ Unt (2 * (S n)) (psi' (S n)))) ->> Dnt n (D @ (Unt (2 * S n)) (psi' (S n)))).
 refine (s_DmUnDnt_Dmt n (2 * n) (D @ (Unt (2 * (S n)) (psi' (S n))))).
 unfold UnDnt in H.

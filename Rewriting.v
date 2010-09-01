@@ -1102,7 +1102,7 @@ destruct j as [n j].
 specialize IH with n p r j.
 destruct IH as [i H1].
 assumption.
-exists (existT _ n i).
+exists (existT (fun n => pred_type (f n)) n i).
 assumption.
 Qed.
 
