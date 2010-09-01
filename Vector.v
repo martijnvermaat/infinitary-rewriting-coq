@@ -132,14 +132,14 @@ Lemma vtake_vdrop_vappend :
 
    Possible solutions:
    - write this with a cast (see below)
-   - with [Program] (defined next)
+   - with [Program] (shown next)
    - use what [Program] makes of it manually (ugly)
 
    I would prefer to avoid using an explicit cast function (i.e. solution 2)
    but this gives me more troubles than I can handle (see also [fill] in
    library [Context]).
-*)
 
+[[
 Program Definition vtake_vdrop_vappend :
   forall n m (H : n <= m) (v : vector m) (i : Fin m),
     vappend (vtake H v) (vdrop H v) i = v i := _.
@@ -157,8 +157,10 @@ reflexivity.
 
 repeat (elim_eq_rect; simpl).
 reflexivity.
-(** Some more tinkering is required here... not important for now. *)
-Admitted.
+]]
+
+   Some more tinkering is required here... not important for now.
+*)
 
 End Vector.
 
@@ -210,12 +212,16 @@ dependent destruction H.
 reflexivity.
 Qed.
 
+(**
+   This is not important for now, see above.
+
+[[
 Lemma vtake_vdrop_vappend' :
   forall n m (H : n <= m) (v : vector A m) (i : Fin m),
     vcast (vappend (vtake H v) (vdrop H v)) (le_plus_minus_r n m H) i = v i.
 Proof.
-(** Not important for now, see above. *)
-Admitted.
+]]
+*)
 
 (*
 Fixpoint vcast n : forall (v : vector A n) m (H : n = m), vector A m :=

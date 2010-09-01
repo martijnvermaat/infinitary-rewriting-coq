@@ -138,12 +138,13 @@ Definition infinite (t : term) : Prop :=
     exists p : position,
       position_depth p = d /\ subterm t p <> None.
 
-(** I guess we should be able to prove these predicates to define the same
-    subset of infinite terms, but my (small) tries below did not succeed. *)
+(**
+   I guess we should be able to prove these predicates to define the same
+   subset of infinite terms, but my (small) tries below did not succeed.
 
+[[
 Require Import Equality.
 
-(* But we cannot prove this *)
 Lemma infinite_implies_term_inf :
   forall t, infinite t -> term_inf t.
 Proof.
@@ -161,8 +162,9 @@ reflexivity.
    I don't see how to get there, but it ought to be
    possible since (arity f) is finite, using something
    akin to the pigeon hole principle. *)
-Admitted.
+]]
 
+[[
 Lemma term_inf_implies_infinite :
   forall t, term_inf t -> infinite t.
 Proof.
@@ -190,9 +192,8 @@ destruct (arity f).
 inversion i0.
 simpl.
 unfold vhead.
-admit. (* Don't know what to do here *)
-intro IH.
-(** And we are stuck. *)
-Admitted.
+(* Don't know what to do here *)
+]]
+*)
 
 End Position.

@@ -295,6 +295,10 @@ Definition pos_eq (p : position) (t u : term) :=
 Definition all_pos_eq (t u : term) :=
   forall p : position, pos_eq p t u.
 
+(**
+   Didn't really bother to complete this...
+
+[[
 Lemma all_pos_eq_fun_inv :
   forall f v w,
     all_pos_eq (Fun f v) (Fun f w) ->
@@ -320,10 +324,9 @@ rewrite Habsurd in *|-.
    (Coq 8.3) and H (Coq 8.2). *)
 discriminate.
 (** I don't know if we're on the right track here. *)
-Admitted.
+]]
 
-(** TODO: This lemma gives a universe inconsitency in Coq trunk
-   (2010-08-13). *)
+[[
 Lemma all_pos_eq_implies_term_bis :
   forall (t u : term), all_pos_eq t u -> t [~] u.
 Proof.
@@ -342,24 +345,22 @@ intro i.
 apply pos2bis.
 apply (all_pos_eq_fun_inv H).
 Qed.
+]]
 
+[[
 Lemma term_bis_implies_all_pos_eq :
   forall (t u : term), t [~] u -> all_pos_eq t u.
 Proof.
 intros t u H p.
 revert t u H.
 induction p as [| a p IH]; intros t u [x | f v w H].
-
 reflexivity.
 reflexivity.
 exact I.
-
 unfold pos_eq; simpl; destruct (Bool_nat.lt_ge_dec a (arity f)).
-
 (** vnth should do this of course *)
 assert (vnth_fact : exists i : Fin (arity f), vnth l v = v i /\ vnth l w = w i).
 admit.
-
 destruct vnth_fact as [i [H1 H2]].
 rewrite H1, H2.
 assert (Hp := IH (v i) (w i) (H i)).
@@ -367,5 +368,7 @@ unfold pos_eq in Hp.
 destruct (subterm (v i) p); destruct (subterm (w i) p); assumption.
 exact I.
 Qed.
+]]
+*)
 
 End PositionEquality.

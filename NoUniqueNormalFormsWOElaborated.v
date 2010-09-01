@@ -1450,11 +1450,15 @@ assumption.
 inversion i.
 Qed.
 
+(**
+   The proof of this lemma is not guarded:
+
+[[
 Lemma psin_eq_oldpsi2n :
   forall n,
     psi' n [~] oldpsi' (2 * n).
 Proof.
-(** Should be somehow possible to show, using lemma [helper], but the
+(* Should be somehow possible to show, using lemma [helper], but the
    strategy below is faulty (not guarded). *)
 cofix c.
 intro n.
@@ -1505,13 +1509,17 @@ rewrite plus_Sn_m.
 specialize c with (S n).
 simpl in c.
 exact c.
-(** So the proof is not guarded now, need to rethink this. *)
-Admitted.
+Guarded.
+(* So the proof is not guarded now, need to rethink this. *)
+]]
 
-(** This increases confidence in correctness of [psi] (if the proof was
-   complete ;) ). *)
+   If the proof was complete, it would let us prove the following easily:
+
+[[
 Lemma psi_eq_oldpsi :
   psi [~] oldpsi.
 Proof.
 apply psin_eq_oldpsi2n.
 Qed.
+]]
+*)

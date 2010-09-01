@@ -164,7 +164,10 @@ Fixpoint dig (t : term) (p : position) {struct p} : option context :=
               end
   end.
 
-(** Digging a hole and filling it with the same gets you nothing new. *)
+(**
+   Digging a hole and filling it with the same gets you nothing new.
+
+[[
 Lemma dig_fill :
   forall t p,
     match dig t p, subterm t p with
@@ -173,13 +176,11 @@ Lemma dig_fill :
     end.
 Proof.
 intros t p.
-induction p as [| n p H]; simpl.
+induction p as [| n p IH]; simpl.
 apply term_eq_refl.
-admit.
-Qed.
+]]
 
-(**
-   By the way, CoLoR states the previous lemma like this:
+   By the way, CoLoR states it like this:
 
 [[
 Lemma subterm_elim : forall p t s, subterm t p = Some s ->
