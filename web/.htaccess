@@ -1,9 +1,0 @@
-AddType text/css .css
-AddType application/x-javascript .js
-AddType "text/html; charset=utf-8" .html
-
-<FilesMatch "^[^\.]+$">
-    ForceType None
-</FilesMatch>
-
-DirectoryIndex index.html
