@@ -156,7 +156,7 @@ where "s [>] t" := (step s t).
 
 Definition step_eq `(p : s [>] t, o : u [>] v) :=
   match p, o with
-  | Step _ _ r c u _ _ _, Step _ _ r' c' u' _ _ _ =>
+  | Step r c u _ _ _, Step r' c' u' _ _ _ =>
     context_bis c c' /\ r = r' /\ substitution_eq (vars (lhs r)) u u'
   end.
 
@@ -264,7 +264,7 @@ Qed.
 (** Depth of rule application in a rewriting step. *)
 Definition depth s t (p : s [>] t) : nat :=
   match p with
-  | Step _ _ _ c _ _ _ _ => hole_depth c
+  | Step _ c _ _ _ _ => hole_depth c
   end.
 
 (** Source and target terms are equal up to the depth of the rewrite step. *)
@@ -334,7 +334,7 @@ Hypothesis H3 :
 Fixpoint sequence_rect `(r : s ->> t) : P r :=
   match r return P r with
   | Nil t          => H1 t
-  | Cons s t r u p => H2 p (sequence_rect r)
+  | Cons s t r p => H2 p (sequence_rect r)
   | Lim s ts f t c => H3 f c (fun n => sequence_rect (f n))
   end.
 

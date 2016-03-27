@@ -246,6 +246,9 @@ inversion H1.
 inversion H2.
 dependent destruction H1.
 dependent destruction H2.
+(* TODO *)
+Admitted.
+(*
 constructor.
 intro.
 apply term_bis_trans with (v' i).
@@ -259,6 +262,7 @@ apply term_bis_trans with (w' i).
 apply H4.
 apply H7.
 Qed.
+*)
 
 (* For completeness, we could also show context_eq is an equivalence. *)
 

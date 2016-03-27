@@ -59,7 +59,7 @@ Definition vcons (x : A) n (v : vector n) : vector (S n) :=
     fun i =>
     match i in Fin Sn return P Sn with
     | First _   => fun _ => x
-    | Next _ i' => fun v => v i'
+    | Next i' => fun v => v i'
     end v.
 
 Definition vhead (n : nat) (v : vector (S n)) : A :=
@@ -112,8 +112,8 @@ Program Fixpoint vnth (n m : nat) : n < m -> vector m -> A :=
            end
   end.
 
-Solve All Obligations using auto with arith.
-Solve All Obligations using intros; contradict H; auto with arith.
+Solve All Obligations with auto; auto with arith.
+Solve All Obligations with intros; contradict H; auto with arith.
 
 Fixpoint vappend (n m : nat) : vector n -> vector m -> vector (n + m) :=
   match n return vector n -> vector m -> vector (n + m) with

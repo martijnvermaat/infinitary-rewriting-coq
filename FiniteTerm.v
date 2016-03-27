@@ -9,7 +9,8 @@
 (** This library defines the type [finite_term] of finite terms. *)
 
 
-Require Import Max. (* TODO: deprecated in Coq 8.3? Max.v -> Peano.v *)
+
+Require Import Peano.
 Require Import List.
 Require Export Signature.
 Require Export Variables.

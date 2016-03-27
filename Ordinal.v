@@ -70,7 +70,7 @@ Fixpoint pd (alpha : ord) : pd_type alpha -> ord :=
                            | inr t  => alpha[t]
                            end
   | Limit f    => fun i => match i with
-                           | existT n t => (f n)[t]
+                           | existT _ n t => (f n)[t]
                            end
   end
 where "alpha [ i ]" := (pd alpha i) : ord_scope.

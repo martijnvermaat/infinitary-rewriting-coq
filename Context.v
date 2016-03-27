@@ -42,14 +42,14 @@ Implicit Arguments CFun [i j].
 Fixpoint hole_depth c : nat :=
   match c with
   | Hole                => 0
-  | CFun _ _ _ _ _ c' _ => 1 + hole_depth c'
+  | CFun _ _ _ c' _ => 1 + hole_depth c'
   end.
 
 (** Position of a hole. *)
 Fixpoint hole_position c : position :=
   match c with
   | Hole                => nil
-  | CFun _ i _ _ _ c' _ => i :: (hole_position c')
+  | @CFun _ i _ _ _ c' _ => i :: (hole_position c')
   end.
 
 (** Depth of a hole is depth of its position. *)
@@ -64,7 +64,7 @@ Qed.
 Fixpoint fill (c : context) (t : term) : term :=
   match c with
   | Hole                  => t
-  | CFun f i j H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
+  | CFun f H v1 c' v2 => Fun f (vcast (vappend v1 (vcons (fill c' t) v2)) H)
   end.
 
 (*
